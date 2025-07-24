@@ -55,18 +55,17 @@ export default function GameInstructions() {
         </p>
         <ol className="list-decimal list-inside space-y-3 text-gray-700">
           <li>
-            <strong>Bidding Order:</strong> Starting with the dealer and going clockwise, each player states their bid.
+            <strong>Simultaneous Bidding:</strong> All players write down their bids at the same time and reveal them simultaneously.
           </li>
           <li>
             <strong>Bid Range:</strong> You can bid from 0 to the number of cards in your hand.
           </li>
           <li>
-            <strong>Dealer Restriction:</strong> The last player to bid (usually the dealer) cannot bid a number that would make the total bids equal the total number of tricks available.
-            <div className="bg-red-50 p-2 rounded mt-2">
-              <p className="text-sm text-red-800">
-                <strong>Example:</strong> In a 4-player game with 3 cards each, there are 3 tricks total. 
-                If the first three players bid 1, 1, 0, the dealer cannot bid 1 (since 1+1+0+1=3). 
-                This ensures someone will be wrong!
+            <strong>No Strategic Advantage:</strong> Since everyone bids at once, no player can adjust their bid based on others&apos; choices.
+            <div className="bg-blue-50 p-2 rounded mt-2">
+              <p className="text-sm text-blue-800">
+                <strong>Result:</strong> This often leads to situations where the group collectively underbids or overbids, 
+                but that&apos;s part of the challenge and fun of Jøssing!
               </p>
             </div>
           </li>
@@ -177,7 +176,8 @@ export default function GameInstructions() {
               <li>Count your trump cards - they are very powerful</li>
               <li>Aces and Kings in non-trump suits usually win tricks</li>
               <li>Small cards (2-6) rarely win unless they are trump</li>
-              <li>Consider what others might bid before you</li>
+              <li>Since bidding is simultaneous, focus only on your hand</li>
+              <li>You can&apos;t adjust based on others&apos; bids - trust your analysis</li>
               <li>Zero bids are safer now - you only need 10 points if successful</li>
               <li>Remember: exact bids get you 10 + your bid points!</li>
             </ul>

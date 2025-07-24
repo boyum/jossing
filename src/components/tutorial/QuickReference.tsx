@@ -91,10 +91,10 @@ export default function QuickReference() {
           <div className="bg-purple-50 p-3 rounded">
             <h4 className="font-medium text-purple-800 mb-2">Bidding Process</h4>
             <ol className="text-sm space-y-1 list-decimal list-inside">
-              <li>Starting with the dealer, each player bids</li>
+              <li>All players write down their bids simultaneously</li>
+              <li>Bids are revealed at the same time</li>
               <li>Bid must be 0 to number of cards in hand</li>
-              <li>Last player (dealer) cannot make bids total exactly equal to total tricks</li>
-              <li>This ensures at least one player will be wrong</li>
+              <li>No player gets strategic advantage from bidding order</li>
             </ol>
           </div>
           
@@ -103,8 +103,8 @@ export default function QuickReference() {
             <ul className="text-sm space-y-1 list-disc list-inside">
               <li>Count your trump cards - they are powerful</li>
               <li>Look for high cards in other suits</li>
-              <li>Consider what others might bid</li>
-              <li>Zero bids are risky but can pay off big</li>
+              <li>Bid based only on your hand - you can&apos;t see others&apos; bids</li>
+              <li>Zero bids are risky but can pay off</li>
               <li>Remember: being exact is more important than winning lots of tricks</li>
             </ul>
           </div>

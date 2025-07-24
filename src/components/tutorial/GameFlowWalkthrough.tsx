@@ -22,10 +22,10 @@ const gameFlowSteps = [
     title: 'Bidding Phase',
     description: 'Players predict how many tricks they will win',
     details: [
-      'Starting with dealer, each player bids',
+      'All players write down bids simultaneously',
       'Bid from 0 to the number of cards you have',
-      'Last player (dealer) cannot make total bids equal total tricks',
-      'This ensures someone will be wrong!'
+      'Bids are revealed at the same time',
+      'No strategic advantage from bidding order'
     ],
     visual: 'bidding'
   },
