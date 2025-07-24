@@ -1,0 +1,429 @@
+# Jøssing Card Game - Application Development Plan
+
+## 1. Project Overview
+
+### Objective
+Create a web-based multiplayer Jøssing card game using Next.js that allows players to join sessions from their own devices with real-time synchronization.
+
+### Core Requirements
+- Multiplayer support (2-8 players)
+- Real-time gameplay synchronization
+- Session-based game management
+- Mobile-responsive design
+- Support for both Classic and Modern scoring systems
+- Game state persistence
+
+## 2. Technical Architecture
+
+### Tech Stack
+- **Frontend**: Next.js 14+ with App Router
+- **Backend**: Next.js API routes
+- **Real-time Communication**: Socket.IO or Server-Sent Events (SSE)
+- **Database**: SQLite with Prisma ORM (for simplicity) or PostgreSQL for production
+- **State Management**: Zustand or React Context
+- **Styling**: Tailwind CSS
+- **Type Safety**: TypeScript throughout
+
+### Deployment
+- **Development**: Local development with hot reload
+- **Production**: Vercel or similar platform
+- **Database**: Railway, PlanetScale, or similar for production
+
+## 3. Data Models
+
+### Game Session
+```typescript
+interface GameSession {
+  id: string
+  adminPlayerId: string
+  gameType: 'up' | 'up-and-down'
+  scoringSystem: 'classic' | 'modern'
+  maxPlayers: number
+  currentSection: number
+  gamePhase: 'waiting' | 'bidding' | 'playing' | 'scoring' | 'finished'
+  createdAt: Date
+  updatedAt: Date
+}
+```
+
+### Player
+```typescript
+interface Player {
+  id: string
+  sessionId: string
+  name: string
+  isAdmin: boolean
+  position: number // Seating order
+  totalScore: number
+  isConnected: boolean
+  joinedAt: Date
+}
+```
+
+### Section State
+```typescript
+interface SectionState {
+  sessionId: string
+  sectionNumber: number
+  dealerId: string
+  leadPlayerId: string
+  trumpSuit: Suit
+  trumpCard: Card
+  playerHands: Record<string, Card[]>
+  playerBids: Record<string, number>
+  playerTricksWon: Record<string, number>
+  currentTrick: Trick
+  completedTricks: Trick[]
+  sectionScores: Record<string, number>
+}
+```
+
+### Card & Trick
+```typescript
+interface Card {
+  suit: 'hearts' | 'diamonds' | 'clubs' | 'spades'
+  rank: 'A' | 'K' | 'Q' | 'J' | '10' | '9' | '8' | '7' | '6' | '5' | '4' | '3' | '2'
+  value: number // For comparison
+}
+
+interface Trick {
+  id: string
+  leadPlayerId: string
+  cardsPlayed: Record<string, Card>
+  winnerId?: string
+  leadingSuit?: Suit
+}
+```
+
+## 4. Application Flow
+
+### Session Management
+1. **Create Session**
+   - Admin player creates a new game session
+   - Generates unique session code (6-digit alphanumeric)
+   - Sets game parameters (type, scoring system, max players)
+
+2. **Join Session**
+   - Players enter session code to join
+   - Name validation and duplicate checking
+   - Automatic seating assignment
+
+3. **Session Lobby**
+   - View connected players
+   - Admin can start the game when ready
+   - Real-time player connection status
+
+### Game Flow
+1. **Game Initialization**
+   - Assign dealer position
+   - Navigate to first section
+
+2. **Section Flow**
+   - Shuffle deck completely
+   - Set new trump card for this section
+   - Deal cards to all players
+   - Bidding phase (simultaneous)
+   - Determine first player (highest bidder, closest to dealer)
+   - Trick-taking phase
+   - Score calculation and display
+   - Proceed to next section or end game
+
+3. **Trick Flow**
+   - Current player plays a card
+   - Validate card play (suit following rules)
+   - Wait for all players to play
+   - Determine trick winner
+   - Update scores and proceed
+
+## 5. User Interface Design
+
+### Home Page Design
+- **Simple Layout**: Clean title with "Jøssing" branding
+- **Primary Actions**: 
+  - Large "Create New Session" button
+  - Quick join input field with session code + submit button
+- **Session Sharing**: Generate shareable links for easy session joining
+- **Mobile-First**: Optimized for players joining on phones
+
+### Screen Hierarchy
+```
+├── Home Page (Simple)
+│   ├── Title & Branding
+│   ├── Create New Session Button
+│   └── Quick Join (Input + Submit)
+├── Session Lobby
+│   ├── Player List
+│   ├── Game Settings
+│   ├── QR Code (pre-game only)
+│   └── Start Game (Admin only)
+├── Game Board
+│   ├── Player's Hand
+│   ├── Current Trick Area
+│   ├── Score Display
+│   ├── Game Status
+│   └── Action Buttons
+├── Display Mode (Admin Large Screen)
+│   ├── Live Score Graph
+│   ├── QR Code for Joining (pre-game)
+│   ├── Trick Effects & Animations
+│   └── Player Status Overview
+├── Bidding Modal
+└── Final Scores
+```
+
+### Display Mode Features (Large Screen)
+- **Score Graph**: Real-time visual representation of player scores across sections
+- **QR Code**: For easy mobile joining (only shown before first section starts)
+- **Trick Effects**: 
+  - **Positive**: When player gets trick they need for their bid (green checkmark, celebration)
+  - **Negative**: When player gets unwanted trick that ruins their bid (red X, disappointed)
+  - **Neutral**: When player gets 2+ tricks beyond their bid (yellow neutral face)
+- **Admin Controls**: Toggle display mode, game management
+
+### Client-Side Effects
+- **Success Effects**: Randomized congratulations with fireworks/confetti when achieving bid
+- **Failure Effects**: Randomized "too bad" messages with sympathetic animations
+- **Neutral Effects**: Randomized neutral responses for over-bidding situations
+- **Dynamic Feel**: Multiple effect variations to keep experience fresh
+
+### Key UI Components
+- **Card Component**: Responsive card display with suit symbols
+- **Player Status Bar**: Shows player names, bids, tricks won, and scores
+- **Hand Management**: Touch-friendly card selection and playing
+- **Trick Display**: Visual representation of current trick
+- **Score Table**: Real-time score tracking across sections
+- **Game Status Indicator**: Current phase, whose turn, etc.
+- **Effect System**: Animated feedback for game events
+- **QR Code Generator**: For session sharing
+- **Score Graph**: Interactive visualization for display mode
+
+### Session Sharing & Joining
+- **Shareable Links**: Generate URLs like `domain.com/join/ABC123`
+- **QR Codes**: Automatically generated for easy mobile scanning
+- **Quick Join**: Prominent input field on home page for session codes
+- **Deep Linking**: Direct navigation to game from shared links
+
+## 6. Real-time Features
+
+### Socket Events
+```typescript
+// Client to Server
+'join-session'
+'leave-session'
+'start-game'
+'place-bid'
+'play-card'
+'ready-next-section'
+
+// Server to Client
+'player-joined'
+'player-left'
+'game-started'
+'cards-dealt'
+'bidding-phase'
+'card-played'
+'trick-completed'
+'section-completed'
+'game-ended'
+'error'
+```
+
+### State Synchronization
+- Optimistic updates for own actions
+- Server validation and rollback if necessary
+- Graceful handling of disconnections
+- Reconnection with state restoration
+
+## 7. Core Game Logic
+
+### Card Game Engine
+```typescript
+class JossingGame {
+  // Core game state
+  session: GameSession
+  players: Player[]
+  currentSection: SectionState
+  
+  // Game actions
+  dealCards(sectionNumber: number): void
+  validateCardPlay(playerId: string, card: Card): boolean
+  processCardPlay(playerId: string, card: Card): TrickResult
+  calculateSectionScores(): Record<string, number>
+  determineGameWinner(): Player
+  
+  // Validation logic
+  canPlayCard(playerId: string, card: Card): boolean
+  mustFollowSuit(hand: Card[], leadingSuit: Suit): boolean
+  getTrickWinner(trick: Trick, trumpSuit: Suit): string
+}
+```
+
+### Validation Rules
+- Ensure players follow suit when possible
+- Validate turn order
+- Prevent playing out of turn
+- Card availability checking
+- Bid range validation (0 to n cards)
+
+## 8. API Endpoints
+
+### REST Endpoints
+```
+POST   /api/sessions          - Create new game session
+GET    /api/sessions/:id      - Get session details
+POST   /api/sessions/:id/join - Join existing session
+DELETE /api/sessions/:id/leave - Leave session
+GET    /api/sessions/:id/state - Get current game state
+```
+
+### WebSocket Events
+- Real-time game state updates
+- Player action broadcasting
+- Connection management
+- Error handling and recovery
+
+## 9. Mobile Responsiveness
+
+### Key Considerations
+- **Card Display**: Stack/fan cards appropriately for small screens
+- **Touch Interactions**: Easy card selection and playing
+- **Orientation Support**: Both portrait and landscape modes
+- **Performance**: Efficient rendering for older mobile devices
+- **Accessibility**: Screen reader support, high contrast mode
+
+### Responsive Breakpoints
+- Mobile: < 768px (focus on vertical layout)
+- Tablet: 768px - 1024px (hybrid layout)
+- Desktop: > 1024px (full horizontal layout)
+
+## 10. Development Phases
+
+### Phase 1: Foundation (Week 1-2)
+- [ ] Set up Next.js project with TypeScript ✅
+- [ ] Configure database and Prisma schema ✅
+- [ ] Implement simplified home page with quick join
+- [ ] Create core UI components ✅
+- [ ] Set up Socket.IO integration
+- [ ] Implement session creation and joining APIs
+- [ ] Add shareable session links
+
+### Phase 2: Core Game Logic (Week 3-4)
+- [ ] Implement card dealing and shuffling ✅
+- [ ] Build bidding system
+- [ ] Create trick-taking mechanics
+- [ ] Implement scoring systems (Classic & Modern) ✅
+- [ ] Add game state validation
+
+### Phase 3: Real-time Features (Week 5)
+- [ ] Complete Socket.IO event system
+- [ ] Implement real-time state synchronization
+- [ ] Add connection management
+- [ ] Handle player disconnections gracefully
+
+### Phase 4: UI/UX & Effects (Week 6)
+- [ ] Responsive design implementation
+- [ ] Create effect system for trick outcomes
+- [ ] Implement client-side success/failure animations
+- [ ] Add randomized effect variations
+- [ ] Mobile optimization
+- [ ] QR code generation for session joining
+
+### Phase 5: Display Mode (Week 7)
+- [ ] Implement admin display mode toggle
+- [ ] Create live score graph visualization
+- [ ] Add large-screen trick effect animations
+- [ ] Implement QR code display (pre-game only)
+- [ ] Add admin controls for display management
+
+### Phase 6: Testing & Deployment (Week 8)
+- [ ] Unit tests for game logic
+- [ ] Integration tests for multiplayer scenarios
+- [ ] Performance optimization
+- [ ] Production deployment setup
+
+### Phase 7: Advanced Features (Week 9+)
+- [ ] Game replay system
+- [ ] Statistics tracking
+- [ ] Tournament mode
+- [ ] Spectator mode
+- [ ] Enhanced effect system with sound
+- [ ] Progressive Web App (PWA) features
+- [ ] Create trick-taking mechanics
+- [ ] Implement scoring systems (Classic & Modern)
+- [ ] Add game state validation
+
+### Phase 3: Real-time Features (Week 5)
+- [ ] Complete Socket.IO event system
+- [ ] Implement real-time state synchronization
+- [ ] Add connection management
+- [ ] Handle player disconnections gracefully
+
+### Phase 4: UI/UX Polish (Week 6)
+- [ ] Responsive design implementation
+- [ ] Animation and transitions
+- [ ] Error handling and user feedback
+- [ ] Mobile optimization
+
+### Phase 5: Testing & Deployment (Week 7)
+- [ ] Unit tests for game logic
+- [ ] Integration tests for multiplayer scenarios
+- [ ] Performance optimization
+- [ ] Production deployment setup
+
+### Phase 6: Advanced Features (Week 8+)
+- [ ] Game replay system
+- [ ] Statistics tracking
+- [ ] Tournament mode
+- [ ] Spectator mode
+- [ ] Chat system
+
+## 11. Technical Challenges & Solutions
+
+### Challenge 1: Real-time State Synchronization
+**Problem**: Keeping all players' game states synchronized
+**Solution**: 
+- Single source of truth on server
+- Optimistic updates with rollback capability
+- Periodic state reconciliation
+
+### Challenge 2: Network Disconnections
+**Problem**: Players may lose connection during gameplay
+**Solution**:
+- Store game state persistently
+- Implement reconnection logic
+- Graceful degradation (pause game for brief disconnections)
+
+### Challenge 3: Mobile Card Interface
+**Problem**: Playing cards on small screens
+**Solution**:
+- Intuitive gesture controls
+- Clear visual feedback
+- Adaptive UI based on hand size
+
+### Challenge 4: Game Rule Validation
+**Problem**: Ensuring all game rules are properly enforced
+**Solution**:
+- Comprehensive validation on server side
+- Clear error messages for invalid actions
+- Extensive test coverage for edge cases
+
+## 12. Future Enhancements
+
+### Potential Features
+- **AI Players**: Add computer opponents for practice
+- **Tournament System**: Multi-session tournaments with brackets
+- **Game Variants**: Support for different house rules
+- **Statistics Dashboard**: Player performance tracking
+- **Social Features**: Friend lists, messaging, game history
+- **Custom Themes**: Different card designs and table themes
+- **Sound Effects**: Audio feedback for actions
+- **Replay System**: Review completed games
+
+### Scalability Considerations
+- Database optimization for concurrent games
+- Horizontal scaling with load balancers
+- CDN for static assets
+- Caching strategies for frequent data
+- Rate limiting for API endpoints
+
+This plan provides a comprehensive roadmap for developing a robust, scalable Jøssing card game application that delivers an excellent multiplayer experience across all devices.

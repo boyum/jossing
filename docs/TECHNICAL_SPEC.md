@@ -1,0 +1,721 @@
+# Jøssing Card Game - Technical Specification
+
+## 1. Database Schema
+
+### Tables Overview
+The application will use the following main entities:
+
+#### game_sessions
+```sql
+CREATE TABLE game_sessions (
+  id VARCHAR(8) PRIMARY KEY,           -- Short alphanumeric session code
+  admin_player_id VARCHAR(36) NOT NULL,
+  game_type ENUM('up', 'up-and-down') NOT NULL,
+  scoring_system ENUM('classic', 'modern') NOT NULL,
+  max_players INTEGER NOT NULL DEFAULT 6,
+  current_section INTEGER NOT NULL DEFAULT 0,
+  game_phase ENUM('waiting', 'bidding', 'playing', 'scoring', 'finished') NOT NULL DEFAULT 'waiting',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+#### players
+```sql
+CREATE TABLE players (
+  id VARCHAR(36) PRIMARY KEY,
+  session_id VARCHAR(8) NOT NULL,
+  name VARCHAR(50) NOT NULL,
+  is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+  position INTEGER NOT NULL,
+  total_score INTEGER NOT NULL DEFAULT 0,
+  is_connected BOOLEAN NOT NULL DEFAULT TRUE,
+  joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (session_id) REFERENCES game_sessions(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_name_per_session (session_id, name),
+  UNIQUE KEY unique_position_per_session (session_id, position)
+);
+```
+
+#### section_states
+```sql
+CREATE TABLE section_states (
+  id VARCHAR(36) PRIMARY KEY,
+  session_id VARCHAR(8) NOT NULL,
+  section_number INTEGER NOT NULL,
+  dealer_position INTEGER NOT NULL,
+  lead_player_position INTEGER,
+  trump_suit ENUM('hearts', 'diamonds', 'clubs', 'spades') NOT NULL,
+  trump_card_rank VARCHAR(2) NOT NULL,
+  phase ENUM('dealing', 'bidding', 'playing', 'completed') NOT NULL DEFAULT 'dealing',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (session_id) REFERENCES game_sessions(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_section_per_session (session_id, section_number)
+);
+```
+
+#### player_hands
+```sql
+CREATE TABLE player_hands (
+  id VARCHAR(36) PRIMARY KEY,
+  section_state_id VARCHAR(36) NOT NULL,
+  player_id VARCHAR(36) NOT NULL,
+  cards JSON NOT NULL,                 -- Array of card objects
+  bid INTEGER,
+  tricks_won INTEGER NOT NULL DEFAULT 0,
+  section_score INTEGER NOT NULL DEFAULT 0,
+  FOREIGN KEY (section_state_id) REFERENCES section_states(id) ON DELETE CASCADE,
+  FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_hand_per_section_player (section_state_id, player_id)
+);
+```
+
+#### tricks
+```sql
+CREATE TABLE tricks (
+  id VARCHAR(36) PRIMARY KEY,
+  section_state_id VARCHAR(36) NOT NULL,
+  trick_number INTEGER NOT NULL,
+  lead_player_position INTEGER NOT NULL,
+  leading_suit ENUM('hearts', 'diamonds', 'clubs', 'spades'),
+  winner_position INTEGER,
+  completed_at TIMESTAMP,
+  FOREIGN KEY (section_state_id) REFERENCES section_states(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_trick_per_section (section_state_id, trick_number)
+);
+```
+
+#### trick_cards
+```sql
+CREATE TABLE trick_cards (
+  id VARCHAR(36) PRIMARY KEY,
+  trick_id VARCHAR(36) NOT NULL,
+  player_position INTEGER NOT NULL,
+  card_suit ENUM('hearts', 'diamonds', 'clubs', 'spades') NOT NULL,
+  card_rank VARCHAR(2) NOT NULL,
+  played_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (trick_id) REFERENCES tricks(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_card_per_trick_player (trick_id, player_position)
+);
+```
+
+## 2. API Specification
+
+### REST Endpoints
+
+#### Session Management
+```typescript
+// POST /api/sessions
+interface CreateSessionRequest {
+  adminName: string;
+  gameType: 'up' | 'up-and-down';
+  scoringSystem: 'classic' | 'modern';
+  maxPlayers: number;
+}
+
+interface CreateSessionResponse {
+  sessionId: string;
+  playerId: string;
+}
+
+// POST /api/sessions/:sessionId/join
+interface JoinSessionRequest {
+  playerName: string;
+}
+
+interface JoinSessionResponse {
+  playerId: string;
+  position: number;
+  gameState: GameState;
+}
+
+// GET /api/sessions/:sessionId/state
+interface GameStateResponse {
+  session: GameSession;
+  players: Player[];
+  currentSection?: SectionState;
+  playerHand?: Card[];
+  isPlayerTurn: boolean;
+}
+```
+
+#### Game Actions
+```typescript
+// POST /api/sessions/:sessionId/start
+interface StartGameRequest {
+  playerId: string;
+}
+
+// POST /api/sessions/:sessionId/bid
+interface PlaceBidRequest {
+  playerId: string;
+  bid: number;
+}
+
+// POST /api/sessions/:sessionId/play-card
+interface PlayCardRequest {
+  playerId: string;
+  card: Card;
+}
+```
+
+### WebSocket Events
+
+#### Client → Server Events
+```typescript
+interface SocketEvents {
+  'join-room': { sessionId: string; playerId: string };
+  'leave-room': { sessionId: string; playerId: string };
+  'player-ready': { sessionId: string; playerId: string };
+  'heartbeat': { playerId: string };
+}
+```
+
+#### Server → Client Events
+```typescript
+interface SocketEmissions {
+  'player-joined': { player: Player };
+  'player-left': { playerId: string };
+  'game-started': { gameState: GameState };
+  'cards-dealt': { hand: Card[] };
+  'bidding-started': { timeLimit: number };
+  'all-bids-placed': { bids: Record<string, number> };
+  'card-played': { playerId: string; card: Card };
+  'trick-completed': { winner: string; nextLeader: string };
+  'section-completed': { scores: Record<string, number> };
+  'game-ended': { finalScores: Record<string, number>; winner: string };
+  'player-disconnected': { playerId: string };
+  'player-reconnected': { playerId: string };
+  'error': { message: string; code: string };
+}
+```
+
+## 3. Core Game Logic Implementation
+
+### Card System
+```typescript
+enum Suit {
+  HEARTS = 'hearts',
+  DIAMONDS = 'diamonds',
+  CLUBS = 'clubs',
+  SPADES = 'spades'
+}
+
+enum Rank {
+  TWO = '2', THREE = '3', FOUR = '4', FIVE = '5', SIX = '6',
+  SEVEN = '7', EIGHT = '8', NINE = '9', TEN = '10',
+  JACK = 'J', QUEEN = 'Q', KING = 'K', ACE = 'A'
+}
+
+class Card {
+  constructor(
+    public suit: Suit,
+    public rank: Rank,
+    public value: number = RANK_VALUES[rank]
+  ) {}
+
+  toString(): string {
+    return `${this.rank}${this.suit}`;
+  }
+
+  static fromString(cardString: string): Card {
+    // Parse card string like "AH" or "10S"
+  }
+}
+
+const RANK_VALUES = {
+  '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
+  'J': 11, 'Q': 12, 'K': 13, 'A': 14
+};
+```
+
+### Game Engine
+```typescript
+class JossingGameEngine {
+  private session: GameSession;
+  private players: Player[];
+  private deck: Card[];
+
+  constructor(sessionId: string) {
+    // Initialize game state
+  }
+
+  // Core game methods
+  async startGame(): Promise<void> {
+    this.shuffleDeck();
+    this.setTrumpCard();
+    await this.startSection(1);
+  }
+
+  async startSection(sectionNumber: number): Promise<void> {
+    // Shuffle entire deck for new section
+    this.shuffleDeck();
+    
+    // Set new trump card for this section
+    this.setTrumpCard();
+    
+    const cardsPerPlayer = this.getCardsPerPlayer(sectionNumber);
+    const hands = this.dealCards(cardsPerPlayer);
+    
+    // Store hands in database
+    await this.savePlayerHands(sectionNumber, hands);
+    
+    // Start bidding phase
+    this.session.gamePhase = 'bidding';
+    this.emitToAll('cards-dealt', { sectionNumber, cardsPerPlayer, trumpSuit: this.session.trumpSuit });
+  }
+
+  async placeBid(playerId: string, bid: number): Promise<void> {
+    // Validate bid
+    if (!this.isValidBid(playerId, bid)) {
+      throw new Error('Invalid bid');
+    }
+
+    // Store bid
+    await this.storeBid(playerId, bid);
+
+    // Check if all bids are placed
+    if (await this.allBidsPlaced()) {
+      await this.startTrickTaking();
+    }
+  }
+
+  async playCard(playerId: string, card: Card): Promise<void> {
+    // Validate card play
+    if (!this.canPlayCard(playerId, card)) {
+      throw new Error('Cannot play this card');
+    }
+
+    // Store card play
+    await this.storeCardPlay(playerId, card);
+
+    // Check if trick is complete
+    if (await this.isTrickComplete()) {
+      await this.completeTrick();
+    }
+  }
+
+  private canPlayCard(playerId: string, card: Card): boolean {
+    const currentTrick = this.getCurrentTrick();
+    const playerHand = this.getPlayerHand(playerId);
+
+    // Check if player has the card
+    if (!playerHand.includes(card)) {
+      return false;
+    }
+
+    // Check if it's player's turn
+    if (!this.isPlayerTurn(playerId)) {
+      return false;
+    }
+
+    // Check suit following rules
+    if (currentTrick.leadingSuit) {
+      const hasLeadingSuit = playerHand.some(c => c.suit === currentTrick.leadingSuit);
+      if (hasLeadingSuit && card.suit !== currentTrick.leadingSuit) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private getTrickWinner(trick: Trick): string {
+    const trumpSuit = this.session.trumpSuit;
+    const leadingSuit = trick.leadingSuit;
+    
+    let winner = trick.leadPlayerId;
+    let winningCard = trick.cardsPlayed[winner];
+
+    for (const [playerId, card] of Object.entries(trick.cardsPlayed)) {
+      if (this.cardBeats(card, winningCard, trumpSuit, leadingSuit)) {
+        winner = playerId;
+        winningCard = card;
+      }
+    }
+
+    return winner;
+  }
+
+  private cardBeats(card: Card, currentWinner: Card, trumpSuit: Suit, leadingSuit: Suit): boolean {
+    // Trump always beats non-trump
+    if (card.suit === trumpSuit && currentWinner.suit !== trumpSuit) {
+      return true;
+    }
+    
+    // Higher trump beats lower trump
+    if (card.suit === trumpSuit && currentWinner.suit === trumpSuit) {
+      return card.value > currentWinner.value;
+    }
+    
+    // Non-trump cannot beat trump
+    if (card.suit !== trumpSuit && currentWinner.suit === trumpSuit) {
+      return false;
+    }
+    
+    // Within leading suit, higher value wins
+    if (card.suit === leadingSuit && currentWinner.suit === leadingSuit) {
+      return card.value > currentWinner.value;
+    }
+    
+    // Leading suit beats off-suit
+    if (card.suit === leadingSuit && currentWinner.suit !== leadingSuit) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  calculateSectionScore(bid: number, tricksWon: number): number {
+    const scoringSystem = this.session.scoringSystem;
+    
+    if (bid === tricksWon) {
+      // Exact bid achieved
+      if (scoringSystem === 'classic') {
+        return 10 + bid;
+      } else {
+        return 5 * (bid + 1);
+      }
+    } else {
+      // Missed bid
+      return 0;
+    }
+  }
+}
+```
+
+## 4. Real-time Communication Architecture
+
+### Connection Management
+```typescript
+class GameSocketManager {
+  private io: SocketIOServer;
+  private connectedPlayers: Map<string, string> = new Map(); // playerId -> socketId
+
+  constructor(server: http.Server) {
+    this.io = new SocketIOServer(server, {
+      cors: { origin: "*" },
+      pingTimeout: 60000,
+      pingInterval: 25000
+    });
+
+    this.setupEventHandlers();
+  }
+
+  private setupEventHandlers(): void {
+    this.io.on('connection', (socket) => {
+      socket.on('join-room', async ({ sessionId, playerId }) => {
+        await this.handleJoinRoom(socket, sessionId, playerId);
+      });
+
+      socket.on('disconnect', () => {
+        this.handleDisconnect(socket);
+      });
+
+      socket.on('heartbeat', ({ playerId }) => {
+        this.updatePlayerActivity(playerId);
+      });
+    });
+  }
+
+  async handleJoinRoom(socket: Socket, sessionId: string, playerId: string): Promise<void> {
+    // Validate session and player
+    const isValid = await this.validatePlayerSession(sessionId, playerId);
+    if (!isValid) {
+      socket.emit('error', { message: 'Invalid session or player', code: 'INVALID_SESSION' });
+      return;
+    }
+
+    // Join room and track connection
+    socket.join(sessionId);
+    this.connectedPlayers.set(playerId, socket.id);
+    
+    // Update player connection status
+    await this.updatePlayerConnection(playerId, true);
+    
+    // Notify others
+    socket.to(sessionId).emit('player-reconnected', { playerId });
+
+    // Send current game state
+    const gameState = await this.getGameState(sessionId, playerId);
+    socket.emit('game-state', gameState);
+  }
+
+  handleDisconnect(socket: Socket): void {
+    // Find player by socket ID
+    const playerId = this.findPlayerBySocket(socket.id);
+    if (playerId) {
+      this.connectedPlayers.delete(playerId);
+      this.updatePlayerConnection(playerId, false);
+      
+      // Notify room about disconnection
+      socket.rooms.forEach(room => {
+        socket.to(room).emit('player-disconnected', { playerId });
+      });
+    }
+  }
+
+  emitToSession(sessionId: string, event: string, data: any): void {
+    this.io.to(sessionId).emit(event, data);
+  }
+
+  emitToPlayer(playerId: string, event: string, data: any): void {
+    const socketId = this.connectedPlayers.get(playerId);
+    if (socketId) {
+      this.io.to(socketId).emit(event, data);
+    }
+  }
+}
+```
+
+## 5. State Management (Client-side)
+
+### Zustand Store Structure
+```typescript
+interface GameStore {
+  // Session state
+  sessionId: string | null;
+  playerId: string | null;
+  players: Player[];
+  gamePhase: GamePhase;
+  
+  // Current section state
+  currentSection: number;
+  playerHand: Card[];
+  playerBid: number | null;
+  tricksWon: number;
+  
+  // Current trick state
+  currentTrick: Trick | null;
+  isPlayerTurn: boolean;
+  
+  // Scores
+  sectionScores: Record<string, number>;
+  totalScores: Record<string, number>;
+  
+  // Actions
+  setSessionId: (id: string) => void;
+  setPlayerId: (id: string) => void;
+  updatePlayers: (players: Player[]) => void;
+  updateGamePhase: (phase: GamePhase) => void;
+  setPlayerHand: (cards: Card[]) => void;
+  playCard: (card: Card) => void;
+  placeBid: (bid: number) => void;
+  updateTrick: (trick: Trick) => void;
+  updateScores: (scores: Record<string, number>) => void;
+  
+  // Socket connection
+  socket: SocketIOClient | null;
+  isConnected: boolean;
+  setSocket: (socket: SocketIOClient) => void;
+  setConnectionStatus: (connected: boolean) => void;
+}
+
+const useGameStore = create<GameStore>((set, get) => ({
+  // Initial state
+  sessionId: null,
+  playerId: null,
+  players: [],
+  gamePhase: 'waiting',
+  currentSection: 0,
+  playerHand: [],
+  playerBid: null,
+  tricksWon: 0,
+  currentTrick: null,
+  isPlayerTurn: false,
+  sectionScores: {},
+  totalScores: {},
+  socket: null,
+  isConnected: false,
+
+  // Actions
+  setSessionId: (id) => set({ sessionId: id }),
+  setPlayerId: (id) => set({ playerId: id }),
+  updatePlayers: (players) => set({ players }),
+  updateGamePhase: (phase) => set({ gamePhase: phase }),
+  setPlayerHand: (cards) => set({ playerHand: cards }),
+  
+  playCard: (card) => {
+    const { playerHand, socket, sessionId, playerId } = get();
+    const newHand = playerHand.filter(c => !cardsEqual(c, card));
+    set({ playerHand: newHand });
+    
+    // Optimistic update - will be rolled back if invalid
+    socket?.emit('play-card', { sessionId, playerId, card });
+  },
+  
+  placeBid: (bid) => {
+    const { socket, sessionId, playerId } = get();
+    set({ playerBid: bid });
+    socket?.emit('place-bid', { sessionId, playerId, bid });
+  },
+  
+  // ... other actions
+}));
+```
+
+## 6. Component Architecture
+
+### Key React Components
+```typescript
+// Main game container
+const GameContainer: React.FC = () => {
+  const { sessionId, gamePhase } = useGameStore();
+  
+  if (!sessionId) return <HomePage />;
+  
+  switch (gamePhase) {
+    case 'waiting':
+      return <SessionLobby />;
+    case 'bidding':
+      return <BiddingPhase />;
+    case 'playing':
+      return <GameBoard />;
+    case 'scoring':
+      return <SectionScores />;
+    case 'finished':
+      return <FinalScores />;
+    default:
+      return <LoadingScreen />;
+  }
+};
+
+// Individual components
+const GameBoard: React.FC = () => {
+  return (
+    <div className="flex flex-col h-screen">
+      <GameHeader />
+      <PlayersStatus />
+      <TrickArea />
+      <PlayerHand />
+      <GameActions />
+    </div>
+  );
+};
+
+const PlayerHand: React.FC = () => {
+  const { playerHand, isPlayerTurn } = useGameStore();
+  
+  return (
+    <div className="flex justify-center p-4 bg-green-800">
+      <div className="flex space-x-2">
+        {playerHand.map((card, index) => (
+          <PlayableCard
+            key={`${card.suit}-${card.rank}`}
+            card={card}
+            disabled={!isPlayerTurn}
+            onPlay={() => handlePlayCard(card)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const PlayableCard: React.FC<{
+  card: Card;
+  disabled: boolean;
+  onPlay: () => void;
+}> = ({ card, disabled, onPlay }) => {
+  return (
+    <button
+      onClick={onPlay}
+      disabled={disabled}
+      className={`
+        w-16 h-24 rounded-lg border-2 flex flex-col items-center justify-center
+        transition-all duration-200 transform hover:scale-105
+        ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg cursor-pointer'}
+        ${card.suit === 'hearts' || card.suit === 'diamonds' ? 'text-red-600' : 'text-black'}
+        bg-white border-gray-300
+      `}
+    >
+      <span className="text-xs font-bold">{card.rank}</span>
+      <span className="text-lg">{getSuitSymbol(card.suit)}</span>
+    </button>
+  );
+};
+```
+
+## 7. Error Handling & Validation
+
+### Client-side Validation
+```typescript
+class GameValidator {
+  static validateBid(bid: number, maxBid: number): string | null {
+    if (bid < 0) return 'Bid cannot be negative';
+    if (bid > maxBid) return `Bid cannot exceed ${maxBid}`;
+    if (!Number.isInteger(bid)) return 'Bid must be a whole number';
+    return null;
+  }
+
+  static validateCardPlay(card: Card, hand: Card[], trick: Trick, trumpSuit: Suit): string | null {
+    if (!hand.some(c => cardsEqual(c, card))) {
+      return 'You do not have this card';
+    }
+
+    if (trick.leadingSuit) {
+      const hasLeadingSuit = hand.some(c => c.suit === trick.leadingSuit);
+      if (hasLeadingSuit && card.suit !== trick.leadingSuit) {
+        return `You must follow suit (${trick.leadingSuit})`;
+      }
+    }
+
+    return null;
+  }
+
+  static validateSessionCode(code: string): string | null {
+    if (!code) return 'Session code is required';
+    if (code.length !== 6) return 'Session code must be 6 characters';
+    if (!/^[A-Z0-9]+$/.test(code)) return 'Session code must contain only letters and numbers';
+    return null;
+  }
+
+  static validatePlayerName(name: string): string | null {
+    if (!name) return 'Name is required';
+    if (name.length < 2) return 'Name must be at least 2 characters';
+    if (name.length > 20) return 'Name must be less than 20 characters';
+    if (!/^[a-zA-Z0-9\s]+$/.test(name)) return 'Name can only contain letters, numbers, and spaces';
+    return null;
+  }
+}
+```
+
+### Error Recovery
+```typescript
+class ErrorRecoveryManager {
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectDelay = 1000;
+
+  async handleSocketDisconnection(): Promise<void> {
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      this.showCriticalError('Unable to reconnect to game server');
+      return;
+    }
+
+    this.reconnectAttempts++;
+    
+    setTimeout(async () => {
+      try {
+        await this.attemptReconnection();
+        this.reconnectAttempts = 0;
+      } catch (error) {
+        await this.handleSocketDisconnection();
+      }
+    }, this.reconnectDelay * this.reconnectAttempts);
+  }
+
+  async handleGameStateDesync(): Promise<void> {
+    // Request fresh game state from server
+    const gameState = await this.fetchGameState();
+    useGameStore.getState().syncGameState(gameState);
+  }
+
+  showCriticalError(message: string): void {
+    // Show modal with option to refresh or return to home
+    useGameStore.getState().setError(message, 'critical');
+  }
+}
+```
+
+This technical specification provides a comprehensive foundation for implementing the Jøssing card game application with robust multiplayer functionality, real-time synchronization, and excellent user experience.

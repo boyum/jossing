@@ -1,0 +1,152 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum GameType {
+  UP
+  UP_AND_DOWN
+}
+
+enum ScoringSystem {
+  CLASSIC
+  MODERN
+}
+
+enum GamePhase {
+  WAITING
+  BIDDING
+  PLAYING
+  SCORING
+  FINISHED
+}
+
+enum Suit {
+  HEARTS
+  DIAMONDS
+  CLUBS
+  SPADES
+}
+
+enum SectionPhase {
+  DEALING
+  BIDDING
+  PLAYING
+  COMPLETED
+}
+
+model GameSession {
+  id             String      @id @default(cuid())
+  adminPlayerId  String
+  gameType       GameType
+  scoringSystem  ScoringSystem
+  maxPlayers     Int         @default(6)
+  currentSection Int         @default(0)
+  gamePhase      GamePhase   @default(WAITING)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  // Relations
+  players        Player[]
+  sectionStates  SectionState[]
+
+  @@map("game_sessions")
+}
+
+model Player {
+  id          String   @id @default(cuid())
+  sessionId   String
+  name        String
+  isAdmin     Boolean  @default(false)
+  position    Int
+  totalScore  Int      @default(0)
+  isConnected Boolean  @default(true)
+  joinedAt    DateTime @default(now())
+
+  // Relations
+  session     GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  playerHands PlayerHand[]
+  trickCards  TrickCard[]
+
+  @@unique([sessionId, name])
+  @@unique([sessionId, position])
+  @@map("players")
+}
+
+model SectionState {
+  id                 String       @id @default(cuid())
+  sessionId          String
+  sectionNumber      Int
+  dealerPosition     Int
+  leadPlayerPosition Int?
+  trumpSuit          Suit
+  trumpCardRank      String
+  phase              SectionPhase @default(DEALING)
+  createdAt          DateTime     @default(now())
+
+  // Relations
+  session     GameSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  playerHands PlayerHand[]
+  tricks      Trick[]
+
+  @@unique([sessionId, sectionNumber])
+  @@map("section_states")
+}
+
+model PlayerHand {
+  id             String @id @default(cuid())
+  sectionStateId String
+  playerId       String
+  cards          String // JSON array of card objects
+  bid            Int?
+  tricksWon      Int    @default(0)
+  sectionScore   Int    @default(0)
+
+  // Relations
+  sectionState SectionState @relation(fields: [sectionStateId], references: [id], onDelete: Cascade)
+  player       Player       @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionStateId, playerId])
+  @@map("player_hands")
+}
+
+model Trick {
+  id                String   @id @default(cuid())
+  sectionStateId    String
+  trickNumber       Int
+  leadPlayerPosition Int
+  leadingSuit       Suit?
+  winnerPosition    Int?
+  completedAt       DateTime?
+
+  // Relations
+  sectionState SectionState @relation(fields: [sectionStateId], references: [id], onDelete: Cascade)
+  trickCards   TrickCard[]
+
+  @@unique([sectionStateId, trickNumber])
+  @@map("tricks")
+}
+
+model TrickCard {
+  id             String   @id @default(cuid())
+  trickId        String
+  playerId       String
+  playerPosition Int
+  cardSuit       Suit
+  cardRank       String
+  playedAt       DateTime @default(now())
+
+  // Relations
+  trick  Trick  @relation(fields: [trickId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([trickId, playerPosition])
+  @@map("trick_cards")
+}
