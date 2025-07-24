@@ -16,7 +16,7 @@ class GameApiService {
     adminName: string,
     gameType: string = 'up',
     scoringSystem: string = 'classic',
-    maxPlayers: number = 4
+    maxPlayers: number = 6
   ) {
     const response = await fetch(`${this.baseUrl}/sessions`, {
       method: 'POST',

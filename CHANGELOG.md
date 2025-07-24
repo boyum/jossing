@@ -10,6 +10,11 @@ All notable changes to this project will be documented in this file.
   - Updated backend validation in simple-db and API routes
   - Updated player count options in GameSetup component to include 2 players
   - Updated documentation and UI text to reflect 2-6 player support
+- **Default Max Players**: Ensured consistent default of 6 players across all components
+  - Updated GameSetup component default from 4 to 6 players
+  - Updated game-api-service default from 4 to 6 players
+  - Updated play page UI to dynamically show max players from session data
+  - Updated AI player addition limits to respect session's max players setting
 - **Polling Frequency**: Increased real-time update polling from 2 seconds to 1 second for more responsive multiplayer experience
   - Updated `useGamePolling` hook default interval: `2000ms` → `1000ms`
   - Updated `GameStore.startPolling` default interval: `2000ms` → `1000ms`

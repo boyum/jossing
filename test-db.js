@@ -24,7 +24,7 @@ async function testDatabase() {
         adminPlayerId: 'test-admin-123',
         gameType: 'UP_AND_DOWN',
         scoringSystem: 'CLASSIC',
-        maxPlayers: 4,
+        maxPlayers: 6,
         currentSection: 0,
         gamePhase: 'WAITING',
       },

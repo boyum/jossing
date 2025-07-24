@@ -168,7 +168,7 @@ export default function PlayPage() {
               <h2 className="text-2xl font-bold text-white mb-6">Waiting for Players</h2>
               
               <div className="grid gap-4 mb-8">
-                <h3 className="text-lg font-semibold text-slate-300">Current Players ({players.length}/4):</h3>
+                <h3 className="text-lg font-semibold text-slate-300">Current Players ({players.length}/{session?.maxPlayers || 6}):</h3>
                 {players.map((player) => (
                   <div 
                     key={player.id} 
@@ -212,7 +212,7 @@ export default function PlayPage() {
                   </p>
                   
                   {/* Add AI Players Component */}
-                  {isAdmin && players.length < 4 && (
+                  {isAdmin && players.length < (session?.maxPlayers || 6) && (
                     <AddAIPlayers
                       onAddAI={handleAddAI}
                       isLoading={isLoading}

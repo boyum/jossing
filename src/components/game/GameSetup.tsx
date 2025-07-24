@@ -22,7 +22,7 @@ export function GameSetup({ onCreateGame, onJoinGame, isLoading }: GameSetupProp
     adminName: '',
     gameType: GameType.UP_AND_DOWN,
     scoringSystem: ScoringSystem.CLASSIC,
-    maxPlayers: 4
+    maxPlayers: 6
   });
   const [joinSessionId, setJoinSessionId] = useState('');
   const [joinPlayerName, setJoinPlayerName] = useState('');
