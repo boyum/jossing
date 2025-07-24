@@ -9,6 +9,7 @@ import {
   type SectionState
 } from '@/types/game';
 import { createDeck, dealCards } from './game-utils';
+import { RandomAI, getAIPlayerName } from './ai-player';
 
 // In-memory storage (in production, this would be a database)
 const sessions = new Map<string, GameSession>();
@@ -211,7 +212,8 @@ export class GameManager {
     if (!sectionState || sectionState.phase !== SectionPhase.BIDDING) return false;
 
     // In a real implementation, we'd store bids and check if all players have bid
-    // For now, just return true
+    // For now, just log the bid and return true
+    console.log(`Player ${player.name} bids ${bid}`);
     return true;
   }
 
@@ -233,6 +235,82 @@ export class GameManager {
     playerHands.set(handKey, newHand);
 
     return true;
+  }
+
+  // Add AI players to fill empty slots
+  static addAIPlayers(sessionId: string): boolean {
+    const session = sessions.get(sessionId);
+    if (!session || session.gamePhase !== GamePhase.WAITING) {
+      return false;
+    }
+
+    const sessionPlayers = GameManager.getSessionPlayers(sessionId);
+    const spotsToFill = session.maxPlayers - sessionPlayers.length;
+
+    for (let i = 0; i < spotsToFill; i++) {
+      const playerId = GameManager.generatePlayerId();
+      const position = sessionPlayers.length + i + 1;
+      const aiName = getAIPlayerName(i);
+
+      const aiPlayer: Player = {
+        id: playerId,
+        sessionId,
+        name: aiName,
+        isAdmin: false,
+        position,
+        totalScore: 0,
+        isConnected: true,
+        joinedAt: new Date(),
+        isAI: true // Add this flag to identify AI players
+      };
+
+      players.set(playerId, aiPlayer);
+    }
+
+    return true;
+  }
+
+  // Make AI players take their turns
+  static processAITurn(sessionId: string): boolean {
+    const session = sessions.get(sessionId);
+    if (!session) return false;
+
+    const sectionState = GameManager.getCurrentSection(sessionId);
+    if (!sectionState) return false;
+
+    const sessionPlayers = GameManager.getSessionPlayers(sessionId);
+    const aiPlayers = sessionPlayers.filter(p => p.isAI);
+
+    // Process AI bids during bidding phase
+    if (sectionState.phase === SectionPhase.BIDDING) {
+      for (const aiPlayer of aiPlayers) {
+        const hand = GameManager.getPlayerHand(aiPlayer.id, session.currentSection);
+        const ai = new RandomAI(aiPlayer.name);
+        const bid = ai.makeBid(hand, session.currentSection, sectionState.trumpSuit);
+        
+        // Store the bid (in a real implementation, you'd track all bids)
+        console.log(`${aiPlayer.name} bids ${bid}`);
+      }
+      return true;
+    }
+
+    // Process AI card plays during playing phase
+    if (sectionState.phase === SectionPhase.PLAYING) {
+      for (const aiPlayer of aiPlayers) {
+        const hand = GameManager.getPlayerHand(aiPlayer.id, session.currentSection);
+        if (hand.length > 0) {
+          const ai = new RandomAI(aiPlayer.name);
+          const card = ai.playCard(hand, [], sectionState.trumpSuit);
+          
+          // Play the card
+          GameManager.playCard(aiPlayer.id, card);
+          console.log(`${aiPlayer.name} plays ${card.rank} of ${card.suit}`);
+        }
+      }
+      return true;
+    }
+
+    return false;
   }
 
   // Remove player from session

@@ -127,6 +127,20 @@ class GameApiService {
       };
     }
   }
+
+  // Add AI players to a session
+  async addAIPlayers(sessionId: string) {
+    const response = await fetch(`${this.baseUrl}/sessions/${sessionId}/add-ai`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to add AI players: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
 }
 
 export const gameApiService = new GameApiService();

@@ -1,19 +1,40 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Home } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
+import { useState, useEffect, Suspense } from "react";
+import { ArrowLeft, ArrowRight, Home } from "lucide-react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 
 // Dynamically import tutorial components
-const GameInstructions = dynamic(() => import('@/components/tutorial/GameInstructions'), { ssr: false });
-const CardPlaySimulator = dynamic(() => import('@/components/tutorial/CardPlaySimulator'), { ssr: false });
-const BiddingTrainer = dynamic(() => import('@/components/tutorial/BiddingTrainer'), { ssr: false });
-const ScoreCalculator = dynamic(() => import('@/components/tutorial/ScoreCalculator'), { ssr: false });
-const TrumpSuitDemo = dynamic(() => import('@/components/tutorial/TrumpSuitDemo'), { ssr: false });
-const GameFlowWalkthrough = dynamic(() => import('@/components/tutorial/GameFlowWalkthrough'), { ssr: false });
-const QuickReference = dynamic(() => import('@/components/tutorial/QuickReference'), { ssr: false });
+const GameInstructions = dynamic(
+  () => import("@/components/tutorial/GameInstructions"),
+  { ssr: false },
+);
+const CardPlaySimulator = dynamic(
+  () => import("@/components/tutorial/CardPlaySimulator"),
+  { ssr: false },
+);
+const BiddingTrainer = dynamic(
+  () => import("@/components/tutorial/BiddingTrainer"),
+  { ssr: false },
+);
+const ScoreCalculator = dynamic(
+  () => import("@/components/tutorial/ScoreCalculator"),
+  { ssr: false },
+);
+const TrumpSuitDemo = dynamic(
+  () => import("@/components/tutorial/TrumpSuitDemo"),
+  { ssr: false },
+);
+const GameFlowWalkthrough = dynamic(
+  () => import("@/components/tutorial/GameFlowWalkthrough"),
+  { ssr: false },
+);
+const QuickReference = dynamic(
+  () => import("@/components/tutorial/QuickReference"),
+  { ssr: false },
+);
 
 interface TutorialSection {
   id: string;
@@ -25,66 +46,76 @@ interface TutorialSection {
 
 const tutorialSections: TutorialSection[] = [
   {
-    id: 'instructions',
-    title: 'Game Instructions',
-    description: 'Complete written rules and guide',
+    id: "instructions",
+    title: "Game Instructions",
+    description: "Complete written rules and guide",
     component: GameInstructions,
-    route: 'instructions'
+    route: "instructions",
   },
   {
-    id: 'basics',
-    title: 'Card Game Basics',
-    description: 'Learn about cards, suits, and trump basics',
+    id: "basics",
+    title: "Card Game Basics",
+    description: "Learn about cards, suits, and trump basics",
     component: TrumpSuitDemo,
-    route: 'basics'
+    route: "basics",
   },
   {
-    id: 'bidding',
-    title: 'Bidding Phase',
-    description: 'Practice making strategic bids',
+    id: "bidding",
+    title: "Bidding Phase",
+    description: "Practice making strategic bids",
     component: BiddingTrainer,
-    route: 'bidding'
+    route: "bidding",
   },
   {
-    id: 'playing',
-    title: 'Playing Cards',
-    description: 'Learn when you can play which cards',
+    id: "playing",
+    title: "Playing Cards",
+    description: "Learn when you can play which cards",
     component: CardPlaySimulator,
-    route: 'playing'
+    route: "playing",
   },
   {
-    id: 'scoring',
-    title: 'Scoring System',
-    description: 'Understand how points are calculated',
+    id: "scoring",
+    title: "Scoring System",
+    description: "Understand how points are calculated",
     component: ScoreCalculator,
-    route: 'scoring'
+    route: "scoring",
   },
   {
-    id: 'gameflow',
-    title: 'Game Flow',
-    description: 'See how a complete game progresses',
+    id: "gameflow",
+    title: "Game Flow",
+    description: "See how a complete game progresses",
     component: GameFlowWalkthrough,
-    route: 'gameflow'
+    route: "gameflow",
   },
   {
-    id: 'reference',
-    title: 'Quick Reference',
-    description: 'Rules summary and cheat sheet',
+    id: "reference",
+    title: "Quick Reference",
+    description: "Rules summary and cheat sheet",
     component: QuickReference,
-    route: 'reference'
-  }
+    route: "reference",
+  },
 ];
 
 export default function HowToPlayPage() {
+  return (
+    <Suspense>
+      <HowToPlay />
+    </Suspense>
+  );
+}
+
+function HowToPlay() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentSection, setCurrentSection] = useState(0);
 
   // Get section from URL parameter
   useEffect(() => {
-    const sectionParam = searchParams.get('section');
+    const sectionParam = searchParams.get("section");
     if (sectionParam) {
-      const sectionIndex = tutorialSections.findIndex(section => section.route === sectionParam);
+      const sectionIndex = tutorialSections.findIndex(
+        (section) => section.route === sectionParam,
+      );
       if (sectionIndex !== -1) {
         setCurrentSection(sectionIndex);
       }
@@ -117,7 +148,7 @@ export default function HowToPlayPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
-              <Link 
+              <Link
                 href="/"
                 className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
               >
@@ -125,7 +156,9 @@ export default function HowToPlayPage() {
                 <span>Home</span>
               </Link>
               <span className="text-gray-300">|</span>
-              <h1 className="text-xl font-bold text-gray-900">How to Play Jøssing</h1>
+              <h1 className="text-xl font-bold text-gray-900">
+                How to Play Jøssing
+              </h1>
             </div>
             <div className="text-sm text-gray-500">
               {currentSection + 1} of {tutorialSections.length}
@@ -145,8 +178,8 @@ export default function HowToPlayPage() {
                 onClick={() => navigateToSection(index)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   currentSection === index
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 border'
+                    ? "bg-blue-500 text-white"
+                    : "bg-white text-gray-700 hover:bg-gray-100 border"
                 }`}
               >
                 {section.title}
@@ -156,9 +189,13 @@ export default function HowToPlayPage() {
 
           {/* Progress bar */}
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
+            <div
               className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${((currentSection + 1) / tutorialSections.length) * 100}%` }}
+              style={{
+                width: `${
+                  ((currentSection + 1) / tutorialSections.length) * 100
+                }%`,
+              }}
             />
           </div>
         </div>
@@ -188,8 +225,8 @@ export default function HowToPlayPage() {
             disabled={currentSection === 0}
             className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors ${
               currentSection === 0
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
             <ArrowLeft className="w-4 h-4" />
@@ -211,8 +248,8 @@ export default function HowToPlayPage() {
             disabled={currentSection === tutorialSections.length - 1}
             className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-colors ${
               currentSection === tutorialSections.length - 1
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-blue-500 text-white hover:bg-blue-600'
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-blue-500 text-white hover:bg-blue-600"
             }`}
           >
             <span>Next</span>

@@ -91,6 +91,7 @@ export interface Player {
   totalScore: number;
   isConnected: boolean;
   joinedAt: Date;
+  isAI?: boolean; // Optional flag to identify AI players
 }
 
 export interface SectionState {

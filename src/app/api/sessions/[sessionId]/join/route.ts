@@ -5,7 +5,6 @@ export async function POST(request: NextRequest) {
   try {
     console.debug("Joining session...");
 
-    console.log("Request URL:", request.nextUrl.pathname);
     const [, sessionId] =
       request.nextUrl.pathname.match(/\/sessions\/([^/]+)\/join/) ?? [];
 
