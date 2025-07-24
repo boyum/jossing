@@ -150,7 +150,14 @@ interface Trick {
 ├── Home Page (Simple)
 │   ├── Title & Branding
 │   ├── Create New Session Button
-│   └── Quick Join (Input + Submit)
+│   ├── Quick Join (Input + Submit)
+│   └── How to Play Link
+├── How to Play Page
+│   ├── Interactive Tutorial
+│   ├── Game Rules Overview
+│   ├── Scoring Examples
+│   ├── Interactive Demos
+│   └── Quick Start Guide
 ├── Session Lobby
 │   ├── Player List
 │   ├── Game Settings
@@ -202,6 +209,74 @@ interface Trick {
 - **QR Codes**: Automatically generated for easy mobile scanning
 - **Quick Join**: Prominent input field on home page for session codes
 - **Deep Linking**: Direct navigation to game from shared links
+
+## 5.1. Interactive "How to Play" Page
+
+### Overview
+A comprehensive, engaging tutorial page that helps new players understand Jøssing quickly through interactive demonstrations and clear explanations.
+
+### Core Features
+
+#### Interactive Tutorial Sections
+1. **Basic Card Game Concepts**
+   - Interactive card deck visualization
+   - Suit and rank explanations with hover effects
+   - Trump card demonstration with visual highlighting
+
+2. **Bidding Phase Demo**
+   - Step-by-step interactive bidding scenario
+   - Visual countdown timer demonstration
+   - Bid validation examples (valid vs invalid bids)
+   - Strategic bidding tips with animated examples
+
+3. **Trick-Taking Simulator**
+   - Interactive 4-player trick simulation
+   - Click-to-play cards with immediate feedback
+   - Suit-following rule demonstrations
+   - Trump card override examples
+   - Winner determination with highlighting
+
+4. **Scoring Examples**
+   - Side-by-side Classic vs Modern scoring comparison
+   - Interactive scoring calculator
+   - Sample scenarios with different bid outcomes
+   - Progressive score visualization across sections
+
+#### Game Flow Walkthrough
+- **Section Progression**: Visual representation of "Up" and "Up-and-Down" game types
+- **Card Distribution**: Animated dealing for different section numbers
+- **Trump Suit Changes**: Visual demonstration of per-section trump changes
+- **Complete Game Example**: Short 3-section demo game with scoring
+
+#### Quick Reference Tools
+- **Rules Summary Card**: Collapsible reference sections
+- **Scoring Cheat Sheet**: Quick lookup table
+- **Valid Card Plays**: Interactive rule checker
+- **Common Scenarios**: FAQ-style problem solving
+
+#### Interactive Components
+```typescript
+// Example interactive components
+- CardPlaySimulator: Click cards to see valid/invalid plays
+- BiddingTrainer: Practice bidding in different scenarios  
+- ScoreCalculator: Input bids/tricks to see point outcomes
+- TrumpSuitDemo: Visual trump card effects
+- SectionProgresser: See how game structure changes
+```
+
+#### Engagement Features
+- **Progressive Disclosure**: Start simple, reveal complexity gradually
+- **Immediate Feedback**: Visual confirmation of understanding
+- **Practice Mode**: Safe environment to try concepts
+- **Mobile Optimized**: Touch-friendly on all devices
+- **Accessibility**: Screen reader friendly, keyboard navigation
+
+#### Technical Implementation
+- **React Components**: Reusable game logic components
+- **Animation Library**: Smooth transitions and effects (Framer Motion)
+- **State Management**: Local state for tutorial progress
+- **Responsive Design**: Adapts to screen size
+- **Performance**: Lightweight, fast loading
 
 ## 6. Real-time Features
 
@@ -302,6 +377,7 @@ GET    /api/sessions/:id/state - Get current game state
 - [ ] Set up Next.js project with TypeScript ✅
 - [ ] Configure database and Prisma schema ✅
 - [ ] Implement simplified home page with quick join
+- [ ] Create interactive "How to Play" page with demos
 - [ ] Create core UI components ✅
 - [ ] Set up Socket.IO integration
 - [ ] Implement session creation and joining APIs

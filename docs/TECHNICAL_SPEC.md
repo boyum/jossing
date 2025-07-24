@@ -636,6 +636,215 @@ const PlayableCard: React.FC<{
 };
 ```
 
+### Tutorial & Learning Components
+```typescript
+// Interactive "How to Play" page components
+const HowToPlayPage: React.FC = () => {
+  const [currentSection, setCurrentSection] = useState(0);
+  
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-green-50">
+      <TutorialNavigation 
+        currentSection={currentSection}
+        onSectionChange={setCurrentSection}
+      />
+      <TutorialContent section={currentSection} />
+    </div>
+  );
+};
+
+const CardPlaySimulator: React.FC = () => {
+  const [currentTrick, setCurrentTrick] = useState<Trick | null>(null);
+  const [playerHand, setPlayerHand] = useState<Card[]>(generateSampleHand());
+  const [feedback, setFeedback] = useState<string>('');
+  
+  const handleCardClick = (card: Card) => {
+    const validation = validateCardPlay(card, playerHand, currentTrick, 'hearts');
+    if (validation) {
+      setFeedback(`❌ ${validation}`);
+      // Show error animation
+      showErrorAnimation(card);
+    } else {
+      setFeedback(`✅ Valid play!`);
+      // Show success animation and update trick
+      showSuccessAnimation(card);
+      playCardInTrick(card);
+    }
+  };
+
+  return (
+    <div className="tutorial-simulator p-6 bg-white rounded-lg shadow-lg">
+      <h3 className="text-xl font-bold mb-4">Practice Card Playing</h3>
+      <div className="trick-area mb-4">
+        <TrickDisplay trick={currentTrick} />
+      </div>
+      <div className="player-hand">
+        <div className="flex space-x-2">
+          {playerHand.map((card) => (
+            <InteractiveCard
+              key={`${card.suit}-${card.rank}`}
+              card={card}
+              onClick={() => handleCardClick(card)}
+              showValidation={true}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="feedback-area mt-4">
+        <p className={`text-lg font-medium ${
+          feedback.includes('❌') ? 'text-red-600' : 'text-green-600'
+        }`}>
+          {feedback}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const BiddingTrainer: React.FC = () => {
+  const [scenario, setScenario] = useState<BiddingScenario>(generateRandomScenario());
+  const [userBid, setUserBid] = useState<number | null>(null);
+  const [showExplanation, setShowExplanation] = useState(false);
+  
+  return (
+    <div className="bidding-trainer p-6 bg-white rounded-lg shadow-lg">
+      <h3 className="text-xl font-bold mb-4">Bidding Practice</h3>
+      <ScenarioDisplay scenario={scenario} />
+      <BidInput
+        value={userBid}
+        onChange={setUserBid}
+        maxBid={scenario.handSize}
+      />
+      <button
+        onClick={() => setShowExplanation(true)}
+        className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+      >
+        Check My Bid
+      </button>
+      {showExplanation && (
+        <BidExplanation
+          scenario={scenario}
+          userBid={userBid}
+          optimalBid={calculateOptimalBid(scenario)}
+        />
+      )}
+    </div>
+  );
+};
+
+const ScoreCalculator: React.FC = () => {
+  const [bid, setBid] = useState<number>(0);
+  const [tricksWon, setTricksWon] = useState<number>(0);
+  const [scoringSystem, setScoringSystem] = useState<'classic' | 'modern'>('classic');
+  
+  const calculatedScore = useMemo(() => {
+    return calculateSectionScore(bid, tricksWon, scoringSystem);
+  }, [bid, tricksWon, scoringSystem]);
+  
+  return (
+    <div className="score-calculator p-6 bg-white rounded-lg shadow-lg">
+      <h3 className="text-xl font-bold mb-4">Score Calculator</h3>
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className="block text-sm font-medium mb-2">Your Bid</label>
+          <input
+            type="number"
+            min="0"
+            max="13"
+            value={bid}
+            onChange={(e) => setBid(Number(e.target.value))}
+            className="w-full p-2 border rounded"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">Tricks Won</label>
+          <input
+            type="number"
+            min="0"
+            max="13"
+            value={tricksWon}
+            onChange={(e) => setTricksWon(Number(e.target.value))}
+            className="w-full p-2 border rounded"
+          />
+        </div>
+      </div>
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-2">Scoring System</label>
+        <select
+          value={scoringSystem}
+          onChange={(e) => setScoringSystem(e.target.value as 'classic' | 'modern')}
+          className="w-full p-2 border rounded"
+        >
+          <option value="classic">Classic</option>
+          <option value="modern">Modern</option>
+        </select>
+      </div>
+      <div className="result bg-gray-100 p-4 rounded">
+        <p className="text-lg font-bold">
+          Score: <span className="text-blue-600">{calculatedScore} points</span>
+        </p>
+        <p className="text-sm text-gray-600 mt-2">
+          {bid === tricksWon 
+            ? '✅ Perfect! You achieved your bid exactly.'
+            : `❌ Missed bid by ${Math.abs(bid - tricksWon)} trick${Math.abs(bid - tricksWon) !== 1 ? 's' : ''}.`
+          }
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const TrumpSuitDemo: React.FC = () => {
+  const [currentExample, setCurrentExample] = useState(0);
+  const examples = useTrumpExamples();
+  
+  return (
+    <div className="trump-demo p-6 bg-white rounded-lg shadow-lg">
+      <h3 className="text-xl font-bold mb-4">Trump Suit Effects</h3>
+      <div className="example-selector mb-4">
+        <div className="flex space-x-2">
+          {examples.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentExample(index)}
+              className={`px-3 py-1 rounded ${
+                currentExample === index 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              Example {index + 1}
+            </button>
+          ))}
+        </div>
+      </div>
+      <TrumpExampleDisplay 
+        example={examples[currentExample]}
+        animated={true}
+      />
+    </div>
+  );
+};
+
+// Helper interfaces for tutorial components
+interface BiddingScenario {
+  handSize: number;
+  playerHand: Card[];
+  trumpSuit: Suit;
+  playerPosition: number;
+  dealerPosition: number;
+  description: string;
+}
+
+interface TrumpExample {
+  cards: Card[];
+  trumpSuit: Suit;
+  leadingSuit: Suit;
+  winner: Card;
+  explanation: string;
+}
+```
+
 ## 7. Error Handling & Validation
 
 ### Client-side Validation
