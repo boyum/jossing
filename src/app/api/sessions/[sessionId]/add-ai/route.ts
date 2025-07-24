@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { GameManager } from "@/lib/game-manager";
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,20 +27,18 @@ export async function POST(request: NextRequest) {
 
     console.debug("Adding AI player:", { sessionId, difficulty });
 
-    // TODO: Implement AI player addition with GameManager
-    // For now, return a placeholder response
-    const result = {
-      success: true,
-      message: `${difficulty} AI player added successfully`,
-      playerId: `ai-${difficulty}-${Date.now()}`,
+    // Add AI player using GameManager
+    const result = await GameManager.addAIPlayer(
+      sessionId.toUpperCase(),
       difficulty
-    };
+    );
 
     return NextResponse.json(result);
   } catch (error) {
     console.error("Error adding AI players:", error);
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

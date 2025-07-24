@@ -20,6 +20,11 @@ All notable changes to this project will be documented in this file.
   - Fixed gamePhase enum mapping mismatch between database (uppercase) and TypeScript types (lowercase)
   - Added immediate game state refresh after starting a game
   - Start button now properly transitions the game from lobby to playing phase
+- **Add AI Players**: Fixed issue where adding AI players to a session had no effect
+  - Implemented actual AI player creation in database via `addAIPlayer` function in simple-db
+  - Added GameManager integration for AI player addition
+  - Updated API endpoint to use GameManager instead of returning placeholder response
+  - AI players are now properly added to sessions with generated names and difficulty tracking
 
 ### Technical
 - Updated documentation to reflect current polling-based architecture (replaced outdated Socket.IO references)

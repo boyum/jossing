@@ -126,8 +126,8 @@ export async function getGameState(playerId: string) {
       totalScore: p.totalScore,
       isConnected: p.isConnected,
       joinedAt: p.joinedAt,
-      isAI: false,
-      aiDifficulty: undefined,
+      isAI: p.id.startsWith('ai-'),
+      aiDifficulty: p.id.startsWith('ai-') ? p.id.split('-')[1] : undefined,
     })),
     playerHand: [], // Will be populated when game starts
     isPlayerTurn: false, // Will be calculated based on game state
@@ -167,4 +167,74 @@ export async function startGame(sessionId: string, adminPlayerId: string) {
   });
 
   return { success: true };
+}
+
+export async function addAIPlayer(sessionId: string, difficulty: string = 'medium') {
+  // Check if session exists and is in lobby
+  const session = await db.gameSession.findUnique({
+    where: { id: sessionId },
+  });
+
+  if (!session || session.gamePhase !== "WAITING") {
+    throw new Error("Session not found or not in lobby");
+  }
+
+  // Check if session is full
+  const playerCount = await db.player.count({
+    where: { sessionId },
+  });
+
+  if (playerCount >= session.maxPlayers) {
+    throw new Error("Session is full");
+  }
+
+  // Generate AI player name and ID
+  const aiNames = {
+    easy: ['AI Bot', 'Simple Sam', 'Easy Eddie'],
+    medium: ['Smart AI', 'Clever Clara', 'Medium Mike'],
+    hard: ['Expert AI', 'Genius Gina', 'Hard Harry']
+  };
+  
+  const names = aiNames[difficulty as keyof typeof aiNames] || aiNames.medium;
+  const baseName = names[Math.floor(Math.random() * names.length)];
+  const aiName = `${baseName} ${playerCount + 1}`;
+  const aiPlayerId = `ai-${difficulty}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  // Create AI player
+  await db.player.create({
+    data: {
+      id: aiPlayerId,
+      sessionId,
+      name: aiName,
+      isAdmin: false,
+      position: playerCount + 1,
+      totalScore: 0,
+      isConnected: true,
+    },
+  });
+
+  // Get updated players list
+  const updatedPlayers = await db.player.findMany({
+    where: { sessionId },
+    orderBy: { position: "asc" },
+  });
+
+  return {
+    success: true,
+    playerId: aiPlayerId,
+    name: aiName,
+    difficulty,
+    players: updatedPlayers.map((p) => ({
+      id: p.id,
+      sessionId: p.sessionId,
+      name: p.name,
+      isAdmin: p.isAdmin,
+      position: p.position,
+      totalScore: p.totalScore,
+      isConnected: p.isConnected,
+      joinedAt: p.joinedAt,
+      isAI: p.id.startsWith('ai-'),
+      aiDifficulty: p.id.startsWith('ai-') ? difficulty : undefined,
+    }))
+  };
 }

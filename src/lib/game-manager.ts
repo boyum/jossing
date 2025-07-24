@@ -48,4 +48,9 @@ export class GameManager {
   static async startGame(sessionId: string, adminPlayerId: string) {
     return await dbService.startGame(sessionId, adminPlayerId);
   }
+
+  // Add AI player to session
+  static async addAIPlayer(sessionId: string, difficulty: string = 'medium') {
+    return await dbService.addAIPlayer(sessionId, difficulty);
+  }
 }
