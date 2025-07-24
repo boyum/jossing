@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useGameStore } from '@/store/game-store';
+import { CardComponent } from '@/components/ui/card';
+import type { Card } from '@/types/game';
 
 interface BiddingPhaseProps {
   maxBid: number;
@@ -10,7 +12,7 @@ interface BiddingPhaseProps {
 
 export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
   const [selectedBid, setSelectedBid] = useState<number | null>(null);
-  const { placeBid, players, currentSection, session, sectionBids } = useGameStore();
+  const { placeBid, players, currentSection, session, sectionBids, playerHand } = useGameStore();
 
   // Check if this player has already bid
   const playerBid = sectionBids.find(bid => bid.playerId === playerId);
@@ -35,19 +37,35 @@ export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
       return {
         playerId: player.id,
         playerName: player.name,
-        bid: bid?.bid
+        hasBid: bid !== undefined,
+        bid: bid && bid.bid >= 0 ? bid.bid : undefined // Only show actual bid if >= 0 (not hidden)
       };
     });
   };
 
   const playerBids = getPlayerBids();
-  const allBidsPlaced = playerBids.every(pb => pb.bid !== undefined);
+  const allBidsPlaced = playerBids.every(pb => pb.hasBid);
 
   // Create bid options array for better keys
   const bidOptions = Array.from({ length: maxBid + 1 }, (_, i) => ({ value: i, label: `${i}` }));
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
+      {/* Player's Hand */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-3">Your Cards</h3>
+        <div className="flex flex-wrap gap-2 justify-center">
+          {playerHand.map((card: Card, index: number) => (
+            <div key={`${card.suit}-${card.rank}-${index}`} className="transform transition-transform hover:scale-105">
+              <CardComponent card={card} size="small" />
+            </div>
+          ))}
+        </div>
+        {playerHand.length === 0 && (
+          <p className="text-gray-500 text-center">No cards in hand</p>
+        )}
+      </div>
+
       <div className="text-center mb-6">
         <h3 className="text-2xl font-bold text-gray-900 mb-2">
           Place Your Bid
@@ -120,19 +138,35 @@ export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
       {/* Bid Status */}
       <div className="mt-6 border-t pt-4">
         <h4 className="font-semibold text-gray-900 mb-3">Bidding Status</h4>
+        {!allBidsPlaced && (
+          <div className="mb-3 text-sm text-gray-600 text-center">
+            💡 Bids are hidden until all players have placed their bids
+          </div>
+        )}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {playerBids.map((playerBid) => (
+          {playerBids.map((playerBidInfo) => (
             <div
-              key={playerBid.playerId}
+              key={playerBidInfo.playerId}
               className={`p-2 rounded border text-center text-sm ${
-                playerBid.bid !== undefined
+                playerBidInfo.hasBid
                   ? 'bg-green-50 border-green-200 text-green-800'
                   : 'bg-gray-50 border-gray-200 text-gray-600'
               }`}
             >
-              <div className="font-medium">{playerBid.playerName}</div>
+              <div className="font-medium">{playerBidInfo.playerName}</div>
               <div>
-                {playerBid.bid !== undefined ? `Bid: ${playerBid.bid}` : 'Thinking...'}
+                {playerBidInfo.hasBid ? (
+                  playerBidInfo.bid !== undefined ? (
+                    `Bid: ${playerBidInfo.bid}`
+                  ) : (
+                    <span className="flex items-center justify-center gap-1">
+                      <span className="text-green-600">✅</span>
+                      <span>Bid placed</span>
+                    </span>
+                  )
+                ) : (
+                  'Thinking...'
+                )}
               </div>
             </div>
           ))}

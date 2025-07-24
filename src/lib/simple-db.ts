@@ -124,12 +124,21 @@ export async function getGameState(playerId: string) {
         include: { player: true },
       });
 
+      // Check if all players have bid
+      const allPlayers = await db.player.findMany({
+        where: { sessionId: player.sessionId },
+      });
+
+      const handsWithBids = playerHands.filter(hand => hand.bid !== null);
+      const allPlayersHaveBid = handsWithBids.length === allPlayers.length;
+
+      // Only show actual bid amounts if all players have bid, otherwise just show who has bid
       const bids = playerHands
         .filter(hand => hand.bid !== null)
         .map(hand => ({
           playerId: hand.playerId,
           playerName: hand.player.name,
-          bid: hand.bid as number,
+          bid: allPlayersHaveBid ? (hand.bid as number) : -1, // Use -1 to indicate bid placed but hidden
           timestamp: new Date(), // We don't have timestamps in the schema, so use current time
         }));
 
@@ -187,6 +196,7 @@ export async function getGameState(playerId: string) {
     currentSection,
     playerHand,
     sectionBids: currentSection?.bids || [],
+    allBidsPlaced: currentSection ? (currentSection.bids.length >= players.length && currentSection.bids.every(bid => bid.bid >= 0)) : false,
     isPlayerTurn: false, // Will be calculated based on game state
   };
 }
