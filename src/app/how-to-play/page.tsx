@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Home } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 // Dynamically import tutorial components
+const GameInstructions = dynamic(() => import('@/components/tutorial/GameInstructions'), { ssr: false });
 const CardPlaySimulator = dynamic(() => import('@/components/tutorial/CardPlaySimulator'), { ssr: false });
 const BiddingTrainer = dynamic(() => import('@/components/tutorial/BiddingTrainer'), { ssr: false });
 const ScoreCalculator = dynamic(() => import('@/components/tutorial/ScoreCalculator'), { ssr: false });
@@ -18,57 +20,94 @@ interface TutorialSection {
   title: string;
   description: string;
   component: React.ComponentType;
+  route: string;
 }
 
 const tutorialSections: TutorialSection[] = [
   {
+    id: 'instructions',
+    title: 'Game Instructions',
+    description: 'Complete written rules and guide',
+    component: GameInstructions,
+    route: 'instructions'
+  },
+  {
     id: 'basics',
     title: 'Card Game Basics',
     description: 'Learn about cards, suits, and trump basics',
-    component: TrumpSuitDemo
+    component: TrumpSuitDemo,
+    route: 'basics'
   },
   {
     id: 'bidding',
     title: 'Bidding Phase',
     description: 'Practice making strategic bids',
-    component: BiddingTrainer
+    component: BiddingTrainer,
+    route: 'bidding'
   },
   {
     id: 'playing',
     title: 'Playing Cards',
     description: 'Learn when you can play which cards',
-    component: CardPlaySimulator
+    component: CardPlaySimulator,
+    route: 'playing'
   },
   {
     id: 'scoring',
     title: 'Scoring System',
     description: 'Understand how points are calculated',
-    component: ScoreCalculator
+    component: ScoreCalculator,
+    route: 'scoring'
   },
   {
     id: 'gameflow',
     title: 'Game Flow',
     description: 'See how a complete game progresses',
-    component: GameFlowWalkthrough
+    component: GameFlowWalkthrough,
+    route: 'gameflow'
   },
   {
     id: 'reference',
     title: 'Quick Reference',
     description: 'Rules summary and cheat sheet',
-    component: QuickReference
+    component: QuickReference,
+    route: 'reference'
   }
 ];
 
 export default function HowToPlayPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [currentSection, setCurrentSection] = useState(0);
+
+  // Get section from URL parameter
+  useEffect(() => {
+    const sectionParam = searchParams.get('section');
+    if (sectionParam) {
+      const sectionIndex = tutorialSections.findIndex(section => section.route === sectionParam);
+      if (sectionIndex !== -1) {
+        setCurrentSection(sectionIndex);
+      }
+    }
+  }, [searchParams]);
+
+  // Update URL when section changes
+  const navigateToSection = (index: number) => {
+    setCurrentSection(index);
+    const section = tutorialSections[index];
+    router.push(`/how-to-play?section=${section.route}`, { scroll: false });
+  };
+
   const CurrentComponent = tutorialSections[currentSection].component;
 
   const nextSection = () => {
-    setCurrentSection((prev) => Math.min(prev + 1, tutorialSections.length - 1));
+    const next = Math.min(currentSection + 1, tutorialSections.length - 1);
+    navigateToSection(next);
   };
 
   const prevSection = () => {
-    setCurrentSection((prev) => Math.max(prev - 1, 0));
+    const prev = Math.max(currentSection - 1, 0);
+    navigateToSection(prev);
   };
 
   return (
@@ -103,7 +142,7 @@ export default function HowToPlayPage() {
               <button
                 key={section.id}
                 type="button"
-                onClick={() => setCurrentSection(index)}
+                onClick={() => navigateToSection(index)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   currentSection === index
                     ? 'bg-blue-500 text-white'
