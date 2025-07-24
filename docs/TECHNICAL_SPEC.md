@@ -1167,4 +1167,348 @@ class ErrorRecoveryManager {
 }
 ```
 
-This technical specification provides a comprehensive foundation for implementing the Jøssing card game application with robust multiplayer functionality, real-time synchronization, and excellent user experience.
+## 9. AI Player System
+
+### AI Architecture Overview
+```typescript
+abstract class AIPlayer {
+  protected difficulty: 'easy' | 'medium' | 'hard';
+  protected personality: AIPersonality;
+  protected memory: AIMemory;
+  protected decisionEngine: AIDecisionEngine;
+  
+  abstract calculateBid(hand: Card[], gameContext: GameContext): number;
+  abstract selectCard(hand: Card[], gameState: GameState): Card;
+  
+  protected addRandomness(value: number, factor: number): number {
+    const variance = value * factor;
+    return Math.round(value + (Math.random() - 0.5) * variance);
+  }
+}
+```
+
+### Difficulty Implementation
+
+#### Easy AI Strategy
+```typescript
+class EasyAI extends AIPlayer {
+  calculateBid(hand: Card[], trumpSuit: Suit): number {
+    let estimatedTricks = 0;
+    
+    // Count obvious winners
+    for (const card of hand) {
+      if (card.suit === trumpSuit && card.value >= 12) estimatedTricks++; // High trump
+      if (card.value === 14) estimatedTricks += 0.8; // Aces
+      if (card.value === 13) estimatedTricks += 0.4; // Kings
+    }
+    
+    // Conservative adjustment
+    const conservativeBid = Math.max(0, Math.floor(estimatedTricks * 0.8));
+    return this.addRandomness(conservativeBid, 0.15);
+  }
+
+  selectCard(hand: Card[], currentTrick: Trick, trumpSuit: Suit): Card {
+    const validCards = this.getValidCards(hand, currentTrick);
+    
+    // Simple heuristic: play high when trying to win, low when trying to lose
+    const needsToWin = this.shouldTryToWinTrick(currentTrick);
+    
+    if (needsToWin) {
+      return this.getHighestCard(validCards, currentTrick.leadingSuit, trumpSuit);
+    } else {
+      return this.getLowestCard(validCards);
+    }
+  }
+
+  private shouldTryToWinTrick(trick: Trick): boolean {
+    // Simple logic: try to win if we're not already over our bid
+    return this.tricksWon < this.bid;
+  }
+}
+```
+
+#### Medium AI Strategy
+```typescript
+class MediumAI extends AIPlayer {
+  private opponentProfiles: Map<string, OpponentProfile> = new Map();
+  private playedCards: Set<string> = new Set();
+
+  calculateBid(hand: Card[], gameContext: GameContext): number {
+    const analysis = this.analyzeHand(hand, gameContext.trumpSuit);
+    const positionFactor = this.calculatePositionAdvantage(gameContext.position);
+    const opponentFactor = this.estimateOpponentStrength(gameContext);
+    
+    const estimatedTricks = analysis.expectedTricks + positionFactor - opponentFactor;
+    return this.addRandomness(Math.max(0, estimatedTricks), 0.1);
+  }
+
+  selectCard(hand: Card[], gameState: GameState): Card {
+    const validCards = this.getValidCards(hand, gameState.currentTrick);
+    const gameAnalysis = this.analyzeGameSituation(gameState);
+    
+    // Prioritized decision making
+    if (gameAnalysis.canSetOpponent) {
+      return this.selectSettingCard(validCards, gameState);
+    }
+    
+    if (gameAnalysis.shouldConserveTrump) {
+      return this.selectNonTrumpCard(validCards, gameState);
+    }
+    
+    if (gameAnalysis.desperateForTricks) {
+      return this.selectAggressiveCard(validCards, gameState);
+    }
+    
+    return this.selectBalancedCard(validCards, gameState);
+  }
+
+  private analyzeHand(hand: Card[], trumpSuit: Suit): HandAnalysis {
+    return {
+      trumpCount: hand.filter(c => c.suit === trumpSuit).length,
+      highCards: hand.filter(c => c.value >= 12).length,
+      longSuits: this.findLongSuits(hand),
+      expectedTricks: this.calculateExpectedTricks(hand, trumpSuit)
+    };
+  }
+}
+```
+
+#### Hard AI Strategy
+```typescript
+class HardAI extends AIPlayer {
+  private gameHistory: GameHistory = new GameHistory();
+  private cardTracker: CardTracker = new CardTracker();
+  private opponentModeler: OpponentModeler = new OpponentModeler();
+
+  calculateBid(hand: Card[], gameContext: GameContext): number {
+    const deepAnalysis = this.performDeepAnalysis(hand, gameContext);
+    const simulationResults = this.runBidSimulations(hand, gameContext, 1000);
+    const opponentModeling = this.opponentModeler.predictOpponentBids(gameContext);
+    
+    const optimalBid = this.optimizeBidBasedOnSimulations(
+      deepAnalysis,
+      simulationResults,
+      opponentModeling
+    );
+    
+    return this.addRandomness(optimalBid, 0.05);
+  }
+
+  selectCard(hand: Card[], gameState: GameState): Card {
+    const possiblePlays = this.getValidCards(hand, gameState.currentTrick);
+    const evaluations = possiblePlays.map(card => {
+      return {
+        card,
+        evaluation: this.evaluateCardPlay(card, gameState),
+        simulations: this.runPlaySimulations(card, gameState, 500)
+      };
+    });
+    
+    const bestPlay = this.selectOptimalPlay(evaluations);
+    this.updateGameKnowledge(bestPlay, gameState);
+    
+    return bestPlay.card;
+  }
+
+  private performDeepAnalysis(hand: Card[], context: GameContext): DeepAnalysis {
+    return {
+      cardCombinations: this.analyzeCardCombinations(hand),
+      suitStrengths: this.analyzeSuitStrengths(hand, context.trumpSuit),
+      positionalAdvantage: this.calculateDetailedPosition(context),
+      trumpTiming: this.optimizeTrumpUsage(hand, context),
+      defensiveCapability: this.assessDefensiveOptions(hand, context)
+    };
+  }
+
+  private runBidSimulations(hand: Card[], context: GameContext, iterations: number): SimulationResult {
+    const results = [];
+    
+    for (let i = 0; i < iterations; i++) {
+      const simulatedOpponentHands = this.generatePlausibleOpponentHands(context);
+      const gameSimulation = new GameSimulation(hand, simulatedOpponentHands, context);
+      results.push(gameSimulation.run());
+    }
+    
+    return this.aggregateSimulationResults(results);
+  }
+}
+```
+
+### Core AI Components
+
+#### Game State Analysis
+```typescript
+class GameAnalyzer {
+  analyzePosition(gameState: GameState, playerId: string): PositionAnalysis {
+    const player = gameState.players.find(p => p.id === playerId);
+    const tricksNeeded = player.bid - player.tricksWon;
+    const tricksRemaining = this.calculateRemainingTricks(gameState);
+    
+    return {
+      isOnTrack: tricksNeeded === tricksRemaining,
+      isAhead: player.tricksWon > player.bid,
+      isBehind: tricksNeeded > tricksRemaining,
+      canStillMakeBid: tricksNeeded <= tricksRemaining,
+      shouldPlayDefensively: player.tricksWon >= player.bid
+    };
+  }
+
+  identifyThreats(gameState: GameState, playerId: string): ThreatAnalysis {
+    const threats = [];
+    
+    for (const opponent of gameState.players) {
+      if (opponent.id === playerId) continue;
+      
+      const opponentNeeds = opponent.bid - opponent.tricksWon;
+      const remainingTricks = this.calculateRemainingTricks(gameState);
+      
+      if (opponentNeeds === remainingTricks) {
+        threats.push({
+          playerId: opponent.id,
+          type: 'exact_bid',
+          priority: 'high',
+          canDisrupt: this.assessDisruptionPotential(opponent, gameState)
+        });
+      }
+    }
+    
+    return { threats, overallThreatLevel: this.calculateThreatLevel(threats) };
+  }
+}
+```
+
+#### Card Tracking System
+```typescript
+class CardTracker {
+  private playedCards: Set<string> = new Set();
+  private suitDistributions: Map<string, SuitDistribution> = new Map();
+
+  recordCardPlay(playerId: string, card: Card): void {
+    this.playedCards.add(`${card.suit}${card.rank}`);
+    this.updateSuitDistribution(playerId, card.suit);
+  }
+
+  getRemainingCards(suit?: Suit): Card[] {
+    const allCards = this.generateFullDeck();
+    return allCards.filter(card => {
+      const cardKey = `${card.suit}${card.rank}`;
+      return !this.playedCards.has(cardKey) && 
+             (suit === undefined || card.suit === suit);
+    });
+  }
+
+  estimateOpponentHolding(playerId: string, suit: Suit): number {
+    const distribution = this.suitDistributions.get(playerId);
+    if (!distribution) return 3; // Default estimate
+    
+    const knownPlays = distribution.suits[suit] || 0;
+    const estimatedTotal = this.estimateOriginalSuitLength(playerId, suit);
+    return Math.max(0, estimatedTotal - knownPlays);
+  }
+}
+```
+
+#### Decision Engine
+```typescript
+class AIDecisionEngine {
+  evaluateCardPlay(card: Card, gameState: GameState): PlayEvaluation {
+    const immediateValue = this.calculateImmediateValue(card, gameState);
+    const strategicValue = this.calculateStrategicValue(card, gameState);
+    const riskFactor = this.calculateRiskFactor(card, gameState);
+    
+    return {
+      totalScore: immediateValue + strategicValue - riskFactor,
+      breakdown: {
+        immediate: immediateValue,
+        strategic: strategicValue,
+        risk: riskFactor
+      },
+      confidence: this.calculateConfidence(card, gameState),
+      reasoning: this.generateReasoning(card, gameState)
+    };
+  }
+
+  private calculateImmediateValue(card: Card, gameState: GameState): number {
+    const currentTrick = gameState.currentTrick;
+    let value = 0;
+    
+    // Value for winning/losing the trick
+    if (this.wouldWinTrick(card, currentTrick, gameState.trumpSuit)) {
+      value += this.needsTrick(gameState) ? 10 : -5;
+    }
+    
+    // Value for trump conservation
+    if (card.suit === gameState.trumpSuit) {
+      value -= this.shouldConserveTrump(gameState) ? 3 : 0;
+    }
+    
+    return value;
+  }
+}
+```
+
+### AI Integration with Game Engine
+
+#### Server-Side AI Management
+```typescript
+class AIPlayerManager {
+  private aiPlayers: Map<string, AIPlayer> = new Map();
+  private decisionQueue: AIDecisionQueue = new AIDecisionQueue();
+
+  async addAIPlayer(sessionId: string, difficulty: AIDifficulty): Promise<Player> {
+    const aiPlayer = this.createAIPlayer(difficulty);
+    const playerData = await this.registerPlayerInSession(sessionId, aiPlayer);
+    
+    this.aiPlayers.set(playerData.id, aiPlayer);
+    return playerData;
+  }
+
+  async processAITurn(playerId: string, gameState: GameState): Promise<void> {
+    const aiPlayer = this.aiPlayers.get(playerId);
+    if (!aiPlayer) return;
+
+    // Add realistic thinking delay
+    const thinkingTime = this.calculateThinkingTime(aiPlayer.difficulty);
+    await this.delay(thinkingTime);
+
+    const decision = await aiPlayer.makeDecision(gameState);
+    await this.executePlayerAction(playerId, decision);
+  }
+
+  private calculateThinkingTime(difficulty: AIDifficulty): number {
+    const baseTimes = { easy: 2000, medium: 3500, hard: 5000 };
+    const variance = 1000;
+    return baseTimes[difficulty] + (Math.random() - 0.5) * variance;
+  }
+}
+```
+
+#### Client-Side AI Indicators
+```typescript
+const AIPlayerIndicator: React.FC<{ player: Player }> = ({ player }) => {
+  const [isThinking, setIsThinking] = useState(false);
+  
+  useEffect(() => {
+    if (player.isAI && player.isCurrentTurn) {
+      setIsThinking(true);
+      const timer = setTimeout(() => setIsThinking(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [player.isCurrentTurn]);
+
+  return (
+    <div className={`player-indicator ${player.isAI ? 'ai-player' : ''}`}>
+      <span className="player-name">
+        {player.name} {player.isAI && `(${player.aiDifficulty})`}
+      </span>
+      {player.isAI && isThinking && (
+        <div className="thinking-indicator">
+          <span className="thinking-dots">🤔</span>
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+This technical specification provides a comprehensive foundation for implementing the Jøssing card game application with robust multiplayer functionality, real-time synchronization, intelligent AI opponents, and excellent user experience.

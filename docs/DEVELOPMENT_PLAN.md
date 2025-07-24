@@ -53,10 +53,32 @@ interface Player {
   sessionId: string
   name: string
   isAdmin: boolean
+  isAI: boolean  // Distinguishes AI from human players
+  aiDifficulty?: 'easy' | 'medium' | 'hard'  // Only for AI players
   position: number // Seating order
   totalScore: number
   isConnected: boolean
   joinedAt: Date
+}
+
+// Extended AI Player interface for server-side logic
+interface AIPlayerData extends Player {
+  isAI: true
+  aiDifficulty: 'easy' | 'medium' | 'hard'
+  personality: AIPersonality
+  memory: AIGameMemory
+}
+
+interface AIPersonality {
+  aggressiveness: number    // 0-1: How likely to take risks
+  consistency: number       // 0-1: How predictable the AI is  
+  adaptability: number      // 0-1: How quickly AI learns opponent patterns
+}
+
+interface AIGameMemory {
+  opponentBids: Record<string, number[]>     // Historical bidding patterns
+  opponentPlays: Record<string, CardPlay[]>  // Historical card plays
+  gamePatterns: GamePattern[]                // Learned strategic patterns
 }
 ```
 
@@ -418,6 +440,7 @@ GET    /api/sessions/:id/state - Get current game state
 - [ ] Production deployment setup
 
 ### Phase 7: Advanced Features (Week 9+)
+- [ ] AI player system (Easy, Medium, Hard difficulty)
 - [ ] Game replay system
 - [ ] Statistics tracking
 - [ ] Tournament mode
@@ -482,6 +505,277 @@ GET    /api/sessions/:id/state - Get current game state
 - Comprehensive validation on server side
 - Clear error messages for invalid actions
 - Extensive test coverage for edge cases
+
+## 11.1. AI Player System
+
+### Overview
+An intelligent computer player system that provides practice opponents and fills empty seats when there aren't enough human players. The AI uses strategic decision-making algorithms that simulate realistic human-like play patterns.
+
+### AI Difficulty Levels
+
+#### Easy AI (Beginner Friendly)
+**Bidding Strategy:**
+- Conservative bidding approach
+- Bids slightly under what hand analysis suggests
+- 15% randomness factor to simulate uncertainty
+- Considers only basic card strength (high cards, trump cards)
+- No advanced position analysis
+
+**Card Playing Strategy:**
+- Follows suit correctly but doesn't optimize
+- Plays high cards when winning tricks needed
+- Plays low cards when avoiding tricks
+- No complex trump management
+- 20% random suboptimal play for realism
+
+```typescript
+class EasyAI extends AIPlayer {
+  calculateBid(hand: Card[], trumpSuit: Suit): number {
+    const basicStrength = this.countHighCards(hand) + this.countTrumpCards(hand, trumpSuit);
+    const estimatedTricks = Math.floor(basicStrength / 3);
+    const conservativeBid = Math.max(0, estimatedTricks - 1);
+    return this.addRandomness(conservativeBid, 0.15);
+  }
+
+  selectCard(hand: Card[], currentTrick: Trick, trumpSuit: Suit): Card {
+    const validCards = this.getValidCards(hand, currentTrick);
+    if (this.shouldTryToWin(currentTrick)) {
+      return this.playHighestValidCard(validCards, currentTrick, trumpSuit);
+    } else {
+      return this.playLowestValidCard(validCards);
+    }
+  }
+}
+```
+
+#### Medium AI (Intermediate Challenge)
+**Bidding Strategy:**
+- Analyzes hand strength more comprehensively
+- Considers position relative to dealer
+- Factors in trump suit distribution
+- 10% randomness factor
+- Basic opponent modeling (remembers previous bids)
+
+**Card Playing Strategy:**
+- Tracks which cards have been played
+- Basic trump management (saves trump for important tricks)
+- Considers trick count vs bid requirements
+- Attempts to set opponents when profitable
+- 10% random play for unpredictability
+
+```typescript
+class MediumAI extends AIPlayer {
+  private cardMemory: Card[] = [];
+  private opponentBids: Record<string, number> = {};
+
+  calculateBid(hand: Card[], trumpSuit: Suit, position: number): number {
+    const handStrength = this.analyzeHandStrength(hand, trumpSuit);
+    const positionAdjustment = this.getPositionAdjustment(position);
+    const opponentFactor = this.estimateOpponentStrength();
+    
+    const estimatedTricks = handStrength + positionAdjustment - opponentFactor;
+    return this.addRandomness(Math.max(0, estimatedTricks), 0.1);
+  }
+
+  selectCard(hand: Card[], currentTrick: Trick, trumpSuit: Suit): Card {
+    const gameState = this.analyzeGameState();
+    const validCards = this.getValidCards(hand, currentTrick);
+    
+    if (this.shouldConserveTrump(gameState)) {
+      return this.selectNonTrumpCard(validCards, currentTrick);
+    }
+    
+    if (this.canSetOpponent(currentTrick, gameState)) {
+      return this.selectSettingCard(validCards, currentTrick);
+    }
+    
+    return this.selectOptimalCard(validCards, currentTrick, trumpSuit, gameState);
+  }
+}
+```
+
+#### Hard AI (Expert Level)
+**Bidding Strategy:**
+- Advanced statistical analysis of hand
+- Position-aware bidding with complex adjustments
+- Opponent modeling and bid history analysis
+- Trump suit strength evaluation
+- 5% randomness factor only
+- Considers section number and game type
+
+**Card Playing Strategy:**
+- Complete card counting and memory
+- Advanced trump management and timing
+- Opponent hand reconstruction
+- Strategic setting and defensive play
+- End-game optimization
+- Minimal randomness (3% for unpredictability)
+
+```typescript
+class HardAI extends AIPlayer {
+  private gameHistory: GameState[] = [];
+  private opponentProfiles: Record<string, PlayerProfile> = {};
+  private cardTracker: CardTracker = new CardTracker();
+
+  calculateBid(hand: Card[], trumpSuit: Suit, gameContext: GameContext): number {
+    const handAnalysis = this.performDeepHandAnalysis(hand, trumpSuit);
+    const positionStrategy = this.calculatePositionalAdvantage(gameContext);
+    const opponentModeling = this.modelOpponentHands(gameContext);
+    const metaGameFactors = this.analyzeMetaGame(gameContext);
+    
+    const weightedEstimate = (
+      handAnalysis.strength * 0.4 +
+      positionStrategy.adjustment * 0.2 +
+      opponentModeling.expectedCompetition * 0.3 +
+      metaGameFactors.sectionBias * 0.1
+    );
+    
+    return this.addMinimalRandomness(Math.max(0, weightedEstimate), 0.05);
+  }
+
+  selectCard(hand: Card[], currentTrick: Trick, gameState: GameState): Card {
+    const analysis = this.performCompleteGameAnalysis(gameState);
+    const validCards = this.getValidCards(hand, currentTrick);
+    
+    // Multi-factor decision engine
+    const decisions = [
+      this.evaluateImmediateTrickValue(validCards, currentTrick, analysis),
+      this.evaluateTrumpConservation(validCards, analysis),
+      this.evaluateOpponentSetting(validCards, currentTrick, analysis),
+      this.evaluateEndgamePositioning(validCards, analysis),
+      this.evaluateRiskManagement(validCards, analysis)
+    ];
+    
+    return this.selectOptimalCardFromAnalysis(decisions, validCards);
+  }
+}
+```
+
+### Core AI Components
+
+#### Hand Analysis Engine
+```typescript
+interface HandAnalysis {
+  highCardPoints: number;
+  trumpStrength: number;
+  suitDistribution: Record<Suit, number>;
+  defensiveCapability: number;
+  trickPotential: { min: number, max: number, expected: number };
+}
+
+class HandAnalyzer {
+  analyzeHand(hand: Card[], trumpSuit: Suit, position: number): HandAnalysis {
+    return {
+      highCardPoints: this.calculateHighCardPoints(hand),
+      trumpStrength: this.evaluateTrumpHolding(hand, trumpSuit),
+      suitDistribution: this.analyzeSuitDistribution(hand),
+      defensiveCapability: this.assessDefensiveCards(hand, trumpSuit),
+      trickPotential: this.estimateTrickRange(hand, trumpSuit, position)
+    };
+  }
+}
+```
+
+#### Card Memory System
+```typescript
+class CardTracker {
+  private playedCards: Set<string> = new Set();
+  private playerHands: Record<string, Set<string>> = {};
+  
+  recordCardPlay(playerId: string, card: Card): void {
+    this.playedCards.add(card.toString());
+    this.playerHands[playerId]?.delete(card.toString());
+  }
+  
+  getRemainingCards(suit?: Suit): Card[] {
+    // Returns cards not yet played
+  }
+  
+  estimateOpponentHolding(playerId: string, suit: Suit): number {
+    // Estimates how many cards of suit opponent likely has
+  }
+}
+```
+
+#### Decision Engine
+```typescript
+interface PlayDecision {
+  card: Card;
+  confidence: number;
+  reasoning: string;
+  expectedOutcome: string;
+}
+
+class AIDecisionEngine {
+  evaluatePlay(
+    card: Card, 
+    gameState: GameState, 
+    objectives: PlayObjective[]
+  ): PlayDecision {
+    const outcomes = this.simulateCardPlay(card, gameState);
+    const score = this.scoreOutcomes(outcomes, objectives);
+    
+    return {
+      card,
+      confidence: score.confidence,
+      reasoning: score.reasoning,
+      expectedOutcome: score.mostLikelyOutcome
+    };
+  }
+}
+```
+
+### AI Integration Features
+
+#### Session Management
+- Admin can add AI players during lobby phase
+- AI players have distinctive names (e.g., "AI-Alice (Medium)")
+- AI difficulty can be changed before game starts
+- Up to 4 AI players maximum per session
+
+#### Real-time Behavior
+- AI players make decisions with realistic timing delays
+- Easy: 2-4 seconds, Medium: 3-5 seconds, Hard: 4-6 seconds
+- Simulated "thinking" indicators for human players
+- AI players respond to game events appropriately
+
+#### Learning & Adaptation
+- AI tracks opponent patterns over multiple sections
+- Adjusts strategy based on opponent behavior
+- Remembers successful tactics from previous games
+- Adapts bidding strategy to scoring system (Classic vs Modern)
+
+### Technical Implementation
+
+#### AI Player Data Model
+```typescript
+interface AIPlayer extends Player {
+  aiDifficulty: 'easy' | 'medium' | 'hard';
+  isAI: true;
+  personality: AIPersonality;
+  memory: AIMemory;
+  decisionEngine: AIDecisionEngine;
+}
+
+interface AIPersonality {
+  aggressiveness: number; // 0-1 scale
+  riskTolerance: number;  // 0-1 scale  
+  bluffPropensity: number; // 0-1 scale
+  adaptability: number;   // 0-1 scale
+}
+```
+
+#### Performance Optimization
+- AI calculations run in Web Workers to avoid UI blocking
+- Cached decision trees for common scenarios
+- Incremental game state updates rather than full recalculation
+- Tunable thinking time for different difficulty levels
+
+#### Testing & Balancing
+- Automated AI vs AI tournaments for balance testing
+- Human vs AI win rate tracking
+- Difficulty curve validation through statistical analysis
+- A/B testing of different AI strategies
 
 ## 12. Future Enhancements
 
