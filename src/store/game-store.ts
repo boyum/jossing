@@ -55,6 +55,7 @@ interface GameStore {
   placeBid: (sessionId: string, bid: number) => Promise<boolean>;
   playCard: (sessionId: string, card: Card) => Promise<boolean>;
   addAI: (sessionId: string, difficulty?: string) => Promise<boolean>;
+  removeAI: (sessionId: string, playerId: string) => Promise<boolean>;
   refreshGameState: (sessionId: string) => Promise<void>;
   
   // Polling control
@@ -263,6 +264,35 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return false;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to add AI players';
+      set({ 
+        error: errorMessage,
+        isConnected: false,
+        isLoading: false
+      });
+      return false;
+    }
+  },
+
+  removeAI: async (sessionId: string, playerId: string) => {
+    const { playerId: adminPlayerId } = get();
+    if (!adminPlayerId) return false;
+
+    try {
+      set({ isLoading: true, error: null });
+      const result = await gameApiService.removeAIPlayer(sessionId, playerId, adminPlayerId);
+      if (result.success) {
+        // Update store with new players list
+        set({ 
+          players: result.players || [],
+          error: null,
+          isConnected: true,
+          isLoading: false
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to remove AI player';
       set({ 
         error: errorMessage,
         isConnected: false,

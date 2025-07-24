@@ -238,3 +238,85 @@ export async function addAIPlayer(sessionId: string, difficulty: string = 'mediu
     }))
   };
 }
+
+export async function removeAIPlayer(sessionId: string, playerId: string, adminPlayerId: string) {
+  // Verify admin
+  const admin = await db.player.findFirst({
+    where: {
+      id: adminPlayerId,
+      sessionId,
+      isAdmin: true,
+    },
+  });
+
+  if (!admin) {
+    throw new Error("Only admin can remove AI players");
+  }
+
+  // Check if session is in lobby
+  const session = await db.gameSession.findUnique({
+    where: { id: sessionId },
+  });
+
+  if (!session || session.gamePhase !== "WAITING") {
+    throw new Error("Can only remove AI players in lobby");
+  }
+
+  // Check if player exists and is AI
+  const player = await db.player.findFirst({
+    where: {
+      id: playerId,
+      sessionId,
+    },
+  });
+
+  if (!player) {
+    throw new Error("Player not found");
+  }
+
+  if (!player.id.startsWith('ai-')) {
+    throw new Error("Can only remove AI players");
+  }
+
+  // Remove the AI player
+  await db.player.delete({
+    where: { id: playerId },
+  });
+
+  // Get updated players list and reorder positions
+  const remainingPlayers = await db.player.findMany({
+    where: { sessionId },
+    orderBy: { position: "asc" },
+  });
+
+  // Update positions to be sequential
+  for (let i = 0; i < remainingPlayers.length; i++) {
+    await db.player.update({
+      where: { id: remainingPlayers[i].id },
+      data: { position: i + 1 },
+    });
+  }
+
+  // Get final updated players list
+  const updatedPlayers = await db.player.findMany({
+    where: { sessionId },
+    orderBy: { position: "asc" },
+  });
+
+  return {
+    success: true,
+    removedPlayerId: playerId,
+    players: updatedPlayers.map((p) => ({
+      id: p.id,
+      sessionId: p.sessionId,
+      name: p.name,
+      isAdmin: p.isAdmin,
+      position: p.position,
+      totalScore: p.totalScore,
+      isConnected: p.isConnected,
+      joinedAt: p.joinedAt,
+      isAI: p.id.startsWith('ai-'),
+      aiDifficulty: p.id.startsWith('ai-') ? p.id.split('-')[1] : undefined,
+    }))
+  };
+}

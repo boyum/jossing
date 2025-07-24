@@ -20,6 +20,7 @@ export default function PlayPage() {
     joinSession,
     startGame,
     addAI,
+    removeAI,
     startPolling,
     stopPolling,
     refreshGameState,
@@ -82,6 +83,12 @@ export default function PlayPage() {
   const handleAddAI = async (difficulty?: AIDifficulty) => {
     if (sessionId) {
       await addAI(sessionId, difficulty);
+    }
+  };
+
+  const handleRemoveAI = async (playerId: string) => {
+    if (sessionId) {
+      await removeAI(sessionId, playerId);
     }
   };
 
@@ -185,6 +192,18 @@ export default function PlayPage() {
                     <div className="flex items-center gap-2">
                       {player.isAdmin && (
                         <span className="px-2 py-1 bg-indian-red text-white text-xs rounded">Admin</span>
+                      )}
+                      {/* Remove AI button for admin */}
+                      {isAdmin && player.isAI && !isGameStarted && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAI(player.id)}
+                          disabled={isLoading}
+                          className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors disabled:opacity-50"
+                          title="Remove AI player"
+                        >
+                          Remove
+                        </button>
                       )}
                       <span className={`w-2 h-2 rounded-full ${
                         player.isConnected ? 'bg-green-500' : 'bg-red-500'

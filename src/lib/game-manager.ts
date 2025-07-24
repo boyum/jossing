@@ -53,4 +53,9 @@ export class GameManager {
   static async addAIPlayer(sessionId: string, difficulty: string = 'medium') {
     return await dbService.addAIPlayer(sessionId, difficulty);
   }
+
+  // Remove AI player from session
+  static async removeAIPlayer(sessionId: string, playerId: string, adminPlayerId: string) {
+    return await dbService.removeAIPlayer(sessionId, playerId, adminPlayerId);
+  }
 }

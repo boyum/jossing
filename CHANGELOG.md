@@ -30,6 +30,11 @@ All notable changes to this project will be documented in this file.
   - Added GameManager integration for AI player addition
   - Updated API endpoint to use GameManager instead of returning placeholder response
   - AI players are now properly added to sessions with generated names and difficulty tracking
+- **Remove AI Players**: Added ability to remove AI players from sessions before game starts
+  - Implemented `removeAIPlayer` function with admin validation and position reordering
+  - Added DELETE API endpoint `/sessions/{sessionId}/remove-ai` for AI player removal
+  - Added "Remove" buttons for AI players in the lobby (admin only)
+  - AI players can be removed individually, allowing fine-tuned team composition
 
 ### Technical
 - Updated documentation to reflect current polling-based architecture (replaced outdated Socket.IO references)

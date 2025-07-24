@@ -142,6 +142,21 @@ class GameApiService {
 
     return response.json();
   }
+
+  // Remove AI player from a session
+  async removeAIPlayer(sessionId: string, playerId: string, adminPlayerId: string) {
+    const response = await fetch(`${this.baseUrl}/sessions/${sessionId}/remove-ai`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerId, adminPlayerId })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to remove AI player: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
 }
 
 export const gameApiService = new GameApiService();
