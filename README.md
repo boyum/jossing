@@ -1,8 +1,24 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🃏 Jøssing - The Ultimate Trick-Taking Challenge
 
-## Getting Started
+**Master the art of precision bidding in this thrilling Norwegian card game!**
 
-First, run the development server:
+Jøssing is a strategic trick-taking card game where **accuracy beats ambition**. Can you predict exactly how many tricks you'll win? One wrong guess and you score zero points!
+
+## 🎯 Why You'll Love Jøssing
+
+- **🧠 Pure Strategy**: No luck - just skill, calculation, and nerves of steel
+- **⚡ Quick Rounds**: Games progress from 1 card to 10 cards per hand
+- **🔥 High Stakes**: Hit your bid exactly or get nothing - no participation points!
+- **🤝 Social Fun**: Perfect for 3-6 players who love a mental challenge
+- **📱 Learn Fast**: Interactive tutorials get you playing in minutes
+
+## 🚀 The Twist That Changes Everything
+
+Unlike other card games, **all players bid simultaneously**! No strategic advantages, no reading the table - just you, your cards, and your ability to predict the future. Will you play it safe with a low bid, or risk it all for maximum points?
+
+## 🎮 Getting Started
+
+Ready to test your skills? Start the game locally:
 
 ```bash
 npm run dev
@@ -14,9 +30,53 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) and dive into the interactive tutorials that will teach you everything you need to dominate your friends!
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ✨ Features That Make This Special
+
+- **🎓 Interactive Learning**: Step-by-step tutorials with real card scenarios
+- **🧮 Smart Calculator**: Practice scoring with different bid combinations  
+- **🎯 Bidding Trainer**: Hone your skills with challenging hand scenarios
+- **📊 Strategy Guides**: Learn from pros and master advanced techniques
+- **🎨 Beautiful Design**: Clean, intuitive interface that focuses on gameplay
+
+## 🎯 How to Win
+
+The scoring is elegantly simple yet brutally unforgiving:
+
+- **Exact bid**: 10 + your bid points ✅
+- **Any other result**: 0 points ❌
+
+Bid 3 and win exactly 3 tricks? You get 13 points!
+Bid 3 but win 2 or 4 tricks? You get nothing!
+
+## 🏆 Master the Mind Game
+
+Success in Jøssing requires:
+
+- **Card Counting**: Track trump cards and high-value suits
+- **Risk Assessment**: Balance safe bids vs. high-scoring opportunities
+- **Pressure Management**: Stay cool when everyone's watching your bid
+- **Pattern Recognition**: Learn from each hand to improve your predictions
+
+## 🔧 Built With Modern Tech
+
+This app is powered by:
+
+- **Next.js 14**: Lightning-fast React framework with App Router
+- **TypeScript**: Type-safe development for bulletproof game logic
+- **Tailwind CSS**: Beautiful, responsive design that works everywhere
+- **Interactive Components**: Engaging tutorials and training tools
+
+## 🎲 Ready to Play?
+
+Whether you're a card game veteran or complete beginner, Jøssing will challenge your mind and keep you coming back for more. The question isn't whether you can win a trick - it's whether you can predict exactly how many you'll win.
+
+**Are you precise enough to master Jøssing?**
+
+---
+
+## 🛠️ Development
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
