@@ -113,7 +113,7 @@ export async function getGameState(playerId: string) {
       scoringSystem: session.scoringSystem,
       maxPlayers: session.maxPlayers,
       currentSection: session.currentSection,
-      gamePhase: session.gamePhase,
+      gamePhase: session.gamePhase.toLowerCase(),
       createdAt: session.createdAt,
       updatedAt: session.updatedAt,
     },

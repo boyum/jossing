@@ -95,6 +95,41 @@ export async function getSession(
   };
 }
 
+export async function startGame(sessionId: string, adminPlayerId: string) {
+  // Verify admin
+  const admin = await db.player.findFirst({
+    where: {
+      id: adminPlayerId,
+      sessionId,
+      isAdmin: true,
+    },
+  });
+
+  if (!admin) {
+    throw new Error("Only admin can start the game");
+  }
+
+  // Check minimum players
+  const playerCount = await db.player.count({
+    where: { sessionId },
+  });
+
+  if (playerCount < 2) {
+    throw new Error("Need at least 2 players to start");
+  }
+
+  // Update session to playing
+  await db.gameSession.update({
+    where: { id: sessionId },
+    data: {
+      gamePhase: "PLAYING",
+      currentSection: 1,
+    },
+  });
+
+  return { success: true };
+}
+
 // Player Management
 export async function createPlayer(
   playerId: string,

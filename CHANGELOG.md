@@ -15,6 +15,12 @@ All notable changes to this project will be documented in this file.
   - Updated `GameStore.startPolling` default interval: `2000ms` → `1000ms`
   - Improved game responsiveness for player actions, AI turns, and state changes
 
+### Fixed
+- **Start Game Bug**: Fixed issue where clicking "Start Game" button had no effect
+  - Fixed gamePhase enum mapping mismatch between database (uppercase) and TypeScript types (lowercase)
+  - Added immediate game state refresh after starting a game
+  - Start button now properly transitions the game from lobby to playing phase
+
 ### Technical
 - Updated documentation to reflect current polling-based architecture (replaced outdated Socket.IO references)
 - Added polling configuration details to `DEVELOPMENT_PLAN.md` and `TECHNICAL_SPEC.md`

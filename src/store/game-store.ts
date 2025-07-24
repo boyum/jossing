@@ -178,6 +178,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
         error: null,
         isConnected: true
       });
+      
+      // Immediately refresh the game state after starting
+      get().refreshGameState(sessionId);
+      
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to start game';
