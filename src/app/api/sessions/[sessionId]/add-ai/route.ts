@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { GameManager } from "@/lib/game-manager";
+import { AIDifficulty } from "@/types/game";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +12,17 @@ export async function POST(request: NextRequest) {
         { error: "Session ID is required" },
         { status: 400 },
       );
+    }
+
+    // Parse request body for AI difficulty
+    let difficulty = AIDifficulty.EASY; // Default to easy
+    try {
+      const body = await request.json();
+      if (body.difficulty && Object.values(AIDifficulty).includes(body.difficulty)) {
+        difficulty = body.difficulty;
+      }
+    } catch {
+      // Use default difficulty if no body or invalid JSON
     }
 
     // Validate session exists and is in waiting phase
@@ -26,8 +38,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Add AI players to fill remaining slots
-    const result = GameManager.addAIPlayers(sessionId.toUpperCase());
+    // Add AI players to fill remaining slots with specified difficulty
+    const result = GameManager.addAIPlayers(sessionId.toUpperCase(), difficulty);
 
     if (!result) {
       return NextResponse.json(
@@ -41,9 +53,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "AI players added successfully",
+      message: `AI players added successfully with ${difficulty} difficulty`,
       players: players,
       aiPlayersAdded: players.filter((p) => p.isAI).length,
+      difficulty: difficulty,
     });
   } catch (error) {
     console.error("Error adding AI players:", error);

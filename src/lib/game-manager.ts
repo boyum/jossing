@@ -10,10 +10,13 @@ import {
   type Bid,
   type Trick,
   type TrickCard,
-  type TrickWithCards
+  type TrickWithCards,
+  AIDifficulty
 } from '@/types/game';
 import { createDeck, dealCards, getTrickWinner, canPlayCard } from './game-utils';
-import { RandomAI, getAIPlayerName } from './ai-player';
+import { RandomAI } from './ai-player';
+import { aiManager, createAI } from './ai/ai-manager';
+import type { GameContext } from './ai/base-ai';
 
 // In-memory storage (in production, this would be a database)
 const sessions = new Map<string, GameSession>();
@@ -637,7 +640,7 @@ export class GameManager {
   }
 
   // Add AI players to fill empty slots
-  static addAIPlayers(sessionId: string): boolean {
+  static addAIPlayers(sessionId: string, difficulty: AIDifficulty = AIDifficulty.EASY): boolean {
     const session = sessions.get(sessionId);
     if (!session || session.gamePhase !== GamePhase.WAITING) {
       return false;
@@ -649,28 +652,34 @@ export class GameManager {
     for (let i = 0; i < spotsToFill; i++) {
       const playerId = GameManager.generatePlayerId();
       const position = sessionPlayers.length + i + 1;
-      const aiName = getAIPlayerName(i);
-
+      
+      // Create AI with specified difficulty
+      const ai = createAI(difficulty);
+      
       const aiPlayer: Player = {
         id: playerId,
         sessionId,
-        name: aiName,
+        name: ai.getName(),
         isAdmin: false,
         position,
         totalScore: 0,
         isConnected: true,
         joinedAt: new Date(),
-        isAI: true // Add this flag to identify AI players
+        isAI: true,
+        aiDifficulty: difficulty
       };
 
       players.set(playerId, aiPlayer);
+      
+      // Register the AI with the manager
+      aiManager.addAIPlayer(playerId, difficulty, ai.getName());
     }
 
     return true;
   }
 
   // Make AI players take their turns
-  static processAITurn(sessionId: string): boolean {
+  static async processAITurn(sessionId: string): Promise<boolean> {
     const session = sessions.get(sessionId);
     if (!session) return false;
 
@@ -682,12 +691,29 @@ export class GameManager {
       const currentBidder = GameManager.getCurrentBidder(sessionId);
       if (currentBidder?.isAI) {
         const hand = GameManager.getPlayerHand(currentBidder.id, session.currentSection);
-        const ai = new RandomAI(currentBidder.name);
-        const bid = ai.makeBid(hand, session.currentSection, sectionState.trumpSuit);
+        const existingBids = sectionState.bids.map(b => b.bid);
         
-        // Place the bid through the proper system
-        GameManager.placeBid(currentBidder.id, bid);
-        return true;
+        // Use the advanced AI system
+        const bid = await aiManager.makeAIBid(
+          currentBidder.id,
+          hand,
+          session.currentSection,
+          sectionState.trumpSuit,
+          currentBidder.position,
+          existingBids
+        );
+        
+        if (bid !== null) {
+          // Place the bid through the proper system
+          GameManager.placeBid(currentBidder.id, bid);
+          return true;
+        } else {
+          // Fallback to random AI if advanced AI fails
+          const ai = new RandomAI(currentBidder.name);
+          const fallbackBid = ai.makeBid(hand, session.currentSection, sectionState.trumpSuit);
+          GameManager.placeBid(currentBidder.id, fallbackBid);
+          return true;
+        }
       }
       return false;
     }
@@ -713,7 +739,6 @@ export class GameManager {
       
       if (currentPlayer?.isAI) {
         const hand = GameManager.getPlayerHand(currentPlayer.id, session.currentSection);
-        const ai = new RandomAI(currentPlayer.name);
         
         // Convert TrickCard[] to Card[] for AI
         const trickCardsForAI: Card[] = cardsPlayed.map(tc => ({
@@ -722,10 +747,37 @@ export class GameManager {
           value: GameManager.getCardValue(tc.cardRank)
         }));
         
-        const cardToPlay = ai.playCard(hand, trickCardsForAI, sectionState.trumpSuit, activeTrick.leadingSuit);
+        // Create game context for advanced AI
+        const gameContext: GameContext = {
+          currentSection: session.currentSection,
+          totalSections: sessionPlayers.length > 4 ? sessionPlayers.length : sessionPlayers.length * 2, // Simplified
+          playerBids: Object.fromEntries(sectionState.bids.map(b => [b.playerId, b.bid])),
+          tricksPlayed: cardsPlayed.length,
+          totalTricks: session.currentSection,
+          scores: Object.fromEntries(sessionPlayers.map(p => [p.id, p.totalScore]))
+        };
+        
+        // Use the advanced AI system
+        const cardToPlay = await aiManager.playAICard(
+          currentPlayer.id,
+          hand,
+          trickCardsForAI,
+          sectionState.trumpSuit,
+          activeTrick.leadingSuit,
+          gameContext
+        );
+        
         if (cardToPlay) {
           GameManager.playCard(currentPlayer.id, cardToPlay);
           return true;
+        } else {
+          // Fallback to random AI if advanced AI fails
+          const ai = new RandomAI(currentPlayer.name);
+          const fallbackCard = ai.playCard(hand, trickCardsForAI, sectionState.trumpSuit, activeTrick.leadingSuit);
+          if (fallbackCard) {
+            GameManager.playCard(currentPlayer.id, fallbackCard);
+            return true;
+          }
         }
       }
       return false;

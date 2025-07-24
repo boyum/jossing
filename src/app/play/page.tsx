@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useGameStore } from '@/store/game-store';
 import { GameBoard } from '@/components/game/GameBoard';
 import { ConnectionStatus } from '@/components/ui/ConnectionStatus';
+import { AddAIPlayers } from '@/components/game/AddAIPlayers';
+import { AIDifficulty } from '@/types/game';
 import Link from 'next/link';
 
 export default function PlayPage() {
@@ -17,6 +19,7 @@ export default function PlayPage() {
     createSession,
     joinSession,
     startGame,
+    addAI,
     startPolling,
     stopPolling,
     refreshGameState,
@@ -73,6 +76,12 @@ export default function PlayPage() {
   const handleStartGame = async () => {
     if (sessionId && playerId) {
       await startGame(sessionId, playerId);
+    }
+  };
+
+  const handleAddAI = async (difficulty?: AIDifficulty) => {
+    if (sessionId) {
+      await addAI(sessionId, difficulty);
     }
   };
 
@@ -165,7 +174,14 @@ export default function PlayPage() {
                     key={player.id} 
                     className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg"
                   >
-                    <span className="text-white font-medium">{player.name}</span>
+                    <span className="text-white font-medium">
+                      {player.name}
+                      {player.isAI && player.aiDifficulty && (
+                        <span className="ml-2 px-2 py-1 bg-blue-600 text-white text-xs rounded">
+                          AI ({player.aiDifficulty})
+                        </span>
+                      )}
+                    </span>
                     <div className="flex items-center gap-2">
                       {player.isAdmin && (
                         <span className="px-2 py-1 bg-indian-red text-white text-xs rounded">Admin</span>
@@ -190,9 +206,20 @@ export default function PlayPage() {
               )}
               
               {!canStartGame && players.length < 3 && (
-                <p className="text-slate-400 text-center">
-                  Need at least 3 players to start. Share the game code with friends!
-                </p>
+                <div className="space-y-4">
+                  <p className="text-slate-400 text-center">
+                    Need at least 3 players to start. Share the game code with friends!
+                  </p>
+                  
+                  {/* Add AI Players Component */}
+                  {isAdmin && players.length < 4 && (
+                    <AddAIPlayers
+                      onAddAI={handleAddAI}
+                      isLoading={isLoading}
+                      disabled={false}
+                    />
+                  )}
+                </div>
               )}
             </div>
           ) : (

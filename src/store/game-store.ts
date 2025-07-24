@@ -54,6 +54,7 @@ interface GameStore {
   startGame: (sessionId: string, adminPlayerId: string) => Promise<boolean>;
   placeBid: (sessionId: string, bid: number) => Promise<boolean>;
   playCard: (sessionId: string, card: Card) => Promise<boolean>;
+  addAI: (sessionId: string, difficulty?: string) => Promise<boolean>;
   refreshGameState: (sessionId: string) => Promise<void>;
   
   // Polling control
@@ -212,6 +213,32 @@ export const useGameStore = create<GameStore>((set, get) => ({
       set({ 
         error: errorMessage,
         isConnected: false
+      });
+      return false;
+    }
+  },
+
+  addAI: async (sessionId: string, difficulty?: string) => {
+    try {
+      set({ isLoading: true, error: null });
+      const result = await gameApiService.addAIPlayers(sessionId, difficulty);
+      if (result.success) {
+        // Update store with new players
+        set({ 
+          players: result.players || [],
+          error: null,
+          isConnected: true,
+          isLoading: false
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add AI players';
+      set({ 
+        error: errorMessage,
+        isConnected: false,
+        isLoading: false
       });
       return false;
     }

@@ -129,10 +129,11 @@ class GameApiService {
   }
 
   // Add AI players to a session
-  async addAIPlayers(sessionId: string) {
+  async addAIPlayers(sessionId: string, difficulty?: string) {
     const response = await fetch(`${this.baseUrl}/sessions/${sessionId}/add-ai`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ difficulty })
     });
 
     if (!response.ok) {

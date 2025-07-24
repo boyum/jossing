@@ -82,6 +82,12 @@ export interface GameSession {
   updatedAt: Date;
 }
 
+export enum AIDifficulty {
+  EASY = 'easy',
+  MEDIUM = 'medium', 
+  HARD = 'hard'
+}
+
 export interface Player {
   id: string;
   sessionId: string;
@@ -92,6 +98,7 @@ export interface Player {
   isConnected: boolean;
   joinedAt: Date;
   isAI?: boolean; // Optional flag to identify AI players
+  aiDifficulty?: AIDifficulty; // AI difficulty level
 }
 
 export interface Bid {

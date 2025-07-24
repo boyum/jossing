@@ -22,8 +22,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Process AI turn
-    const result = GameManager.processAITurn(sessionId.toUpperCase());
+    // Process AI turn (now async)
+    const result = await GameManager.processAITurn(sessionId.toUpperCase());
     
     if (!result) {
       return NextResponse.json(
