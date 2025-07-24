@@ -100,10 +100,9 @@ export default function ScoreCalculator() {
           onClick={() => setShowCustom(false)}
           className={`px-4 py-2 rounded transition-all ${
             !showCustom 
-              ? 'text-white shadow-md' 
+              ? 'bg-secondary text-white shadow-md' 
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
-          style={{ backgroundColor: !showCustom ? '#496DDB' : undefined }}
         >
           Examples
         </button>
@@ -112,10 +111,9 @@ export default function ScoreCalculator() {
           onClick={() => setShowCustom(true)}
           className={`px-4 py-2 rounded transition-all ${
             showCustom 
-              ? 'text-white shadow-md' 
+              ? 'bg-accent text-white shadow-md' 
               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
-          style={{ backgroundColor: showCustom ? '#C95D63' : undefined }}
         >
           Custom
         </button>
@@ -133,13 +131,9 @@ export default function ScoreCalculator() {
                 onClick={() => setSelectedExample(example)}
                 className={`p-3 text-left rounded border transition-all hover:shadow-md ${
                   selectedExample.id === example.id
-                    ? 'text-white shadow-md'
+                    ? 'bg-primary text-white shadow-md border-primary'
                     : 'border-gray-200 hover:border-gray-300 bg-white'
                 }`}
-                style={{
-                  backgroundColor: selectedExample.id === example.id ? '#717EC3' : undefined,
-                  borderColor: selectedExample.id === example.id ? '#717EC3' : undefined,
-                }}
               >
                 <div className="font-medium">{example.name}</div>
                 <div className={`text-sm ${selectedExample.id === example.id ? 'text-blue-100' : 'text-gray-600'}`}>
@@ -149,7 +143,7 @@ export default function ScoreCalculator() {
             ))}
           </div>
           
-          <div className="mt-4 p-3 rounded border-2" style={{ backgroundColor: '#F8F9FA', borderColor: '#AE8799' }}>
+          <div className="mt-4 p-3 bg-gray-50 rounded border-2 border-muted">
             <p className="text-sm text-gray-700">{selectedExample.description}</p>
           </div>
         </div>

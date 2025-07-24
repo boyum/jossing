@@ -9,13 +9,13 @@ export default function Navigation() {
   const isActive = (path: string) => pathname === path;
   
   return (
-    <nav className="bg-white shadow-md sticky top-0 z-50 border-b-2" style={{ borderBottomColor: '#717EC3' }}>
+    <nav className="bg-white shadow-md sticky top-0 z-50 border-b-2 border-jossing-primary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             <span className="text-2xl">🃏</span>
-            <span className="text-xl font-bold" style={{ color: '#496DDB' }}>Jøssing</span>
+            <span className="text-xl font-bold text-jossing-secondary">Jøssing</span>
           </Link>
           
           {/* Navigation Links */}
@@ -24,12 +24,9 @@ export default function Navigation() {
               href="/"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-all hover:opacity-90 ${
                 isActive('/') 
-                  ? 'text-white' 
-                  : 'text-gray-700 hover:text-white'
+                  ? 'bg-primary text-white' 
+                  : 'text-gray-700 hover:text-white hover:bg-primary'
               }`}
-              style={{ 
-                backgroundColor: isActive('/') ? '#717EC3' : 'transparent',
-              }}
             >
               Home
             </Link>
@@ -37,12 +34,9 @@ export default function Navigation() {
               href="/how-to-play"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-all hover:opacity-90 ${
                 isActive('/how-to-play') 
-                  ? 'text-white' 
-                  : 'text-gray-700 hover:text-white'
+                  ? 'bg-secondary text-white' 
+                  : 'text-gray-700 hover:text-white hover:bg-secondary'
               }`}
-              style={{ 
-                backgroundColor: isActive('/how-to-play') ? '#496DDB' : 'transparent',
-              }}
             >
               How to Play
             </Link>
@@ -50,12 +44,9 @@ export default function Navigation() {
               href="/play"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-all hover:opacity-90 ${
                 isActive('/play') 
-                  ? 'text-white' 
-                  : 'text-gray-700 hover:text-white'
+                  ? 'bg-accent text-white' 
+                  : 'text-gray-700 hover:text-white hover:bg-accent'
               }`}
-              style={{ 
-                backgroundColor: isActive('/play') ? '#C95D63' : 'transparent',
-              }}
             >
               Play Game
             </Link>

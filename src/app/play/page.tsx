@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function PlayPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #717EC3 0%, #496DDB 50%, #AE8799 100%)' }}>
+    <div className="min-h-screen flex items-center justify-center bg-jossing-play">
       <div className="max-w-2xl mx-auto px-4 text-center">
         <div className="bg-white rounded-xl shadow-xl p-8">
           <div className="text-6xl mb-6">🎮</div>
@@ -17,22 +17,20 @@ export default function PlayPage() {
           <div className="space-y-4">
             <Link 
               href="/how-to-play"
-              className="block text-white px-6 py-3 rounded-lg text-lg font-semibold transition-all hover:opacity-90"
-              style={{ backgroundColor: '#496DDB' }}
+              className="block bg-secondary hover:opacity-90 text-white px-6 py-3 rounded-lg text-lg font-semibold transition-all"
             >
               🎓 Learn How to Play
             </Link>
             <Link 
               href="/"
-              className="block text-white px-6 py-3 rounded-lg text-lg font-semibold transition-all hover:opacity-90"
-              style={{ backgroundColor: '#AE8799' }}
+              className="block bg-muted hover:opacity-90 text-white px-6 py-3 rounded-lg text-lg font-semibold transition-all"
             >
               🏠 Back to Home
             </Link>
           </div>
 
-          <div className="mt-8 p-4 rounded-lg border-2" style={{ backgroundColor: '#F8F9FA', borderColor: '#717EC3' }}>
-            <h3 className="font-semibold mb-2" style={{ color: '#717EC3' }}>🚀 Coming Features:</h3>
+          <div className="mt-8 p-4 bg-gray-50 rounded-lg border-2 border-jossing-primary">
+            <h3 className="font-semibold text-jossing-primary mb-2">🚀 Coming Features:</h3>
             <ul className="text-sm text-gray-700 space-y-1">
               <li>• Real-time multiplayer games</li>
               <li>• AI opponents for practice</li>

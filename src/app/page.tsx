@@ -14,18 +14,18 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Hero Section */}
-      <div className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #717EC3 0%, #496DDB 100%)' }}>
+      <div className="relative overflow-hidden bg-jossing-hero">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-16">
           <div className="text-center">
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
-              🃏 <span className="text-white">Jøssing</span>
+            <h1 className="text-5xl md:text-7xl font-bold mb-6">
+              🃏 Jøssing
             </h1>
-            <p className="text-xl md:text-2xl text-blue-100 mb-4 font-medium">
+            <p className="text-xl md:text-2xl mb-4 font-medium">
               The Ultimate Trick-Taking Challenge
             </p>
-            <p className="text-lg text-blue-100 mb-8 max-w-2xl mx-auto">
+            <p className="text-lg mb-8 max-w-2xl mx-auto">
               Master the art of precision bidding in this thrilling Norwegian card game where 
-              <strong className="text-white"> accuracy beats ambition</strong>!
+              <strong> accuracy beats ambition</strong>!
             </p>
             
             {/* Sample Cards Display */}
@@ -51,15 +51,13 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link 
                 href="/how-to-play"
-                className="text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 hover:opacity-90"
-                style={{ backgroundColor: '#C95D63' }}
+                className="bg-accent hover:opacity-90 px-8 py-4 rounded-lg text-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 🎓 Learn to Play
               </Link>
               <Link 
                 href="/play"
-                className="text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 hover:opacity-90"
-                style={{ backgroundColor: '#AE8799' }}
+                className="bg-muted hover:opacity-90 px-8 py-4 rounded-lg text-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 🎮 Start Playing
               </Link>
@@ -82,7 +80,7 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center group">
-              <div className="rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 transition-all group-hover:scale-110" style={{ backgroundColor: '#717EC3' }}>
+              <div className="bg-primary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 transition-all group-hover:scale-110">
                 <span className="text-2xl text-white">🧠</span>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Pure Strategy</h3>
@@ -90,7 +88,7 @@ export default function HomePage() {
             </div>
 
             <div className="text-center group">
-              <div className="rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 transition-all group-hover:scale-110" style={{ backgroundColor: '#496DDB' }}>
+              <div className="bg-secondary rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 transition-all group-hover:scale-110">
                 <span className="text-2xl text-white">⚡</span>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Quick Rounds</h3>
@@ -98,7 +96,7 @@ export default function HomePage() {
             </div>
 
             <div className="text-center group">
-              <div className="rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 transition-all group-hover:scale-110" style={{ backgroundColor: '#C95D63' }}>
+              <div className="bg-accent rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 transition-all group-hover:scale-110">
                 <span className="text-2xl text-white">🔥</span>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">High Stakes</h3>
@@ -106,7 +104,7 @@ export default function HomePage() {
             </div>
 
             <div className="text-center group">
-              <div className="rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 transition-all group-hover:scale-110" style={{ backgroundColor: '#AE8799' }}>
+              <div className="bg-muted rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 transition-all group-hover:scale-110">
                 <span className="text-2xl text-white">🤝</span>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Social Fun</h3>
@@ -130,9 +128,9 @@ export default function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow border-t-4" style={{ borderTopColor: '#717EC3' }}>
+            <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow border-t-4 border-primary">
               <div className="text-center">
-                <div className="text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4 text-xl font-bold" style={{ backgroundColor: '#717EC3' }}>
+                <div className="bg-primary text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
                   1
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Analyze Your Hand</h3>
@@ -142,9 +140,9 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow border-t-4" style={{ borderTopColor: '#496DDB' }}>
+            <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow border-t-4 border-secondary">
               <div className="text-center">
-                <div className="text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4 text-xl font-bold" style={{ backgroundColor: '#496DDB' }}>
+                <div className="bg-secondary text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
                   2
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Bid Simultaneously</h3>
@@ -154,9 +152,9 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow border-t-4" style={{ borderTopColor: '#C95D63' }}>
+            <div className="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow border-t-4 border-accent">
               <div className="text-center">
-                <div className="text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4 text-xl font-bold" style={{ backgroundColor: '#C95D63' }}>
+                <div className="bg-accent text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
                   3
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Win Exactly</h3>
@@ -177,19 +175,19 @@ export default function HomePage() {
           </h2>
           
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-white rounded-lg p-6 shadow-lg border-2" style={{ borderColor: '#717EC3' }}>
+            <div className="bg-white rounded-lg p-6 shadow-lg border-2 border-primary">
               <div className="text-4xl mb-4">✅</div>
-              <h3 className="text-xl font-semibold mb-2" style={{ color: '#717EC3' }}>Exact Bid</h3>
-              <p className="text-lg font-medium" style={{ color: '#496DDB' }}>10 + your bid points</p>
+              <h3 className="text-xl font-semibold text-jossing-primary mb-2">Exact Bid</h3>
+              <p className="text-lg font-medium text-jossing-secondary">10 + your bid points</p>
               <p className="text-sm text-gray-600 mt-2">
                 Bid 3, win 3 tricks = 13 points!
               </p>
             </div>
 
-            <div className="bg-white rounded-lg p-6 shadow-lg border-2" style={{ borderColor: '#C95D63' }}>
+            <div className="bg-white rounded-lg p-6 shadow-lg border-2 border-accent">
               <div className="text-4xl mb-4">❌</div>
-              <h3 className="text-xl font-semibold mb-2" style={{ color: '#C95D63' }}>Any Other Result</h3>
-              <p className="text-lg font-medium" style={{ color: '#AE8799' }}>0 points</p>
+              <h3 className="text-xl font-semibold text-jossing-accent mb-2">Any Other Result</h3>
+              <p className="text-lg font-medium text-jossing-muted">0 points</p>
               <p className="text-sm text-gray-600 mt-2">
                 Bid 3, win 2 or 4 tricks = nothing!
               </p>
@@ -205,7 +203,7 @@ export default function HomePage() {
       </div>
 
       {/* CTA Section */}
-      <div className="py-16" style={{ background: 'linear-gradient(135deg, #AE8799 0%, #C95D63 100%)' }}>
+      <div className="py-16 bg-jossing-cta">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Ready to Test Your Precision?
@@ -223,8 +221,7 @@ export default function HomePage() {
             </Link>
             <Link 
               href="/play"
-              className="text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 hover:opacity-90 border-2 border-white"
-              style={{ backgroundColor: '#496DDB' }}
+              className="bg-secondary hover:opacity-90 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 border-2 border-white"
             >
               🎯 Start Your Challenge
             </Link>
@@ -239,7 +236,7 @@ export default function HomePage() {
       </div>
 
       {/* Footer */}
-      <footer className="text-white py-8" style={{ backgroundColor: '#2D3748' }}>
+      <footer className="bg-gray-900 text-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-gray-300">
             Built with ❤️ for card game enthusiasts everywhere
