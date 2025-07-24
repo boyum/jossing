@@ -1,6 +1,6 @@
 'use client';
 
-import type { Player, SectionState } from '@/types/game';
+import type { Player } from '@/types/game';
 
 interface ScoreBoardProps {
   players: Player[];

@@ -1,6 +1,6 @@
 'use client';
 
-import type { Card, Trick, Player, Suit } from '@/types/game';
+import { type Player, Suit, type Trick } from '@/types/game';
 
 interface TrickAreaProps {
   trick: Trick | null;

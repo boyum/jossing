@@ -1,7 +1,7 @@
 'use client';
 
+import type { GameSession, Player } from '@/types/game';
 import { useState } from 'react';
-import type { Player, GameSession } from '@/types/game';
 
 interface GameLobbyProps {
   session: GameSession;
@@ -189,7 +189,7 @@ export function GameLobby({ session, players, currentPlayerId, onStartGame, onLe
           <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-600">
             <div>
               <h4 className="font-semibold text-gray-900 mb-1">Objective:</h4>
-              <p>Bid exactly how many tricks you'll win. Hit your bid exactly to score!</p>
+              <p>Bid exactly how many tricks you&apos;ll win. Hit your bid exactly to score!</p>
             </div>
             <div>
               <h4 className="font-semibold text-gray-900 mb-1">Scoring:</h4>

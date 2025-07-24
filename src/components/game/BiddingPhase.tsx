@@ -11,13 +11,13 @@ interface BiddingPhaseProps {
 export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
   const [selectedBid, setSelectedBid] = useState<number | null>(null);
   const [hasBid, setHasBid] = useState(false);
-  const { placeBid, players, currentSection } = useGameStore();
+  const { placeBid, players, currentSection, session } = useGameStore();
 
   const handlePlaceBid = async () => {
-    if (selectedBid === null || hasBid) return;
+    if (selectedBid === null || hasBid || !session) return;
 
     try {
-      await placeBid(selectedBid);
+      await placeBid(session.id, selectedBid);
       setHasBid(true);
     } catch (error) {
       console.error('Failed to place bid:', error);

@@ -1,8 +1,8 @@
 'use client';
 
-import { Card, Trick, Suit } from '@/types/game';
 import { CardComponent } from '@/components/ui/card';
 import { useGameStore } from '@/store/game-store';
+import type { Card, Suit, Trick } from '@/types/game';
 
 interface PlayerHandProps {
   cards: Card[];
@@ -13,13 +13,13 @@ interface PlayerHandProps {
 }
 
 export function PlayerHand({ cards, isPlayerTurn, playerId, currentTrick, trumpSuit }: PlayerHandProps) {
-  const { playCard } = useGameStore();
+  const { playCard, session } = useGameStore();
 
   const handleCardClick = async (card: Card) => {
-    if (!isPlayerTurn || !currentTrick) return;
+    if (!isPlayerTurn || !currentTrick || !session) return;
 
     try {
-      await playCard(card);
+      await playCard(session.id, card);
     } catch (error) {
       console.error('Failed to play card:', error);
     }

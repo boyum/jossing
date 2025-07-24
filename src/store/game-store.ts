@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import type { Socket } from 'socket.io-client';
-import { socketService } from '@/lib/socket-service';
+import { gameApiService } from '@/lib/game-api-service';
 import type { 
   Card, 
   GameSession, 
@@ -22,9 +21,9 @@ interface GameStore {
   sectionScores: Record<string, number>;
   totalScores: Record<string, number>;
   
-  // Socket connection
-  socket: Socket | null;
+  // Connection state (polling-based)
   isConnected: boolean;
+  isPolling: boolean;
   
   // UI state
   isLoading: boolean;
@@ -36,33 +35,30 @@ interface GameStore {
   updatePlayers: (players: Player[]) => void;
   updateGamePhase: (phase: GamePhase) => void;
   setPlayerHand: (cards: Card[]) => void;
-  playCard: (card: Card) => void;
-  placeBid: (bid: number) => void;
-  
-  // Socket actions
-  connectSocket: () => Promise<void>;
-  disconnectSocket: () => void;
-  joinGameRoom: (sessionId: string, playerId: string) => Promise<void>;
-  leaveGameRoom: (sessionId: string, playerId: string) => void;
-  startMultiplayerGame: (sessionId: string, adminPlayerId: string) => void;
   updateCurrentSection: (section: SectionState | null) => void;
   updateCurrentTrick: (trick: Trick | null) => void;
   updateSectionScores: (scores: Record<string, number>) => void;
-  updateTotalScores: (scores: Record<string, number>) => void;
-  
-  // Socket management
-  setSocket: (socket: Socket | null) => void;
-  setConnectionStatus: (connected: boolean) => void;
-  
-  // UI actions
-  setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  setLoading: (loading: boolean) => void;
   
-  // Reset state
-  resetGame: () => void;
+  // Game actions (API-based)
+  createSession: (adminName: string) => Promise<{ sessionId: string; playerId: string } | null>;
+  joinSession: (sessionId: string, playerName: string) => Promise<{ playerId: string; position: number } | null>;
+  startGame: (sessionId: string, adminPlayerId: string) => Promise<boolean>;
+  placeBid: (sessionId: string, bid: number) => Promise<boolean>;
+  playCard: (sessionId: string, card: Card) => Promise<boolean>;
+  refreshGameState: (sessionId: string) => Promise<void>;
+  
+  // Polling control
+  startPolling: (sessionId: string, interval?: number) => void;
+  stopPolling: () => void;
 }
 
-const initialState = {
+// Polling interval state
+let pollingInterval: NodeJS.Timeout | null = null;
+
+export const useGameStore = create<GameStore>((set, get) => ({
+  // Initial state
   session: null,
   playerId: null,
   players: [],
@@ -72,173 +68,190 @@ const initialState = {
   currentTrick: null,
   sectionScores: {},
   totalScores: {},
-  
-  socket: null,
-  isConnected: false,
+  isConnected: true, // Assume connected unless API fails
+  isPolling: false,
   isLoading: false,
   error: null,
-};
 
-export const useGameStore = create<GameStore>((set, get) => ({
-  ...initialState,
+  // Basic setters
+  setSession: (session) => set({ session }),
+  setPlayerId: (playerId) => set({ playerId }),
+  updatePlayers: (players) => set({ players }),
+  updateGamePhase: (phase) => set((state) => 
+    state.session ? { session: { ...state.session, gamePhase: phase } } : {}
+  ),
+  setPlayerHand: (playerHand) => set({ playerHand }),
+  updateCurrentSection: (currentSection) => set({ currentSection }),
+  updateCurrentTrick: (currentTrick) => set({ currentTrick }),
+  updateSectionScores: (sectionScores) => set({ sectionScores }),
+  setError: (error) => set({ error, isConnected: !error }),
+  setLoading: (isLoading) => set({ isLoading }),
 
-  setSession: (session: GameSession | null) => {
-    set({ session });
-  },
-
-  setPlayerId: (playerId: string | null) => {
-    set({ playerId });
-  },
-
-  updatePlayers: (players: Player[]) => {
-    set({ players });
-  },
-
-  updateGamePhase: (phase: GamePhase) => {
-    set(state => ({
-      session: state.session ? { ...state.session, gamePhase: phase } : null
-    }));
-  },
-
-  setPlayerHand: (cards: Card[]) => {
-    set({ playerHand: cards });
-  },
-
-  playCard: (card: Card) => {
-    const { playerHand, session, playerId } = get();
-    
-    // Optimistic update - remove card from hand
-    const newHand = playerHand.filter(c => !(c.suit === card.suit && c.rank === card.rank));
-    set({ playerHand: newHand, isPlayerTurn: false });
-    
-    // Emit to server via socket service
-    if (session && playerId) {
-      socketService.playCard(session.id, playerId, card);
-    }
-  },
-
-  placeBid: (bid: number) => {
-    const { session, playerId } = get();
-    
-    // Emit to server via socket service
-    if (session && playerId) {
-      socketService.placeBid(session.id, playerId, bid);
-    }
-  },
-
-  // Socket actions
-  connectSocket: async () => {
+  // API Actions
+  createSession: async (adminName: string) => {
+    set({ isLoading: true, error: null });
     try {
-      set({ isLoading: true, error: null });
-      const socket = await socketService.connect();
-      set({ socket, isConnected: true });
+      const result = await gameApiService.createSession(adminName);
+      set({ 
+        isLoading: false,
+        error: null,
+        isConnected: true
+      });
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create session';
+      set({ 
+        isLoading: false, 
+        error: errorMessage,
+        isConnected: false
+      });
+      return null;
+    }
+  },
+
+  joinSession: async (sessionId: string, playerName: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const result = await gameApiService.joinSession(sessionId, playerName);
+      set({ 
+        isLoading: false,
+        error: null,
+        isConnected: true
+      });
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to join session';
+      set({ 
+        isLoading: false, 
+        error: errorMessage,
+        isConnected: false
+      });
+      return null;
+    }
+  },
+
+  startGame: async (sessionId: string, adminPlayerId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await gameApiService.startGame(sessionId, adminPlayerId);
+      set({ 
+        isLoading: false,
+        error: null,
+        isConnected: true
+      });
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start game';
+      set({ 
+        isLoading: false, 
+        error: errorMessage,
+        isConnected: false
+      });
+      return false;
+    }
+  },
+
+  placeBid: async (sessionId: string, bid: number) => {
+    const { playerId } = get();
+    if (!playerId) return false;
+
+    try {
+      const result = await gameApiService.placeBid(sessionId, playerId, bid);
+      if (result.success && result.gameState) {
+        // Update store with new game state
+        set({ 
+          error: null,
+          isConnected: true
+        });
+        // Trigger a refresh to get updated state
+        get().refreshGameState(sessionId);
+      }
+      return result.success;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to place bid';
+      set({ 
+        error: errorMessage,
+        isConnected: false
+      });
+      return false;
+    }
+  },
+
+  playCard: async (sessionId: string, card: Card) => {
+    const { playerId } = get();
+    if (!playerId) return false;
+
+    try {
+      const result = await gameApiService.playCard(sessionId, playerId, card);
+      if (result.success && result.gameState) {
+        // Update store with new game state
+        set({ 
+          error: null,
+          isConnected: true
+        });
+        // Trigger a refresh to get updated state
+        get().refreshGameState(sessionId);
+      }
+      return result.success;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to play card';
+      set({ 
+        error: errorMessage,
+        isConnected: false
+      });
+      return false;
+    }
+  },
+
+  refreshGameState: async (sessionId: string) => {
+    const { playerId } = get();
+    if (!playerId) return;
+
+    try {
+      const gameState = await gameApiService.getGameState(sessionId, playerId);
       
-      // Set up event listeners
-      socketService.onPlayerConnected((data) => {
-        console.log('Player connected:', data.playerId);
+      // Update store with fresh game state
+      set({
+        session: gameState.session,
+        players: gameState.players || [],
+        currentSection: gameState.currentSection,
+        playerHand: gameState.playerHand || [],
+        isPlayerTurn: gameState.isPlayerTurn || false,
+        currentTrick: gameState.currentTrick,
+        sectionScores: gameState.sectionScores || {},
+        totalScores: gameState.totalScores || {},
+        error: null,
+        isConnected: true
       });
-
-      socketService.onPlayerDisconnected((data) => {
-        console.log('Player disconnected:', data.playerId);
-      });
-
-      socketService.onGameStarting((data) => {
-        console.log('Game starting by:', data.adminPlayerId);
-      });
-
-      socketService.onBidPlaced((data) => {
-        console.log('Bid placed by:', data.playerId);
-      });
-
-      socketService.onCardPlayed((data) => {
-        console.log('Card played by:', data.playerId, data.card);
-      });
-
-      socketService.onGameError((data) => {
-        set({ error: data.message });
-      });
-
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Failed to connect to game server' });
-    } finally {
-      set({ isLoading: false });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to refresh game state';
+      set({ 
+        error: errorMessage,
+        isConnected: false
+      });
     }
   },
 
-  disconnectSocket: () => {
-    socketService.disconnect();
-    set({ socket: null, isConnected: false });
+  // Polling control
+  startPolling: (sessionId: string, interval = 2000) => {
+    const { stopPolling, refreshGameState } = get();
+    
+    // Stop any existing polling
+    stopPolling();
+    
+    set({ isPolling: true });
+    
+    // Start new polling interval
+    pollingInterval = setInterval(() => {
+      refreshGameState(sessionId);
+    }, interval);
   },
 
-  joinGameRoom: async (sessionId: string, playerId: string) => {
-    try {
-      set({ isLoading: true, error: null });
-      await socketService.joinRoom(sessionId, playerId);
-      console.log(`Joined game room ${sessionId} as player ${playerId}`);
-    } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Failed to join game room' });
-    } finally {
-      set({ isLoading: false });
+  stopPolling: () => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      pollingInterval = null;
     }
-  },
-
-  leaveGameRoom: (sessionId: string, playerId: string) => {
-    socketService.leaveRoom(sessionId, playerId);
-  },
-
-  startMultiplayerGame: (sessionId: string, adminPlayerId: string) => {
-    socketService.startGame(sessionId, adminPlayerId);
-  },
-
-  updateCurrentSection: (section: SectionState | null) => {
-    set({ currentSection: section });
-  },
-
-  updateCurrentTrick: (trick: Trick | null) => {
-    set({ currentTrick: trick });
-  },
-
-  updateSectionScores: (scores: Record<string, number>) => {
-    set({ sectionScores: scores });
-  },
-
-  updateTotalScores: (scores: Record<string, number>) => {
-    set({ totalScores: scores });
-  },
-
-  setSocket: (socket: Socket | null) => {
-    set({ socket });
-  },
-
-  setConnectionStatus: (connected: boolean) => {
-    set({ isConnected: connected });
-  },
-
-  setLoading: (loading: boolean) => {
-    set({ isLoading: loading });
-  },
-
-  setError: (error: string | null) => {
-    set({ error });
-  },
-
-  resetGame: () => {
-    const { socket } = get();
-    set({
-      ...initialState,
-      socket, // Keep socket connection
-    });
-  },
+    set({ isPolling: false });
+  }
 }));
-
-// Selector hooks for better performance
-export const useSession = () => useGameStore(state => state.session);
-export const usePlayers = () => useGameStore(state => state.players);
-export const usePlayerHand = () => useGameStore(state => state.playerHand);
-export const useCurrentTrick = () => useGameStore(state => state.currentTrick);
-export const useIsPlayerTurn = () => useGameStore(state => state.isPlayerTurn);
-export const useGamePhase = () => useGameStore(state => state.session?.gamePhase);
-export const useSocket = () => useGameStore(state => state.socket);
-export const useIsConnected = () => useGameStore(state => state.isConnected);
-export const useError = () => useGameStore(state => state.error);
-export const useIsLoading = () => useGameStore(state => state.isLoading);

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { CardComponent } from '@/components/ui/card';
-import { Card, Suit, Rank, RANK_VALUES } from '@/types/game';
+import { RANK_VALUES, Rank, Suit } from '@/types/game';
 
 const gameFlowSteps = [
   {

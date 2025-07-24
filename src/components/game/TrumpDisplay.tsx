@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, Suit, Rank } from '@/types/game';
+import { type Rank, Suit } from '@/types/game';
 
 interface TrumpDisplayProps {
   trumpSuit: Suit;

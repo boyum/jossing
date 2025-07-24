@@ -1,16 +1,14 @@
-import { 
-  GameSession, 
-  Player, 
-  SectionState, 
-  GameType, 
-  ScoringSystem, 
+import {
+  type Card,
   GamePhase,
+  type GameSession,
+  type GameType,
+  type Player,
+  type ScoringSystem,
   SectionPhase,
-  Suit,
-  Rank,
-  Card 
+  type SectionState
 } from '@/types/game';
-import { createDeck, dealCards, shuffleDeck } from './game-utils';
+import { createDeck, dealCards } from './game-utils';
 
 // In-memory storage (in production, this would be a database)
 const sessions = new Map<string, GameSession>();
@@ -18,6 +16,7 @@ const players = new Map<string, Player>();
 const sectionStates = new Map<string, SectionState>();
 const playerHands = new Map<string, Card[]>();
 
+// biome-ignore lint/complexity/noStaticOnlyClass: This can be a class for now
 export class GameManager {
   // Generate a unique session ID
   static generateSessionId(): string {
@@ -36,8 +35,8 @@ export class GameManager {
     scoringSystem: ScoringSystem,
     maxPlayers: number
   ): { sessionId: string; playerId: string } {
-    const sessionId = this.generateSessionId();
-    const playerId = this.generatePlayerId();
+    const sessionId = GameManager.generateSessionId();
+    const playerId = GameManager.generatePlayerId();
 
     // Create session
     const session: GameSession = {
@@ -81,12 +80,12 @@ export class GameManager {
     }
 
     // Count current players
-    const sessionPlayers = this.getSessionPlayers(sessionId);
+    const sessionPlayers = GameManager.getSessionPlayers(sessionId);
     if (sessionPlayers.length >= session.maxPlayers) {
       return null;
     }
 
-    const playerId = this.generatePlayerId();
+    const playerId = GameManager.generatePlayerId();
     const position = sessionPlayers.length + 1;
 
     const player: Player = {
@@ -123,7 +122,7 @@ export class GameManager {
       return false;
     }
 
-    const sessionPlayers = this.getSessionPlayers(sessionId);
+    const sessionPlayers = GameManager.getSessionPlayers(sessionId);
     if (sessionPlayers.length < 3) {
       return false;
     }
@@ -134,7 +133,7 @@ export class GameManager {
     sessions.set(sessionId, session);
 
     // Start first section
-    this.startSection(sessionId, 1);
+    GameManager.startSection(sessionId, 1);
 
     return true;
   }
@@ -144,7 +143,7 @@ export class GameManager {
     const session = sessions.get(sessionId);
     if (!session) return false;
 
-    const sessionPlayers = this.getSessionPlayers(sessionId);
+    const sessionPlayers = GameManager.getSessionPlayers(sessionId);
     const numPlayers = sessionPlayers.length;
 
     // Deal cards
@@ -208,7 +207,7 @@ export class GameManager {
     const session = sessions.get(player.sessionId);
     if (!session) return false;
 
-    const sectionState = this.getCurrentSection(player.sessionId);
+    const sectionState = GameManager.getCurrentSection(player.sessionId);
     if (!sectionState || sectionState.phase !== SectionPhase.BIDDING) return false;
 
     // In a real implementation, we'd store bids and check if all players have bid
@@ -224,7 +223,7 @@ export class GameManager {
     const session = sessions.get(player.sessionId);
     if (!session) return false;
 
-    const sectionState = this.getCurrentSection(player.sessionId);
+    const sectionState = GameManager.getCurrentSection(player.sessionId);
     if (!sectionState || sectionState.phase !== SectionPhase.PLAYING) return false;
 
     // Remove card from player's hand
@@ -245,7 +244,7 @@ export class GameManager {
 
     // If this was the admin and there are other players, make someone else admin
     if (player.isAdmin) {
-      const sessionPlayers = this.getSessionPlayers(player.sessionId);
+      const sessionPlayers = GameManager.getSessionPlayers(player.sessionId);
       if (sessionPlayers.length > 0) {
         const newAdmin = sessionPlayers[0];
         newAdmin.isAdmin = true;
@@ -264,16 +263,16 @@ export class GameManager {
   }
 
   // Get game state for a player
-  static getGameState(playerId: string): any {
+  static getGameState(playerId: string) {
     const player = players.get(playerId);
     if (!player) return null;
 
     const session = sessions.get(player.sessionId);
     if (!session) return null;
 
-    const sessionPlayers = this.getSessionPlayers(player.sessionId);
-    const currentSection = this.getCurrentSection(player.sessionId);
-    const playerHand = currentSection ? this.getPlayerHand(playerId, session.currentSection) : [];
+    const sessionPlayers = GameManager.getSessionPlayers(player.sessionId);
+    const currentSection = GameManager.getCurrentSection(player.sessionId);
+    const playerHand = currentSection ? GameManager.getPlayerHand(playerId, session.currentSection) : [];
 
     return {
       session,

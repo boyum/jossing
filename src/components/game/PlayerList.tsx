@@ -1,6 +1,6 @@
 'use client';
 
-import { Player } from '@/types/game';
+import type { Player } from '@/types/game';
 
 interface PlayerListProps {
   players: Player[];
