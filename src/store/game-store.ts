@@ -107,11 +107,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const result = await gameApiService.createSession(adminName);
-      set({ 
-        isLoading: false,
-        error: null,
-        isConnected: true
-      });
+      
+      // Set the playerId from the create response
+      if (result?.playerId) {
+        set({ 
+          playerId: result.playerId,
+          isLoading: false,
+          error: null,
+          isConnected: true
+        });
+      } else {
+        set({ 
+          isLoading: false,
+          error: null,
+          isConnected: true
+        });
+      }
+      
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create session';
@@ -128,11 +140,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const result = await gameApiService.joinSession(sessionId, playerName);
-      set({ 
-        isLoading: false,
-        error: null,
-        isConnected: true
-      });
+      
+      // Set the playerId from the join response
+      if (result?.playerId) {
+        set({ 
+          playerId: result.playerId,
+          isLoading: false,
+          error: null,
+          isConnected: true
+        });
+      } else {
+        set({ 
+          isLoading: false,
+          error: null,
+          isConnected: true
+        });
+      }
+      
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to join session';

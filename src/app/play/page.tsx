@@ -36,7 +36,7 @@ export default function PlayPage() {
   // Auto-start polling when we have a session
   useEffect(() => {
     if (sessionId && playerId && mode === 'multiplayer') {
-      startPolling(sessionId, 2000); // Poll every 2 seconds
+      startPolling(sessionId); // Use default 1-second interval
       
       return () => {
         stopPolling();
