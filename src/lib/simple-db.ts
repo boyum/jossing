@@ -105,6 +105,46 @@ export async function getGameState(playerId: string) {
     orderBy: { position: "asc" },
   })) as Player[];
 
+  // Get current section state if game is playing
+  let currentSection = null;
+  let playerHand = [];
+  
+  if (session.gamePhase === "PLAYING" && session.currentSection > 0) {
+    const sectionState = await db.sectionState.findFirst({
+      where: {
+        sessionId: player.sessionId,
+        sectionNumber: session.currentSection,
+      },
+    });
+
+    if (sectionState) {
+      currentSection = {
+        id: sectionState.id,
+        sessionId: sectionState.sessionId,
+        sectionNumber: sectionState.sectionNumber,
+        dealerPosition: sectionState.dealerPosition,
+        leadPlayerPosition: sectionState.leadPlayerPosition,
+        trumpSuit: sectionState.trumpSuit.toLowerCase(),
+        trumpCardRank: sectionState.trumpCardRank,
+        phase: sectionState.phase.toLowerCase(),
+        createdAt: sectionState.createdAt,
+        bids: [], // Will be populated separately if needed
+      };
+
+      // Get player's hand for current section
+      const playerHandRecord = await db.playerHand.findFirst({
+        where: {
+          sectionStateId: sectionState.id,
+          playerId: player.id,
+        },
+      });
+
+      if (playerHandRecord) {
+        playerHand = JSON.parse(playerHandRecord.cards);
+      }
+    }
+  }
+
   return {
     session: {
       id: session.id,
@@ -129,7 +169,8 @@ export async function getGameState(playerId: string) {
       isAI: p.id.startsWith('ai-'),
       aiDifficulty: p.id.startsWith('ai-') ? p.id.split('-')[1] : undefined,
     })),
-    playerHand: [], // Will be populated when game starts
+    currentSection,
+    playerHand,
     isPlayerTurn: false, // Will be calculated based on game state
   };
 }
@@ -166,7 +207,79 @@ export async function startGame(sessionId: string, adminPlayerId: string) {
     },
   });
 
+  // Initialize the first section
+  await initializeSection(sessionId, 1);
+
   return { success: true };
+}
+
+async function initializeSection(sessionId: string, sectionNumber: number) {
+  // Get players for this session
+  const players = await db.player.findMany({
+    where: { sessionId },
+    orderBy: { position: "asc" },
+  });
+
+  // Determine dealer (rotate based on section number)
+  const dealerPosition = ((sectionNumber - 1) % players.length) + 1;
+
+  // Create a deck and shuffle
+  const suits = ['HEARTS', 'DIAMONDS', 'CLUBS', 'SPADES'];
+  const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+  const deck = [];
+  
+  for (const suit of suits) {
+    for (const rank of ranks) {
+      deck.push({ suit, rank });
+    }
+  }
+  
+  // Shuffle the deck
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+
+  // Draw trump card
+  const trumpCard = deck.pop();
+  if (!trumpCard) {
+    throw new Error("Not enough cards in deck");
+  }
+  
+  // Create section state
+  const sectionState = await db.sectionState.create({
+    data: {
+      sessionId,
+      sectionNumber,
+      dealerPosition,
+      trumpSuit: trumpCard.suit as "HEARTS" | "DIAMONDS" | "CLUBS" | "SPADES",
+      trumpCardRank: trumpCard.rank,
+      phase: "DEALING",
+    },
+  });
+
+  // Deal cards to each player
+  const cardsPerPlayer = sectionNumber;
+  for (let i = 0; i < players.length; i++) {
+    const player = players[i];
+    const playerCards = deck.splice(0, cardsPerPlayer);
+    
+    await db.playerHand.create({
+      data: {
+        sectionStateId: sectionState.id,
+        playerId: player.id,
+        cards: JSON.stringify(playerCards),
+        tricksWon: 0,
+        sectionScore: 0,
+      },
+    });
+  }
+
+  // Update section to bidding phase
+  await db.sectionState.update({
+    where: { id: sectionState.id },
+    data: { phase: "BIDDING" },
+  });
 }
 
 export async function addAIPlayer(sessionId: string, difficulty: string = 'medium') {
