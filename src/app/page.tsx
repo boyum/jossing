@@ -108,7 +108,7 @@ export default function HomePage() {
                 <span className="text-2xl text-white">🤝</span>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Social Fun</h3>
-              <p className="text-gray-600">Perfect for 3-6 players who love a mental challenge</p>
+              <p className="text-gray-600">Perfect for 2-6 players who love a mental challenge</p>
             </div>
           </div>
         </div>

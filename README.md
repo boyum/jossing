@@ -9,7 +9,7 @@ Jøssing is a strategic trick-taking card game where **accuracy beats ambition**
 - **🧠 Pure Strategy**: No luck - just skill, calculation, and nerves of steel
 - **⚡ Quick Rounds**: Games progress from 1 card to 10 cards per hand
 - **🔥 High Stakes**: Hit your bid exactly or get nothing - no participation points!
-- **🤝 Social Fun**: Perfect for 3-6 players who love a mental challenge
+- **🤝 Social Fun**: Perfect for 2-6 players who love a mental challenge
 - **📱 Learn Fast**: Interactive tutorials get you playing in minutes
 
 ## 🚀 The Twist That Changes Everything
@@ -36,7 +36,7 @@ Open [http://localhost:3000](http://localhost:3000) and dive into the interactiv
 
 ### 🎯 Fully Functional Multiplayer Game
 - **Create & Join Games**: Real-time session management with unique game codes
-- **3-6 Players**: Flexible player count for intimate or group play
+- **2-6 Players**: Flexible player count for intimate or group play
 - **Live Game Lobby**: See players join in real-time with connection status
 - **Smart Dealing**: Automatic card distribution with trump suit selection
 

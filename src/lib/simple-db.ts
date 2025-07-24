@@ -153,8 +153,8 @@ export async function startGame(sessionId: string, adminPlayerId: string) {
     where: { sessionId },
   });
 
-  if (playerCount < 3) {
-    throw new Error("Need at least 3 players to start");
+  if (playerCount < 2) {
+    throw new Error("Need at least 2 players to start");
   }
 
   // Update session to playing

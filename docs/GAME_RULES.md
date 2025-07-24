@@ -8,7 +8,7 @@ Jøssing is a trick-taking card game played with a standard 52-card deck. Player
 
 ### Players
 
-- 2-8 players (optimal: 3-6 players)
+- 2-8 players (optimal: 2-6 players)
 - One player acts as the dealer/admin
 
 ### Deck

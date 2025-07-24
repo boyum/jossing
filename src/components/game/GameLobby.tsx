@@ -15,7 +15,7 @@ export function GameLobby({ session, players, currentPlayerId, onStartGame, onLe
   const [copySuccess, setCopySuccess] = useState(false);
   const currentPlayer = players.find(p => p.id === currentPlayerId);
   const isAdmin = currentPlayer?.isAdmin || false;
-  const canStart = players.length >= 3 && isAdmin;
+  const canStart = players.length >= 2 && isAdmin;
 
   const copyGameCode = async () => {
     try {
@@ -167,8 +167,8 @@ export function GameLobby({ session, players, currentPlayerId, onStartGame, onLe
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  {players.length < 3 
-                    ? `Need ${3 - players.length} more player${3 - players.length !== 1 ? 's' : ''} to start`
+                  {players.length < 2 
+                    ? `Need ${2 - players.length} more player${2 - players.length !== 1 ? 's' : ''} to start`
                     : 'Start Game'
                   }
                 </button>

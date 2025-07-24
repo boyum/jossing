@@ -87,7 +87,7 @@ export default function PlayPage() {
 
   const isGameStarted = session?.gamePhase === 'playing';
   const isAdmin = players.find(p => p.id === playerId)?.isAdmin || false;
-  const canStartGame = isAdmin && players.length >= 3 && !isGameStarted;
+  const canStartGame = isAdmin && players.length >= 2 && !isGameStarted;
 
   if (mode === 'demo') {
     return (
@@ -205,10 +205,10 @@ export default function PlayPage() {
                 </button>
               )}
               
-              {!canStartGame && players.length < 3 && (
+              {!canStartGame && players.length < 2 && (
                 <div className="space-y-4">
                   <p className="text-slate-400 text-center">
-                    Need at least 3 players to start. Share the game code with friends!
+                    Need at least 2 players to start. Share the game code with friends!
                   </p>
                   
                   {/* Add AI Players Component */}

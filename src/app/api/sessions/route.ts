@@ -29,9 +29,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!maxPlayers || maxPlayers < 3 || maxPlayers > 6) {
+    if (!maxPlayers || maxPlayers < 2 || maxPlayers > 6) {
       return NextResponse.json(
-        { error: 'Max players must be between 3 and 6' },
+        { error: 'Max players must be between 2 and 6' },
         { status: 400 }
       );
     }

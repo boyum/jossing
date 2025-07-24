@@ -15,7 +15,7 @@ export default function GameInstructions() {
         </p>
         <div className="bg-blue-50 p-4 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>Players:</strong> 3-7 players<br/>
+            <strong>Players:</strong> 2-6 players<br/>
             <strong>Deck:</strong> Standard 52-card deck<br/>
             <strong>Game Length:</strong> 7 sections (Up game) or 13 sections (Up-and-Down game)
           </p>

@@ -133,6 +133,7 @@ export function GameSetup({ onCreateGame, onJoinGame, isLoading }: GameSetupProp
                 onChange={(e) => setConfig(prev => ({ ...prev, maxPlayers: parseInt(e.target.value) }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jossing-primary focus:border-transparent"
               >
+                <option value={2}>2 Players</option>
                 <option value={3}>3 Players</option>
                 <option value={4}>4 Players</option>
                 <option value={5}>5 Players</option>
