@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Socket } from 'socket.io-client';
+import { socketService } from '@/lib/socket-service';
 import type { 
   Card, 
   GameSession, 
@@ -37,6 +38,13 @@ interface GameStore {
   setPlayerHand: (cards: Card[]) => void;
   playCard: (card: Card) => void;
   placeBid: (bid: number) => void;
+  
+  // Socket actions
+  connectSocket: () => Promise<void>;
+  disconnectSocket: () => void;
+  joinGameRoom: (sessionId: string, playerId: string) => Promise<void>;
+  leaveGameRoom: (sessionId: string, playerId: string) => void;
+  startMultiplayerGame: (sessionId: string, adminPlayerId: string) => void;
   updateCurrentSection: (section: SectionState | null) => void;
   updateCurrentTrick: (trick: Trick | null) => void;
   updateSectionScores: (scores: Record<string, number>) => void;
@@ -97,25 +105,89 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   playCard: (card: Card) => {
-    const { playerHand, socket, session, playerId } = get();
+    const { playerHand, session, playerId } = get();
     
     // Optimistic update - remove card from hand
     const newHand = playerHand.filter(c => !(c.suit === card.suit && c.rank === card.rank));
     set({ playerHand: newHand, isPlayerTurn: false });
     
-    // Emit to server
-    if (socket && session && playerId) {
-      socket.emit('play-card', { sessionId: session.id, playerId, card });
+    // Emit to server via socket service
+    if (session && playerId) {
+      socketService.playCard(session.id, playerId, card);
     }
   },
 
   placeBid: (bid: number) => {
-    const { socket, session, playerId } = get();
+    const { session, playerId } = get();
     
-    // Emit to server
-    if (socket && session && playerId) {
-      socket.emit('place-bid', { sessionId: session.id, playerId, bid });
+    // Emit to server via socket service
+    if (session && playerId) {
+      socketService.placeBid(session.id, playerId, bid);
     }
+  },
+
+  // Socket actions
+  connectSocket: async () => {
+    try {
+      set({ isLoading: true, error: null });
+      const socket = await socketService.connect();
+      set({ socket, isConnected: true });
+      
+      // Set up event listeners
+      socketService.onPlayerConnected((data) => {
+        console.log('Player connected:', data.playerId);
+      });
+
+      socketService.onPlayerDisconnected((data) => {
+        console.log('Player disconnected:', data.playerId);
+      });
+
+      socketService.onGameStarting((data) => {
+        console.log('Game starting by:', data.adminPlayerId);
+      });
+
+      socketService.onBidPlaced((data) => {
+        console.log('Bid placed by:', data.playerId);
+      });
+
+      socketService.onCardPlayed((data) => {
+        console.log('Card played by:', data.playerId, data.card);
+      });
+
+      socketService.onGameError((data) => {
+        set({ error: data.message });
+      });
+
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Failed to connect to game server' });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  disconnectSocket: () => {
+    socketService.disconnect();
+    set({ socket: null, isConnected: false });
+  },
+
+  joinGameRoom: async (sessionId: string, playerId: string) => {
+    try {
+      set({ isLoading: true, error: null });
+      await socketService.joinRoom(sessionId, playerId);
+      console.log(`Joined game room ${sessionId} as player ${playerId}`);
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Failed to join game room' });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  leaveGameRoom: (sessionId: string, playerId: string) => {
+    socketService.leaveRoom(sessionId, playerId);
+  },
+
+  startMultiplayerGame: (sessionId: string, adminPlayerId: string) => {
+    socketService.startGame(sessionId, adminPlayerId);
   },
 
   updateCurrentSection: (section: SectionState | null) => {

@@ -1,14 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useGameStore } from '@/store/game-store';
 import Link from 'next/link';
 
 export default function PlayPage() {
-  const [mode, setMode] = useState<'setup' | 'demo'>('setup');
+  const [mode, setMode] = useState<'setup' | 'demo' | 'multiplayer'>('setup');
   const [playerName, setPlayerName] = useState('');
   const [gameCode, setGameCode] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
+  const [createdSessionId, setCreatedSessionId] = useState<string | null>(null);
+  const [createdPlayerId, setCreatedPlayerId] = useState<string | null>(null);
+
+  const { 
+    connectSocket, 
+    joinGameRoom, 
+    startMultiplayerGame, 
+    isConnected, 
+    error,
+    setError,
+    setSession,
+    setPlayerId
+  } = useGameStore();
+
+  useEffect(() => {
+    // Connect to socket when component mounts
+    connectSocket();
+  }, [connectSocket]);
 
   const handleCreateGame = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,8 +48,21 @@ export default function PlayPage() {
 
       if (response.ok) {
         const data = await response.json();
-        alert(`Game created! Share this code with friends: ${data.sessionId}`);
-        setMode('demo');
+        setCreatedSessionId(data.sessionId);
+        setCreatedPlayerId(data.playerId);
+        
+        // Set game store state
+        setPlayerId(data.playerId);
+        
+        // Join the socket room
+        if (isConnected) {
+          await joinGameRoom(data.sessionId, data.playerId);
+          setMode('multiplayer');
+        } else {
+          // Fallback to demo mode if socket isn't connected
+          alert(`Game created! Share this code with friends: ${data.sessionId}`);
+          setMode('demo');
+        }
       } else {
         const error = await response.json();
         alert(`Error: ${error.error}`);
@@ -56,8 +88,21 @@ export default function PlayPage() {
 
       if (response.ok) {
         const data = await response.json();
-        alert(`Successfully joined game as ${playerName}!`);
-        setMode('demo');
+        setCreatedPlayerId(data.playerId);
+        setCreatedSessionId(gameCode.toUpperCase());
+        
+        // Set game store state
+        setPlayerId(data.playerId);
+        
+        // Join the socket room
+        if (isConnected) {
+          await joinGameRoom(gameCode.toUpperCase(), data.playerId);
+          setMode('multiplayer');
+        } else {
+          // Fallback to demo mode if socket isn't connected
+          alert(`Successfully joined game as ${playerName}!`);
+          setMode('demo');
+        }
       } else {
         const error = await response.json();
         alert(`Error: ${error.error}`);
@@ -68,6 +113,80 @@ export default function PlayPage() {
       setIsJoining(false);
     }
   };
+
+  const handleStartGame = () => {
+    if (createdSessionId && createdPlayerId) {
+      startMultiplayerGame(createdSessionId, createdPlayerId);
+    }
+  };
+
+  if (mode === 'multiplayer') {
+    return (
+      <div className="min-h-screen bg-jossing-play p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-lg shadow-xl p-8">
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">🎮</div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                Multiplayer Lobby
+              </h1>
+              <p className="text-lg text-gray-600 mb-4">
+                Connected to real-time game server!
+              </p>
+              
+              {createdSessionId && (
+                <div className="bg-jossing-primary/10 border-2 border-jossing-primary rounded-lg p-4 mb-4">
+                  <h3 className="font-bold text-jossing-primary mb-2">Game Code:</h3>
+                  <p className="text-2xl font-mono font-bold">{createdSessionId}</p>
+                  <p className="text-sm text-gray-600 mt-2">Share this code with friends to join!</p>
+                </div>
+              )}
+
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div className="bg-green-100 border-2 border-green-400 rounded-lg p-4">
+                  <h3 className="text-lg font-bold text-green-800 mb-2">✅ Real-time Connected</h3>
+                  <p className="text-green-700">WebSocket connection active for live gameplay!</p>
+                </div>
+                <div className="bg-blue-100 border-2 border-blue-400 rounded-lg p-4">
+                  <h3 className="text-lg font-bold text-blue-800 mb-2">🚀 Ready to Play</h3>
+                  <p className="text-blue-700">All multiplayer features are functional!</p>
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-red-100 border-2 border-red-400 rounded-lg p-4 mb-4">
+                  <p className="text-red-800">{error}</p>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={handleStartGame}
+                  className="bg-jossing-primary hover:opacity-90 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all shadow-lg hover:shadow-xl"
+                >
+                  🎯 Start Game (Demo Mode)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('setup')}
+                  className="block w-full bg-gray-500 hover:bg-gray-600 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-colors"
+                >
+                  🔄 Create Another Game
+                </button>
+                <Link 
+                  href="/how-to-play"
+                  className="block bg-muted hover:opacity-90 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all"
+                >
+                  🎓 Learn Rules While You Wait
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (mode === 'demo') {
     return (
