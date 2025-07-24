@@ -22,7 +22,7 @@ Create a web-based multiplayer Jøssing card game using Next.js that allows play
 - **Frontend**: Next.js 14+ with App Router
 - **Backend**: Next.js API routes
 - **Real-time Communication**: Polling-based updates (Vercel-compatible, replaced Socket.IO)
-- **Database**: SQLite with Prisma ORM (for simplicity) or PostgreSQL for production
+- **Database**: Turso (LibSQL) for production, SQLite for development with Prisma ORM
 - **State Management**: Zustand
 - **Styling**: Tailwind CSS
 - **Type Safety**: TypeScript throughout
@@ -30,8 +30,8 @@ Create a web-based multiplayer Jøssing card game using Next.js that allows play
 ### Deployment
 
 - **Development**: Local development with hot reload
-- **Production**: Vercel or similar platform
-- **Database**: Railway, PlanetScale, or similar for production
+- **Production**: Vercel with Turso database
+- **Database**: Turso (LibSQL) - serverless, edge-compatible database
 
 ## 3. Data Models
 
