@@ -94,15 +94,24 @@ export interface Player {
   isAI?: boolean; // Optional flag to identify AI players
 }
 
+export interface Bid {
+  playerId: string;
+  playerName: string;
+  bid: number;
+  timestamp: Date;
+}
+
 export interface SectionState {
   id: string;
   sessionId: string;
   sectionNumber: number;
   dealerPosition: number;
   leadPlayerPosition?: number;
+  currentBidderPosition?: number;
   trumpSuit: Suit;
   trumpCardRank: Rank;
   phase: SectionPhase;
+  bids: Bid[];
   createdAt: Date;
 }
 

@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { gameApiService } from '@/lib/game-api-service';
-import type { 
-  Card, 
-  GameSession, 
-  Player, 
-  SectionState, 
-  Trick, 
-  GamePhase 
+import type {
+  Card,
+  GamePhase,
+  GameSession,
+  Player,
+  SectionState,
+  Trick,
+  Bid
 } from '@/types/game';
 
 interface GameStore {
@@ -20,6 +21,12 @@ interface GameStore {
   currentTrick: Trick | null;
   sectionScores: Record<string, number>;
   totalScores: Record<string, number>;
+  
+  // Bidding state
+  sectionBids: Bid[];
+  playerBid: number | null;
+  currentBidder: Player | null;
+  allBidsPlaced: boolean;
   
   // Connection state (polling-based)
   isConnected: boolean;
@@ -68,6 +75,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   currentTrick: null,
   sectionScores: {},
   totalScores: {},
+  sectionBids: [],
+  playerBid: null,
+  currentBidder: null,
+  allBidsPlaced: false,
   isConnected: true, // Assume connected unless API fails
   isPolling: false,
   isLoading: false,
@@ -220,6 +231,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
         currentTrick: gameState.currentTrick,
         sectionScores: gameState.sectionScores || {},
         totalScores: gameState.totalScores || {},
+        // Update bidding state
+        sectionBids: gameState.sectionBids || [],
+        playerBid: gameState.playerBid,
+        currentBidder: gameState.currentBidder,
+        allBidsPlaced: gameState.allBidsPlaced || false,
         error: null,
         isConnected: true
       });

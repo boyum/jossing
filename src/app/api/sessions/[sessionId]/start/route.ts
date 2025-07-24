@@ -4,7 +4,7 @@ import { GameManager } from "@/lib/game-manager";
 export async function POST(request: NextRequest) {
   try {
     const [, sessionId] =
-      request.nextUrl.pathname.match(/\/sessions\/([^/]+)\/join/) ?? [];
+      request.nextUrl.pathname.match(/\/sessions\/([^/]+)\/start/) ?? [];
 
     if (!sessionId) {
       return NextResponse.json(

@@ -6,7 +6,8 @@ import {
   type Player,
   type ScoringSystem,
   SectionPhase,
-  type SectionState
+  type SectionState,
+  type Bid
 } from '@/types/game';
 import { createDeck, dealCards } from './game-utils';
 import { RandomAI, getAIPlayerName } from './ai-player';
@@ -154,15 +155,18 @@ export class GameManager {
     // Create section state
     const sectionStateId = `${sessionId}-${sectionNumber}`;
     const dealerPosition = ((sectionNumber - 1) % numPlayers) + 1;
+    const firstBidderPosition = dealerPosition === numPlayers ? 1 : dealerPosition + 1;
 
     const sectionState: SectionState = {
       id: sectionStateId,
       sessionId,
       sectionNumber,
       dealerPosition,
+      currentBidderPosition: firstBidderPosition,
       trumpSuit: trumpCard.suit,
       trumpCardRank: trumpCard.rank,
       phase: SectionPhase.BIDDING,
+      bids: [],
       createdAt: new Date()
     };
 
@@ -211,10 +215,86 @@ export class GameManager {
     const sectionState = GameManager.getCurrentSection(player.sessionId);
     if (!sectionState || sectionState.phase !== SectionPhase.BIDDING) return false;
 
-    // In a real implementation, we'd store bids and check if all players have bid
-    // For now, just log the bid and return true
+    // Check if it's this player's turn to bid
+    if (sectionState.currentBidderPosition !== player.position) return false;
+
+    // Check if player has already bid
+    if (sectionState.bids.some(b => b.playerId === playerId)) return false;
+
+    // Validate bid range (0 to number of cards in section)
+    if (bid < 0 || bid > session.currentSection) return false;
+
+    // Add the bid
+    const newBid: Bid = {
+      playerId,
+      playerName: player.name,
+      bid,
+      timestamp: new Date()
+    };
+
+    sectionState.bids.push(newBid);
+
+    // Move to next bidder
+    const sessionPlayers = GameManager.getSessionPlayers(player.sessionId);
+    const numPlayers = sessionPlayers.length;
+    
+    if (sectionState.bids.length < numPlayers) {
+      // More players need to bid
+      sectionState.currentBidderPosition = sectionState.currentBidderPosition === numPlayers 
+        ? 1 
+        : sectionState.currentBidderPosition + 1;
+    } else {
+      // All players have bid, move to playing phase
+      sectionState.phase = SectionPhase.PLAYING;
+      sectionState.currentBidderPosition = undefined;
+      sectionState.leadPlayerPosition = sectionState.dealerPosition === numPlayers ? 1 : sectionState.dealerPosition + 1;
+    }
+
+    // Update the section state
+    sectionStates.set(sectionState.id, sectionState);
+
     console.log(`Player ${player.name} bids ${bid}`);
+    
+    // If all bids are placed, log the summary
+    if (sectionState.bids.length === numPlayers) {
+      const bidSummary = sectionState.bids.map(b => `${b.playerName}: ${b.bid}`).join(', ');
+      console.log(`All bids placed: ${bidSummary}. Starting play phase.`);
+    }
+
     return true;
+  }
+
+  // Get current bidder for a section
+  static getCurrentBidder(sessionId: string): Player | null {
+    const sectionState = GameManager.getCurrentSection(sessionId);
+    if (!sectionState || sectionState.phase !== SectionPhase.BIDDING || !sectionState.currentBidderPosition) {
+      return null;
+    }
+
+    const sessionPlayers = GameManager.getSessionPlayers(sessionId);
+    return sessionPlayers.find(p => p.position === sectionState.currentBidderPosition) || null;
+  }
+
+  // Get all bids for current section
+  static getSectionBids(sessionId: string): Bid[] {
+    const sectionState = GameManager.getCurrentSection(sessionId);
+    return sectionState?.bids || [];
+  }
+
+  // Get a player's bid for current section
+  static getPlayerBid(sessionId: string, playerId: string): number | null {
+    const bids = GameManager.getSectionBids(sessionId);
+    const playerBid = bids.find(b => b.playerId === playerId);
+    return playerBid?.bid ?? null;
+  }
+
+  // Check if all players have bid
+  static areAllBidsPlaced(sessionId: string): boolean {
+    const sectionState = GameManager.getCurrentSection(sessionId);
+    if (!sectionState) return false;
+
+    const sessionPlayers = GameManager.getSessionPlayers(sessionId);
+    return sectionState.bids.length === sessionPlayers.length;
   }
 
   // Play a card
@@ -278,36 +358,26 @@ export class GameManager {
     const sectionState = GameManager.getCurrentSection(sessionId);
     if (!sectionState) return false;
 
-    const sessionPlayers = GameManager.getSessionPlayers(sessionId);
-    const aiPlayers = sessionPlayers.filter(p => p.isAI);
-
-    // Process AI bids during bidding phase
+    // Process AI bid during bidding phase
     if (sectionState.phase === SectionPhase.BIDDING) {
-      for (const aiPlayer of aiPlayers) {
-        const hand = GameManager.getPlayerHand(aiPlayer.id, session.currentSection);
-        const ai = new RandomAI(aiPlayer.name);
+      const currentBidder = GameManager.getCurrentBidder(sessionId);
+      if (currentBidder?.isAI) {
+        const hand = GameManager.getPlayerHand(currentBidder.id, session.currentSection);
+        const ai = new RandomAI(currentBidder.name);
         const bid = ai.makeBid(hand, session.currentSection, sectionState.trumpSuit);
         
-        // Store the bid (in a real implementation, you'd track all bids)
-        console.log(`${aiPlayer.name} bids ${bid}`);
+        // Place the bid through the proper system
+        GameManager.placeBid(currentBidder.id, bid);
+        return true;
       }
-      return true;
+      return false;
     }
 
     // Process AI card plays during playing phase
     if (sectionState.phase === SectionPhase.PLAYING) {
-      for (const aiPlayer of aiPlayers) {
-        const hand = GameManager.getPlayerHand(aiPlayer.id, session.currentSection);
-        if (hand.length > 0) {
-          const ai = new RandomAI(aiPlayer.name);
-          const card = ai.playCard(hand, [], sectionState.trumpSuit);
-          
-          // Play the card
-          GameManager.playCard(aiPlayer.id, card);
-          console.log(`${aiPlayer.name} plays ${card.rank} of ${card.suit}`);
-        }
-      }
-      return true;
+      // TODO: Implement turn-based card playing
+      // For now, just return false
+      return false;
     }
 
     return false;
@@ -351,13 +421,20 @@ export class GameManager {
     const sessionPlayers = GameManager.getSessionPlayers(player.sessionId);
     const currentSection = GameManager.getCurrentSection(player.sessionId);
     const playerHand = currentSection ? GameManager.getPlayerHand(playerId, session.currentSection) : [];
+    const currentBidder = currentSection ? GameManager.getCurrentBidder(player.sessionId) : null;
+    const sectionBids = GameManager.getSectionBids(player.sessionId);
+    const playerBid = GameManager.getPlayerBid(player.sessionId, playerId);
 
     return {
       session,
       players: sessionPlayers,
       currentSection,
       playerHand,
-      isPlayerTurn: false, // TODO: Implement turn logic
+      isPlayerTurn: currentBidder?.id === playerId,
+      currentBidder,
+      sectionBids,
+      playerBid,
+      allBidsPlaced: GameManager.areAllBidsPlaced(player.sessionId),
       currentTrick: null, // TODO: Implement trick tracking
       sectionScores: {}, // TODO: Implement scoring
       totalScores: sessionPlayers.reduce((acc, p) => {
