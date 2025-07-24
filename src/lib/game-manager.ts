@@ -58,4 +58,9 @@ export class GameManager {
   static async removeAIPlayer(sessionId: string, playerId: string, adminPlayerId: string) {
     return await dbService.removeAIPlayer(sessionId, playerId, adminPlayerId);
   }
+
+  // Place a bid for a player
+  static async placeBid(sessionId: string, playerId: string, bidAmount: number) {
+    return await dbService.placeBid(sessionId, playerId, bidAmount);
+  }
 }

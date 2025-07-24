@@ -82,8 +82,7 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        // TODO: Implement bid functionality with GameManager
-        result = { success: true, message: "Bid placed successfully" };
+        result = await GameManager.placeBid(sessionId, playerId, data.bid);
         break;
 
       case 'playCard':

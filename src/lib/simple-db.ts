@@ -118,6 +118,21 @@ export async function getGameState(playerId: string) {
     });
 
     if (sectionState) {
+      // Get bids for this section
+      const playerHands = await db.playerHand.findMany({
+        where: { sectionStateId: sectionState.id },
+        include: { player: true },
+      });
+
+      const bids = playerHands
+        .filter(hand => hand.bid !== null)
+        .map(hand => ({
+          playerId: hand.playerId,
+          playerName: hand.player.name,
+          bid: hand.bid as number,
+          timestamp: new Date(), // We don't have timestamps in the schema, so use current time
+        }));
+
       currentSection = {
         id: sectionState.id,
         sessionId: sectionState.sessionId,
@@ -128,7 +143,7 @@ export async function getGameState(playerId: string) {
         trumpCardRank: sectionState.trumpCardRank,
         phase: sectionState.phase.toLowerCase(),
         createdAt: sectionState.createdAt,
-        bids: [], // Will be populated separately if needed
+        bids,
       };
 
       // Get player's hand for current section
@@ -171,6 +186,7 @@ export async function getGameState(playerId: string) {
     })),
     currentSection,
     playerHand,
+    sectionBids: currentSection?.bids || [],
     isPlayerTurn: false, // Will be calculated based on game state
   };
 }
@@ -432,4 +448,154 @@ export async function removeAIPlayer(sessionId: string, playerId: string, adminP
       aiDifficulty: p.id.startsWith('ai-') ? p.id.split('-')[1] : undefined,
     }))
   };
+}
+
+export async function placeBid(sessionId: string, playerId: string, bidAmount: number) {
+  // Get the player
+  const player = await db.player.findFirst({
+    where: {
+      id: playerId,
+      sessionId,
+    },
+  });
+
+  if (!player) {
+    throw new Error("Player not found in session");
+  }
+
+  // Get the current section
+  const session = await db.gameSession.findUnique({
+    where: { id: sessionId },
+  });
+
+  if (!session || session.gamePhase !== "PLAYING") {
+    throw new Error("Game is not in playing phase");
+  }
+
+  const sectionState = await db.sectionState.findFirst({
+    where: {
+      sessionId,
+      sectionNumber: session.currentSection,
+    },
+  });
+
+  if (!sectionState || sectionState.phase !== "BIDDING") {
+    throw new Error("Not in bidding phase");
+  }
+
+  // Validate bid amount
+  if (bidAmount < 0 || bidAmount > sectionState.sectionNumber) {
+    throw new Error(`Bid must be between 0 and ${sectionState.sectionNumber}`);
+  }
+
+  // Check if player already has a bid
+  const playerHand = await db.playerHand.findFirst({
+    where: {
+      sectionStateId: sectionState.id,
+      playerId,
+    },
+  });
+
+  if (!playerHand) {
+    throw new Error("Player hand not found for this section");
+  }
+
+  if (playerHand.bid !== null) {
+    throw new Error("Player has already placed a bid for this section");
+  }
+
+  // Update the player's bid
+  await db.playerHand.update({
+    where: { id: playerHand.id },
+    data: { bid: bidAmount },
+  });
+
+  // Check if all players have bid
+  const allPlayers = await db.player.findMany({
+    where: { sessionId },
+  });
+
+  const playerHands = await db.playerHand.findMany({
+    where: { sectionStateId: sectionState.id },
+  });
+
+  const handsWithBids = playerHands.filter(hand => hand.bid !== null);
+
+  // If all players have bid, move to playing phase
+  if (handsWithBids.length === allPlayers.length) {
+    await db.sectionState.update({
+      where: { id: sectionState.id },
+      data: { 
+        phase: "PLAYING",
+        leadPlayerPosition: ((sectionState.dealerPosition) % allPlayers.length) + 1, // Player after dealer leads
+      },
+    });
+  } else {
+    // Generate AI bids if needed
+    await processAIBids(sessionId, sectionState.id);
+  }
+
+  return { success: true, message: "Bid placed successfully" };
+}
+
+async function processAIBids(sessionId: string, sectionStateId: string) {
+  // Get all AI players in session who haven't bid yet
+  const allPlayers = await db.player.findMany({
+    where: { sessionId },
+  });
+
+  const playerHands = await db.playerHand.findMany({
+    where: { sectionStateId },
+  });
+
+  const handsWithBids = new Set(playerHands.filter(hand => hand.bid !== null).map(hand => hand.playerId));
+  const aiPlayersWithoutBids = allPlayers.filter(p => 
+    p.id.startsWith('ai-') && !handsWithBids.has(p.id)
+  );
+
+  // Get section info for max bid
+  const sectionState = await db.sectionState.findUnique({
+    where: { id: sectionStateId },
+  });
+
+  if (!sectionState) return;
+
+  // Generate AI bids
+  for (const aiPlayer of aiPlayersWithoutBids) {
+    const difficulty = aiPlayer.id.split('-')[1] || 'medium';
+    const maxBid = sectionState.sectionNumber;
+    
+    // Simple AI bidding logic based on difficulty
+    let aiBid: number;
+    
+    switch (difficulty) {
+      case 'easy':
+        // Easy AI bids randomly
+        aiBid = Math.floor(Math.random() * (maxBid + 1));
+        break;
+      case 'hard':
+        // Hard AI bids more strategically (simplified)
+        aiBid = Math.min(maxBid, Math.floor(maxBid * 0.6) + Math.floor(Math.random() * 2));
+        break;
+      default: // medium
+        // Medium AI bids somewhat strategically
+        aiBid = Math.floor(Math.random() * Math.max(1, maxBid * 0.8)) + Math.floor(Math.random() * 2);
+        aiBid = Math.min(aiBid, maxBid);
+    }
+
+    // Find the AI player's hand and update their bid
+    const aiPlayerHand = await db.playerHand.findFirst({
+      where: {
+        sectionStateId,
+        playerId: aiPlayer.id,
+      },
+    });
+
+    if (aiPlayerHand) {
+      await db.playerHand.update({
+        where: { id: aiPlayerHand.id },
+        data: { bid: aiBid },
+      });
+    }
+  }
 }

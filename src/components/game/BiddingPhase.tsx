@@ -10,15 +10,18 @@ interface BiddingPhaseProps {
 
 export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
   const [selectedBid, setSelectedBid] = useState<number | null>(null);
-  const [hasBid, setHasBid] = useState(false);
-  const { placeBid, players, currentSection, session } = useGameStore();
+  const { placeBid, players, currentSection, session, sectionBids } = useGameStore();
+
+  // Check if this player has already bid
+  const playerBid = sectionBids.find(bid => bid.playerId === playerId);
+  const hasBid = playerBid !== undefined;
 
   const handlePlaceBid = async () => {
     if (selectedBid === null || hasBid || !session) return;
 
     try {
       await placeBid(session.id, selectedBid);
-      setHasBid(true);
+      // The store will be updated via polling, so we don't need to manually update state
     } catch (error) {
       console.error('Failed to place bid:', error);
     }
@@ -27,17 +30,21 @@ export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
   const getPlayerBids = () => {
     if (!currentSection) return [];
     
-    // In real implementation, this would come from the game state
-    // For now, show placeholder
-    return players.map(player => ({
-      playerId: player.id,
-      playerName: player.name,
-      bid: player.id === playerId && hasBid ? selectedBid : undefined
-    }));
+    return players.map(player => {
+      const bid = sectionBids.find(b => b.playerId === player.id);
+      return {
+        playerId: player.id,
+        playerName: player.name,
+        bid: bid?.bid
+      };
+    });
   };
 
   const playerBids = getPlayerBids();
   const allBidsPlaced = playerBids.every(pb => pb.bid !== undefined);
+
+  // Create bid options array for better keys
+  const bidOptions = Array.from({ length: maxBid + 1 }, (_, i) => ({ value: i, label: `${i}` }));
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
@@ -57,17 +64,18 @@ export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
         <div className="space-y-4">
           {/* Bid Selection */}
           <div className="grid grid-cols-6 gap-2 max-w-md mx-auto">
-            {Array.from({ length: maxBid + 1 }, (_, i) => (
+            {bidOptions.map((option) => (
               <button
-                key={i}
-                onClick={() => setSelectedBid(i)}
+                key={`bid-${option.value}`}
+                type="button"
+                onClick={() => setSelectedBid(option.value)}
                 className={`aspect-square rounded-lg border-2 font-bold text-lg transition-all ${
-                  selectedBid === i
+                  selectedBid === option.value
                     ? 'border-jossing-primary bg-jossing-primary text-white'
                     : 'border-gray-300 bg-white text-gray-700 hover:border-jossing-secondary hover:bg-jossing-secondary/10'
                 }`}
               >
-                {i}
+                {option.value}
               </button>
             ))}
           </div>
@@ -75,6 +83,7 @@ export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
           {/* Confirm Bid Button */}
           <div className="text-center">
             <button
+              type="button"
               onClick={handlePlaceBid}
               disabled={selectedBid === null}
               className={`px-8 py-3 rounded-lg font-semibold text-lg transition-all ${
@@ -99,7 +108,7 @@ export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
           <div className="bg-green-100 border-2 border-green-400 rounded-lg p-4 max-w-md mx-auto">
             <div className="text-2xl mb-2">✅</div>
             <h4 className="text-lg font-semibold text-green-800">
-              Bid Placed: {selectedBid} trick{selectedBid !== 1 ? 's' : ''}
+              Bid Placed: {playerBid?.bid} trick{playerBid?.bid !== 1 ? 's' : ''}
             </h4>
             <p className="text-green-600">
               Waiting for other players...
