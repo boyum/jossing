@@ -32,23 +32,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Try to start the game
-    const success = GameManager.startGame(
+    const success = await GameManager.startGame(
       sessionId.toUpperCase(),
-      adminPlayerId,
+      adminPlayerId
     );
 
     if (!success) {
       return NextResponse.json(
-        {
-          error:
-            "Unable to start game. You may not be the admin, or there may not be enough players.",
-        },
-        { status: 400 },
+        { error: "Failed to start game" },
+        { status: 400 }
       );
     }
 
-    // Get updated game state
-    const gameState = GameManager.getGameState(adminPlayerId);
+    // Get the updated game state
+    const gameState = await GameManager.getGameState(adminPlayerId);
 
     return NextResponse.json({
       success: true,

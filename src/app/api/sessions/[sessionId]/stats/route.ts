@@ -1,30 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { GameManager } from "@/lib/game-manager";
 
 export async function GET(request: NextRequest) {
   try {
-    const [, sessionId] =
-      request.nextUrl.pathname.match(/\/sessions\/([^/]+)\/stats/) ?? [];
-
-    if (!sessionId) {
-      return NextResponse.json(
-        { error: "Session ID is required" },
-        { status: 400 },
-      );
-    }
-
-    const stats = GameManager.getFinalGameStats(sessionId);
-
-    if (!stats) {
-      return NextResponse.json({ error: "Session not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(stats);
+    // TODO: Re-implement game stats functionality with database
+    return NextResponse.json(
+      { error: "Game stats functionality temporarily disabled during migration" },
+      { status: 501 }
+    );
   } catch (error) {
-    console.error("Error getting final game stats:", error);
+    console.error("Error getting game stats:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the session
-    const result = GameManager.createSession(
+    const result = await GameManager.createSession(
       adminName.trim(),
       gameType,
       scoringSystem,

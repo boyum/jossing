@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Try to join the session
-    const result = GameManager.joinSession(
+    const result = await GameManager.joinSession(
       sessionId.toUpperCase(),
       playerName.trim(),
     );
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the game state for the new player
-    const gameState = GameManager.getGameState(result.playerId);
+    const gameState = await GameManager.getGameState(result.playerId);
 
     return NextResponse.json({
       playerId: result.playerId,
