@@ -100,7 +100,7 @@ export default function GameFlowWalkthrough() {
           <div className="bg-green-50 p-4 rounded">
             <h4 className="font-medium text-center mb-3">Bidding Results</h4>
             <div className="space-y-2">
-              {sampleGameData.players.map((player, index) => (
+              {sampleGameData.players.map((player) => (
                 <div key={player.name} className="flex justify-between items-center">
                   <span className={player.name === 'You' ? 'font-bold' : ''}>{player.name}:</span>
                   <span className="bg-white px-2 py-1 rounded">Bid {player.bid}</span>
@@ -192,9 +192,9 @@ export default function GameFlowWalkthrough() {
         </button>
         
         <div className="flex space-x-2">
-          {gameFlowSteps.map((_, index) => (
+          {gameFlowSteps.map(({id}, index) => (
             <button
-              key={index}
+              key={id}
               type="button"
               onClick={() => setCurrentStep(index)}
               className={`w-3 h-3 rounded-full ${
@@ -226,8 +226,8 @@ export default function GameFlowWalkthrough() {
         <p className="text-gray-700 mb-4">{currentStepData.description}</p>
         
         <ul className="list-disc list-inside space-y-1 text-sm text-gray-600 mb-4">
-          {currentStepData.details.map((detail, index) => (
-            <li key={index}>{detail}</li>
+          {currentStepData.details.map((detail) => (
+            <li key={detail}>{detail}</li>
           ))}
         </ul>
         

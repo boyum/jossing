@@ -59,6 +59,9 @@ interface GameStore {
   // Polling control
   startPolling: (sessionId: string, interval?: number) => void;
   stopPolling: () => void;
+  
+  // Reset
+  resetGameState: () => void;
 }
 
 // Polling interval state
@@ -269,5 +272,29 @@ export const useGameStore = create<GameStore>((set, get) => ({
       pollingInterval = null;
     }
     set({ isPolling: false });
+  },
+
+  // Reset game state (for new games)
+  resetGameState: () => {
+    get().stopPolling();
+    set({
+      session: null,
+      playerId: null,
+      players: [],
+      currentSection: null,
+      playerHand: [],
+      isPlayerTurn: false,
+      currentTrick: null,
+      sectionScores: {},
+      totalScores: {},
+      sectionBids: [],
+      playerBid: null,
+      currentBidder: null,
+      allBidsPlaced: false,
+      isConnected: false,
+      isPolling: false,
+      isLoading: false,
+      error: null
+    });
   }
 }));

@@ -826,4 +826,31 @@ export class GameManager {
       cardsPlayed
     };
   }
+
+  // Get final game statistics
+  static getFinalGameStats(sessionId: string) {
+    const session = sessions.get(sessionId);
+    const sessionPlayers = GameManager.getSessionPlayers(sessionId);
+    
+    if (!session || !sessionPlayers.length) return null;
+
+    // Calculate final rankings
+    const finalRankings = sessionPlayers
+      .map(player => ({ 
+        player, 
+        totalScore: player.totalScore 
+      }))
+      .sort((a, b) => b.totalScore - a.totalScore);
+
+    const winner = finalRankings[0];
+
+    return {
+      session,
+      players: sessionPlayers,
+      finalRankings,
+      winner: winner.player,
+      gameComplete: session.gamePhase === GamePhase.FINISHED,
+      totalSections: session.gameType === 'up' ? 10 : 20
+    };
+  }
 }

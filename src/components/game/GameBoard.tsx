@@ -1,13 +1,14 @@
 'use client';
 
 import { useGameStore } from '@/store/game-store';
-import { SectionPhase } from '@/types/game';
+import { SectionPhase, GamePhase } from '@/types/game';
 import { PlayerList } from './PlayerList';
 import { PlayerHand } from './PlayerHand';
 import { TrickArea } from './TrickArea';
 import { BiddingPhase } from './BiddingPhase';
 import { ScoreBoard } from './ScoreBoard';
 import { TrumpDisplay } from './TrumpDisplay';
+import { FinalGameScreen } from './FinalGameScreen';
 
 export function GameBoard() {
   const {
@@ -19,8 +20,28 @@ export function GameBoard() {
     sectionScores,
     totalScores,
     playerId,
-    isPlayerTurn
+    isPlayerTurn,
+    resetGameState
   } = useGameStore();
+
+  // Show final game screen if game is finished
+  if (session && session.gamePhase === GamePhase.FINISHED) {
+    return (
+      <FinalGameScreen
+        session={session}
+        players={players}
+        totalScores={totalScores}
+        onNewGame={() => {
+          resetGameState();
+          window.location.href = '/play';
+        }}
+        onLeaveGame={() => {
+          resetGameState();
+          window.location.href = '/';
+        }}
+      />
+    );
+  }
 
   if (!session || !currentSection) {
     return (
