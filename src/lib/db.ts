@@ -13,11 +13,7 @@ function createPrismaClient() {
       authToken: process.env.TURSO_AUTH_TOKEN,
     });
 
-    return new PrismaClient({
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore TSC sometimes complains that `adapter` is not a valid option
-      adapter,
-    });
+    return new PrismaClient({ adapter });
   }
 
   // Use local SQLite for development
