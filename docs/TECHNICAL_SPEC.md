@@ -680,6 +680,246 @@ class GameValidator {
 }
 ```
 
+## 8. UI Enhancement Features
+
+### Effect System
+```typescript
+enum EffectType {
+  SUCCESS = 'success',
+  FAILURE = 'failure', 
+  NEUTRAL = 'neutral'
+}
+
+interface GameEffect {
+  type: EffectType;
+  message: string;
+  animation: string;
+  duration: number;
+  sound?: string;
+}
+
+class EffectManager {
+  private successEffects: GameEffect[] = [
+    { type: EffectType.SUCCESS, message: 'Perfect!', animation: 'fireworks', duration: 3000 },
+    { type: EffectType.SUCCESS, message: 'Excellent!', animation: 'confetti', duration: 3000 },
+    { type: EffectType.SUCCESS, message: 'Fantastic!', animation: 'celebration', duration: 3000 },
+    { type: EffectType.SUCCESS, message: 'Well done!', animation: 'sparkles', duration: 3000 }
+  ];
+
+  private failureEffects: GameEffect[] = [
+    { type: EffectType.FAILURE, message: 'Too bad!', animation: 'disappointed', duration: 2000 },
+    { type: EffectType.FAILURE, message: 'Almost!', animation: 'sympathetic', duration: 2000 },
+    { type: EffectType.FAILURE, message: 'Better luck next time!', animation: 'encouraging', duration: 2000 }
+  ];
+
+  private neutralEffects: GameEffect[] = [
+    { type: EffectType.NEUTRAL, message: 'Interesting...', animation: 'neutral', duration: 2000 },
+    { type: EffectType.NEUTRAL, message: 'Hmm...', animation: 'thinking', duration: 2000 },
+    { type: EffectType.NEUTRAL, message: 'Okay then!', animation: 'shrug', duration: 2000 }
+  ];
+
+  getRandomEffect(type: EffectType): GameEffect {
+    const effects = {
+      [EffectType.SUCCESS]: this.successEffects,
+      [EffectType.FAILURE]: this.failureEffects,
+      [EffectType.NEUTRAL]: this.neutralEffects
+    };
+    
+    const typeEffects = effects[type];
+    return typeEffects[Math.floor(Math.random() * typeEffects.length)];
+  }
+
+  triggerTrickEffect(playerId: string, bid: number, currentTricks: number, isLastTrick: boolean): EffectType {
+    if (!isLastTrick) {
+      // Mid-section trick evaluation
+      const tricksNeeded = bid - currentTricks;
+      if (tricksNeeded === 0) return EffectType.SUCCESS; // Got exactly what they needed
+      if (tricksNeeded < 0 && Math.abs(tricksNeeded) === 1) return EffectType.FAILURE; // One too many
+      return EffectType.NEUTRAL; // Two or more over
+    } else {
+      // Final evaluation
+      return currentTricks === bid ? EffectType.SUCCESS : EffectType.FAILURE;
+    }
+  }
+}
+```
+
+### Display Mode Features
+```typescript
+interface DisplayModeState {
+  isEnabled: boolean;
+  showQRCode: boolean;
+  scoreGraphVisible: boolean;
+  effectsEnabled: boolean;
+}
+
+class DisplayModeManager {
+  private qrCodeGenerator = new QRCodeGenerator();
+  private scoreGraph = new ScoreGraphManager();
+  
+  generateSessionQR(sessionId: string): string {
+    const joinUrl = `${window.location.origin}/join/${sessionId}`;
+    return this.qrCodeGenerator.generate(joinUrl);
+  }
+
+  updateScoreGraph(players: Player[], sectionScores: Record<string, number[]>): void {
+    this.scoreGraph.updateData(players, sectionScores);
+  }
+
+  hideQRCode(): void {
+    // Hide QR code when first section starts
+    this.setState({ showQRCode: false });
+  }
+
+  showLargeTrickEffect(effect: GameEffect, playerName: string): void {
+    // Display prominent effect on large screen
+    const effectElement = document.createElement('div');
+    effectElement.className = `large-effect ${effect.animation}`;
+    effectElement.innerHTML = `
+      <div class="player-name">${playerName}</div>
+      <div class="effect-message">${effect.message}</div>
+    `;
+    
+    document.body.appendChild(effectElement);
+    
+    setTimeout(() => {
+      effectElement.remove();
+    }, effect.duration);
+  }
+}
+```
+
+### Session Sharing & QR Codes
+```typescript
+class SessionSharingManager {
+  generateShareableLink(sessionId: string): string {
+    return `${window.location.origin}/join/${sessionId}`;
+  }
+
+  generateQRCode(sessionId: string): Promise<string> {
+    const joinUrl = this.generateShareableLink(sessionId);
+    
+    // Using QR code library
+    return QRCode.toDataURL(joinUrl, {
+      width: 256,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#FFFFFF'
+      }
+    });
+  }
+
+  copyLinkToClipboard(sessionId: string): Promise<boolean> {
+    const link = this.generateShareableLink(sessionId);
+    
+    try {
+      await navigator.clipboard.writeText(link);
+      return true;
+    } catch (error) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = link;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return true;
+    }
+  }
+}
+```
+
+### Score Graph Implementation
+```typescript
+interface ScoreDataPoint {
+  section: number;
+  score: number;
+  totalScore: number;
+}
+
+class ScoreGraphManager {
+  private chartInstance: Chart | null = null;
+
+  initializeGraph(canvasElement: HTMLCanvasElement): void {
+    this.chartInstance = new Chart(canvasElement, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: []
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Total Score'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Section'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          title: {
+            display: true,
+            text: 'Score Progress'
+          }
+        }
+      }
+    });
+  }
+
+  updateData(players: Player[], sectionHistory: Record<string, number[]>): void {
+    if (!this.chartInstance) return;
+
+    const sections = Object.values(sectionHistory)[0]?.length || 0;
+    const labels = Array.from({ length: sections }, (_, i) => `Section ${i + 1}`);
+
+    const datasets = players.map((player, index) => ({
+      label: player.name,
+      data: this.calculateCumulativeScores(sectionHistory[player.id] || []),
+      borderColor: this.getPlayerColor(index),
+      backgroundColor: this.getPlayerColor(index, 0.1),
+      tension: 0.1
+    }));
+
+    this.chartInstance.data.labels = labels;
+    this.chartInstance.data.datasets = datasets;
+    this.chartInstance.update();
+  }
+
+  private calculateCumulativeScores(sectionScores: number[]): number[] {
+    let cumulative = 0;
+    return sectionScores.map(score => cumulative += score);
+  }
+
+  private getPlayerColor(index: number, alpha = 1): string {
+    const colors = [
+      `rgba(255, 99, 132, ${alpha})`,   // Red
+      `rgba(54, 162, 235, ${alpha})`,   // Blue  
+      `rgba(255, 205, 86, ${alpha})`,   // Yellow
+      `rgba(75, 192, 192, ${alpha})`,   // Green
+      `rgba(153, 102, 255, ${alpha})`,  // Purple
+      `rgba(255, 159, 64, ${alpha})`,   // Orange
+      `rgba(199, 199, 199, ${alpha})`,  // Grey
+      `rgba(83, 102, 255, ${alpha})`    // Indigo
+    ];
+    return colors[index % colors.length];
+  }
+}
+```
+
 ### Error Recovery
 ```typescript
 class ErrorRecoveryManager {
