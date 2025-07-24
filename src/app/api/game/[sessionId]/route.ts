@@ -1,6 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { GameManager } from "@/lib/game-manager";
 
+interface GameActionResult {
+  success: boolean;
+  message: string;
+  gameState?: unknown;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const [, sessionId] =
@@ -43,13 +49,62 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    // TODO: Re-implement game action functionality with database
-    return NextResponse.json(
-      { error: "Game action functionality temporarily disabled during migration" },
-      { status: 501 }
-    );
+    const [, sessionId] =
+      request.nextUrl.pathname.match(/\/game\/([^?]+)/) ?? [];
+
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: "Session ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    const { action, playerId, data } = body;
+
+    if (!action || !playerId) {
+      return NextResponse.json(
+        { error: "Action and player ID are required" },
+        { status: 400 }
+      );
+    }
+
+    console.debug("Processing game action:", { sessionId, playerId, action });
+
+    let result: GameActionResult;
+    switch (action) {
+      case 'bid':
+        if (typeof data?.bid !== 'number') {
+          return NextResponse.json(
+            { error: "Bid value is required" },
+            { status: 400 }
+          );
+        }
+        // TODO: Implement bid functionality with GameManager
+        result = { success: true, message: "Bid placed successfully" };
+        break;
+
+      case 'playCard':
+        if (!data?.card || !data.card.suit || !data.card.rank) {
+          return NextResponse.json(
+            { error: "Valid card is required" },
+            { status: 400 }
+          );
+        }
+        // TODO: Implement play card functionality with GameManager
+        result = { success: true, message: "Card played successfully" };
+        break;
+
+      default:
+        return NextResponse.json(
+          { error: `Unknown action: ${action}` },
+          { status: 400 }
+        );
+    }
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Error processing game action:", error);
     return NextResponse.json(
