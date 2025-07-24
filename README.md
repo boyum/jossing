@@ -60,6 +60,7 @@ Open [http://localhost:3000](http://localhost:3000) and dive into the interactiv
 - **Tailwind CSS**: Custom theme with branded color palette
 - **Zustand**: Efficient state management for real-time game data
 - **RESTful API**: Clean backend architecture ready for scaling
+- **Real-time Updates**: 1-second polling for responsive multiplayer experience
 
 ## 🎯 How to Win
 

@@ -431,7 +431,38 @@ class JossingGameEngine {
 
 ## 4. Real-time Communication Architecture
 
-### Connection Management
+### Polling-Based State Synchronization
+
+**Note**: The application has migrated from Socket.IO to polling-based updates for Vercel/serverless compatibility.
+
+Current implementation uses HTTP polling with a **1-second interval** for responsive real-time updates:
+
+```typescript
+// hooks/useGamePolling.ts - Default polling interval: 1000ms (1 second)
+interface UseGamePollingOptions {
+  sessionId: string;
+  playerId: string;
+  enabled?: boolean;
+  pollingInterval?: number; // milliseconds (default: 1000ms)
+}
+
+export function useGamePolling({
+  sessionId,
+  playerId,
+  enabled = true,
+  pollingInterval = 1000 // 1 second for responsive updates
+}: UseGamePollingOptions): GamePollingResult {
+  // Implementation fetches game state every 1 second
+  useEffect(() => {
+    const interval = setInterval(fetchGameState, pollingInterval);
+    return () => clearInterval(interval);
+  }, [pollingInterval, fetchGameState]);
+}
+```
+
+### Legacy Socket.IO Architecture (Deprecated)
+
+The following Socket.IO implementation has been replaced by polling:
 
 ```typescript
 class GameSocketManager {

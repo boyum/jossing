@@ -1,4 +1,6 @@
 // hooks/useGamePolling.ts
+// Polling-based real-time updates for Vercel/serverless compatibility
+// Default interval: 1000ms (1 second) for responsive game state synchronization
 import { useState, useEffect, useCallback } from 'react';
 import type { GameState } from '@/types/game';
 
@@ -20,7 +22,7 @@ export function useGamePolling({
   sessionId,
   playerId,
   enabled = true,
-  pollingInterval = 2000 // 2 seconds
+  pollingInterval = 1000 // 1 second
 }: UseGamePollingOptions): GamePollingResult {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [error, setError] = useState<string | null>(null);

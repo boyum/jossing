@@ -279,7 +279,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   // Polling control
-  startPolling: (sessionId: string, interval = 2000) => {
+  startPolling: (sessionId: string, interval = 1000) => {
     const { stopPolling, refreshGameState } = get();
     
     // Stop any existing polling
