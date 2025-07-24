@@ -6,7 +6,7 @@ import type {
   GameSession,
   Player,
   SectionState,
-  Trick,
+  TrickWithCards,
   Bid
 } from '@/types/game';
 
@@ -18,7 +18,7 @@ interface GameStore {
   currentSection: SectionState | null;
   playerHand: Card[];
   isPlayerTurn: boolean;
-  currentTrick: Trick | null;
+  currentTrick: TrickWithCards | null;
   sectionScores: Record<string, number>;
   totalScores: Record<string, number>;
   
@@ -43,7 +43,7 @@ interface GameStore {
   updateGamePhase: (phase: GamePhase) => void;
   setPlayerHand: (cards: Card[]) => void;
   updateCurrentSection: (section: SectionState | null) => void;
-  updateCurrentTrick: (trick: Trick | null) => void;
+  updateCurrentTrick: (trick: TrickWithCards | null) => void;
   updateSectionScores: (scores: Record<string, number>) => void;
   setError: (error: string | null) => void;
   setLoading: (loading: boolean) => void;

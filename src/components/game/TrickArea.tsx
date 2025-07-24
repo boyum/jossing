@@ -1,9 +1,10 @@
 'use client';
 
-import { type Player, Suit, type Trick } from '@/types/game';
+import { CardComponent } from '@/components/ui/card';
+import type { Player, Suit, TrickWithCards } from '@/types/game';
 
 interface TrickAreaProps {
-  trick: Trick | null;
+  trick: TrickWithCards | null;
   players: Player[];
   trumpSuit: Suit;
 }
@@ -17,19 +18,6 @@ export function TrickArea({ trick, players, trumpSuit }: TrickAreaProps) {
       </div>
     );
   }
-
-  const getSuitEmoji = (suit: Suit) => {
-    switch (suit) {
-      case Suit.HEARTS: return '♥️';
-      case Suit.DIAMONDS: return '♦️';
-      case Suit.CLUBS: return '♣️';
-      case Suit.SPADES: return '♠️';
-    }
-  };
-
-  const getSuitColor = (suit: Suit) => {
-    return suit === Suit.HEARTS || suit === Suit.DIAMONDS ? 'text-red-600' : 'text-black';
-  };
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
@@ -47,30 +35,53 @@ export function TrickArea({ trick, players, trumpSuit }: TrickAreaProps) {
 
       {/* Cards played in the trick */}
       <div className="flex justify-center items-center space-x-4 min-h-[120px]">
-        {/* Placeholder for played cards - in real implementation, this would show actual cards */}
-        <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg w-20 h-28 flex items-center justify-center">
-          <span className="text-gray-400 text-sm">Card 1</span>
-        </div>
-        <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg w-20 h-28 flex items-center justify-center">
-          <span className="text-gray-400 text-sm">Card 2</span>
-        </div>
-        <div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg w-20 h-28 flex items-center justify-center">
-          <span className="text-gray-400 text-sm">Card 3</span>
-        </div>
+        {trick.cardsPlayed.length > 0 ? (
+          trick.cardsPlayed.map((trickCard) => {
+            const player = players[trickCard.playerPosition - 1];
+            const card = {
+              suit: trickCard.cardSuit,
+              rank: trickCard.cardRank,
+              value: 0 // Value not needed for display
+            };
+
+            return (
+              <div key={trickCard.id} className="text-center">
+                <CardComponent 
+                  card={card}
+                  size="medium"
+                  className={`
+                    ${trickCard.cardSuit === trumpSuit ? 'ring-2 ring-yellow-400' : ''}
+                    ${trickCard.playerPosition === trick.leadPlayerPosition ? 'ring-2 ring-blue-400' : ''}
+                  `}
+                />
+                <p className="text-sm text-gray-600 mt-2 font-medium">
+                  {player?.name || `Player ${trickCard.playerPosition}`}
+                  {trickCard.playerPosition === trick.leadPlayerPosition && ' (Lead)'}
+                </p>
+              </div>
+            );
+          })
+        ) : (
+          <p className="text-gray-500 italic">Waiting for first card...</p>
+        )}
       </div>
 
-      {/* Current leader info */}
+      {/* Trick status */}
+      {trick.winnerPosition && (
+        <div className="text-center mt-4 p-3 bg-green-100 rounded-lg">
+          <p className="text-green-800 font-semibold">
+            🏆 Won by {players[trick.winnerPosition - 1]?.name || `Player ${trick.winnerPosition}`}
+          </p>
+        </div>
+      )}
+
+      {/* Leading player info */}
       <div className="mt-4 text-center">
         <p className="text-sm text-gray-600">
           Leading player: <span className="font-semibold">
             {players.find(p => p.position === trick.leadPlayerPosition)?.name || 'Unknown'}
           </span>
         </p>
-        {trick.winnerPosition && (
-          <p className="text-sm text-green-600 font-semibold">
-            Current winner: {players.find(p => p.position === trick.winnerPosition)?.name || 'Unknown'}
-          </p>
-        )}
       </div>
     </div>
   );

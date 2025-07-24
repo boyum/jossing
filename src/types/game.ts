@@ -144,6 +144,10 @@ export interface TrickCard {
   playedAt: Date;
 }
 
+export interface TrickWithCards extends Trick {
+  cardsPlayed: TrickCard[];
+}
+
 // Client-side game state interfaces
 export interface GameState {
   session: GameSession;
