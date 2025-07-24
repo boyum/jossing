@@ -3,9 +3,11 @@
 ## 1. Project Overview
 
 ### Objective
+
 Create a web-based multiplayer Jøssing card game using Next.js that allows players to join sessions from their own devices with real-time synchronization.
 
 ### Core Requirements
+
 - Multiplayer support (2-8 players)
 - Real-time gameplay synchronization
 - Session-based game management
@@ -16,6 +18,7 @@ Create a web-based multiplayer Jøssing card game using Next.js that allows play
 ## 2. Technical Architecture
 
 ### Tech Stack
+
 - **Frontend**: Next.js 14+ with App Router
 - **Backend**: Next.js API routes
 - **Real-time Communication**: Polling-based updates (Vercel-compatible, replaced Socket.IO)
@@ -25,6 +28,7 @@ Create a web-based multiplayer Jøssing card game using Next.js that allows play
 - **Type Safety**: TypeScript throughout
 
 ### Deployment
+
 - **Development**: Local development with hot reload
 - **Production**: Vercel or similar platform
 - **Database**: Railway, PlanetScale, or similar for production
@@ -32,100 +36,120 @@ Create a web-based multiplayer Jøssing card game using Next.js that allows play
 ## 3. Data Models
 
 ### Game Session
+
 ```typescript
 interface GameSession {
-  id: string
-  adminPlayerId: string
-  gameType: 'up' | 'up-and-down'
-  scoringSystem: 'classic' | 'modern'
-  maxPlayers: number
-  currentSection: number
-  gamePhase: 'waiting' | 'bidding' | 'playing' | 'scoring' | 'finished'
-  createdAt: Date
-  updatedAt: Date
+  id: string;
+  adminPlayerId: string;
+  gameType: "up" | "up-and-down";
+  scoringSystem: "classic" | "modern";
+  maxPlayers: number;
+  currentSection: number;
+  gamePhase: "waiting" | "bidding" | "playing" | "scoring" | "finished";
+  createdAt: Date;
+  updatedAt: Date;
 }
 ```
 
 ### Player
+
 ```typescript
 interface Player {
-  id: string
-  sessionId: string
-  name: string
-  isAdmin: boolean
-  isAI: boolean  // Distinguishes AI from human players
-  aiDifficulty?: 'easy' | 'medium' | 'hard'  // Only for AI players
-  position: number // Seating order
-  totalScore: number
-  isConnected: boolean
-  joinedAt: Date
+  id: string;
+  sessionId: string;
+  name: string;
+  isAdmin: boolean;
+  isAI: boolean; // Distinguishes AI from human players
+  aiDifficulty?: "easy" | "medium" | "hard"; // Only for AI players
+  position: number; // Seating order
+  totalScore: number;
+  isConnected: boolean;
+  joinedAt: Date;
 }
 
 // Extended AI Player interface for server-side logic
 interface AIPlayerData extends Player {
-  isAI: true
-  aiDifficulty: 'easy' | 'medium' | 'hard'
-  personality: AIPersonality
-  memory: AIGameMemory
+  isAI: true;
+  aiDifficulty: "easy" | "medium" | "hard";
+  personality: AIPersonality;
+  memory: AIGameMemory;
 }
 
 interface AIPersonality {
-  aggressiveness: number    // 0-1: How likely to take risks
-  consistency: number       // 0-1: How predictable the AI is  
-  adaptability: number      // 0-1: How quickly AI learns opponent patterns
+  aggressiveness: number; // 0-1: How likely to take risks
+  consistency: number; // 0-1: How predictable the AI is
+  adaptability: number; // 0-1: How quickly AI learns opponent patterns
 }
 
 interface AIGameMemory {
-  opponentBids: Record<string, number[]>     // Historical bidding patterns
-  opponentPlays: Record<string, CardPlay[]>  // Historical card plays
-  gamePatterns: GamePattern[]                // Learned strategic patterns
+  opponentBids: Record<string, number[]>; // Historical bidding patterns
+  opponentPlays: Record<string, CardPlay[]>; // Historical card plays
+  gamePatterns: GamePattern[]; // Learned strategic patterns
 }
 ```
 
 ### Section State
+
 ```typescript
 interface SectionState {
-  sessionId: string
-  sectionNumber: number
-  dealerId: string
-  leadPlayerId: string
-  trumpSuit: Suit
-  trumpCard: Card
-  playerHands: Record<string, Card[]>
-  playerBids: Record<string, number>
-  playerTricksWon: Record<string, number>
-  currentTrick: Trick
-  completedTricks: Trick[]
-  sectionScores: Record<string, number>
+  sessionId: string;
+  sectionNumber: number;
+  dealerId: string;
+  leadPlayerId: string;
+  trumpSuit: Suit;
+  trumpCard: Card;
+  playerHands: Record<string, Card[]>;
+  playerBids: Record<string, number>;
+  playerTricksWon: Record<string, number>;
+  currentTrick: Trick;
+  completedTricks: Trick[];
+  sectionScores: Record<string, number>;
 }
 ```
 
 ### Card & Trick
+
 ```typescript
 interface Card {
-  suit: 'hearts' | 'diamonds' | 'clubs' | 'spades'
-  rank: 'A' | 'K' | 'Q' | 'J' | '10' | '9' | '8' | '7' | '6' | '5' | '4' | '3' | '2'
-  value: number // For comparison
+  suit: "hearts" | "diamonds" | "clubs" | "spades";
+  rank:
+    | "A"
+    | "K"
+    | "Q"
+    | "J"
+    | "10"
+    | "9"
+    | "8"
+    | "7"
+    | "6"
+    | "5"
+    | "4"
+    | "3"
+    | "2";
+  value: number; // For comparison
 }
 
 interface Trick {
-  id: string
-  leadPlayerId: string
-  cardsPlayed: Record<string, Card>
-  winnerId?: string
-  leadingSuit?: Suit
+  id: string;
+  leadPlayerId: string;
+  cardsPlayed: Record<string, Card>;
+  winnerId?: string;
+  leadingSuit?: Suit;
 }
 ```
 
 ## 4. Application Flow
 
 ### Session Management
+
 1. **Create Session**
+
    - Admin player creates a new game session
    - Generates unique session code (6-digit alphanumeric)
    - Sets game parameters (type, scoring system, max players)
 
 2. **Join Session**
+
    - Players enter session code to join
    - Name validation and duplicate checking
    - Automatic seating assignment
@@ -136,11 +160,14 @@ interface Trick {
    - Real-time player connection status
 
 ### Game Flow
+
 1. **Game Initialization**
+
    - Assign dealer position
    - Navigate to first section
 
 2. **Section Flow**
+
    - Shuffle deck completely
    - Set new trump card for this section
    - Deal cards to all players
@@ -160,15 +187,17 @@ interface Trick {
 ## 5. User Interface Design
 
 ### Home Page Design
+
 - **Simple Layout**: Clean title with "Jøssing" branding
-- **Primary Actions**: 
+- **Primary Actions**:
   - Large "Create New Session" button
   - Quick join input field with session code + submit button
 - **Session Sharing**: Generate shareable links for easy session joining
 - **Mobile-First**: Optimized for players joining on phones
 
 ### Screen Hierarchy
-```
+
+```text
 ├── Home Page (Simple)
 │   ├── Title & Branding
 │   ├── Create New Session Button
@@ -201,21 +230,24 @@ interface Trick {
 ```
 
 ### Display Mode Features (Large Screen)
+
 - **Score Graph**: Real-time visual representation of player scores across sections
 - **QR Code**: For easy mobile joining (only shown before first section starts)
-- **Trick Effects**: 
+- **Trick Effects**:
   - **Positive**: When player gets trick they need for their bid (green checkmark, celebration)
   - **Negative**: When player gets unwanted trick that ruins their bid (red X, disappointed)
   - **Neutral**: When player gets 2+ tricks beyond their bid (yellow neutral face)
 - **Admin Controls**: Toggle display mode, game management
 
 ### Client-Side Effects
+
 - **Success Effects**: Randomized congratulations with fireworks/confetti when achieving bid
 - **Failure Effects**: Randomized "too bad" messages with sympathetic animations
 - **Neutral Effects**: Randomized neutral responses for over-bidding situations
 - **Dynamic Feel**: Multiple effect variations to keep experience fresh
 
 ### Key UI Components
+
 - **Card Component**: Responsive card display with suit symbols
 - **Player Status Bar**: Shows player names, bids, tricks won, and scores
 - **Hand Management**: Touch-friendly card selection and playing
@@ -227,6 +259,7 @@ interface Trick {
 - **Score Graph**: Interactive visualization for display mode
 
 ### Session Sharing & Joining
+
 - **Shareable Links**: Generate URLs like `domain.com/join/ABC123`
 - **QR Codes**: Automatically generated for easy mobile scanning
 - **Quick Join**: Prominent input field on home page for session codes
@@ -235,23 +268,28 @@ interface Trick {
 ## 5.1. Interactive "How to Play" Page
 
 ### Overview
+
 A comprehensive, engaging tutorial page that helps new players understand Jøssing quickly through interactive demonstrations and clear explanations.
 
 ### Core Features
 
 #### Interactive Tutorial Sections
+
 1. **Basic Card Game Concepts**
+
    - Interactive card deck visualization
    - Suit and rank explanations with hover effects
    - Trump card demonstration with visual highlighting
 
 2. **Bidding Phase Demo**
+
    - Step-by-step interactive bidding scenario
    - Visual countdown timer demonstration
    - Bid validation examples (valid vs invalid bids)
    - Strategic bidding tips with animated examples
 
 3. **Trick-Taking Simulator**
+
    - Interactive 4-player trick simulation
    - Click-to-play cards with immediate feedback
    - Suit-following rule demonstrations
@@ -265,28 +303,32 @@ A comprehensive, engaging tutorial page that helps new players understand Jøssi
    - Progressive score visualization across sections
 
 #### Game Flow Walkthrough
+
 - **Section Progression**: Visual representation of "Up" and "Up-and-Down" game types
 - **Card Distribution**: Animated dealing for different section numbers
 - **Trump Suit Changes**: Visual demonstration of per-section trump changes
 - **Complete Game Example**: Short 3-section demo game with scoring
 
 #### Quick Reference Tools
+
 - **Rules Summary Card**: Collapsible reference sections
 - **Scoring Cheat Sheet**: Quick lookup table
 - **Valid Card Plays**: Interactive rule checker
 - **Common Scenarios**: FAQ-style problem solving
 
 #### Interactive Components
+
 ```typescript
 // Example interactive components
 - CardPlaySimulator: Click cards to see valid/invalid plays
-- BiddingTrainer: Practice bidding in different scenarios  
+- BiddingTrainer: Practice bidding in different scenarios
 - ScoreCalculator: Input bids/tricks to see point outcomes
 - TrumpSuitDemo: Visual trump card effects
 - SectionProgresser: See how game structure changes
 ```
 
 #### Engagement Features
+
 - **Progressive Disclosure**: Start simple, reveal complexity gradually
 - **Immediate Feedback**: Visual confirmation of understanding
 - **Practice Mode**: Safe environment to try concepts
@@ -294,6 +336,7 @@ A comprehensive, engaging tutorial page that helps new players understand Jøssi
 - **Accessibility**: Screen reader friendly, keyboard navigation
 
 #### Technical Implementation
+
 - **React Components**: Reusable game logic components
 - **Animation Library**: Smooth transitions and effects (Framer Motion)
 - **State Management**: Local state for tutorial progress
@@ -303,29 +346,31 @@ A comprehensive, engaging tutorial page that helps new players understand Jøssi
 ## 6. Real-time Features
 
 ### Socket Events
+
 ```typescript
 // Client to Server
-'join-session'
-'leave-session'
-'start-game'
-'place-bid'
-'play-card'
-'ready-next-section'
+"join-session";
+"leave-session";
+"start-game";
+"place-bid";
+"play-card";
+"ready-next-section";
 
 // Server to Client
-'player-joined'
-'player-left'
-'game-started'
-'cards-dealt'
-'bidding-phase'
-'card-played'
-'trick-completed'
-'section-completed'
-'game-ended'
-'error'
+"player-joined";
+"player-left";
+"game-started";
+"cards-dealt";
+"bidding-phase";
+"card-played";
+"trick-completed";
+"section-completed";
+"game-ended";
+"error";
 ```
 
 ### State Synchronization
+
 - Optimistic updates for own actions
 - Server validation and rollback if necessary
 - Graceful handling of disconnections
@@ -334,28 +379,30 @@ A comprehensive, engaging tutorial page that helps new players understand Jøssi
 ## 7. Core Game Logic
 
 ### Card Game Engine
+
 ```typescript
 class JossingGame {
   // Core game state
-  session: GameSession
-  players: Player[]
-  currentSection: SectionState
-  
+  session: GameSession;
+  players: Player[];
+  currentSection: SectionState;
+
   // Game actions
-  dealCards(sectionNumber: number): void
-  validateCardPlay(playerId: string, card: Card): boolean
-  processCardPlay(playerId: string, card: Card): TrickResult
-  calculateSectionScores(): Record<string, number>
-  determineGameWinner(): Player
-  
+  dealCards(sectionNumber: number): void;
+  validateCardPlay(playerId: string, card: Card): boolean;
+  processCardPlay(playerId: string, card: Card): TrickResult;
+  calculateSectionScores(): Record<string, number>;
+  determineGameWinner(): Player;
+
   // Validation logic
-  canPlayCard(playerId: string, card: Card): boolean
-  mustFollowSuit(hand: Card[], leadingSuit: Suit): boolean
-  getTrickWinner(trick: Trick, trumpSuit: Suit): string
+  canPlayCard(playerId: string, card: Card): boolean;
+  mustFollowSuit(hand: Card[], leadingSuit: Suit): boolean;
+  getTrickWinner(trick: Trick, trumpSuit: Suit): string;
 }
 ```
 
 ### Validation Rules
+
 - Ensure players follow suit when possible
 - Validate turn order
 - Prevent playing out of turn
@@ -365,9 +412,10 @@ class JossingGame {
 ## 8. API Endpoints
 
 ### REST Endpoints ✅ **IMPLEMENTED**
-```
+
+```text
 POST   /api/sessions                    - Create new game session ✅
-POST   /api/sessions/:id/join          - Join existing session ✅  
+POST   /api/sessions/:id/join          - Join existing session ✅
 POST   /api/sessions/:id/start         - Start game session ✅
 POST   /api/sessions/:id/add-ai        - Add AI players ✅
 POST   /api/sessions/:id/ai-turn       - Process AI turn ✅
@@ -377,6 +425,7 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 ```
 
 ### Real-time Updates ✅ **IMPLEMENTED**
+
 - Polling-based state synchronization (Vercel-compatible)
 - Client-side polling with configurable intervals
 - Connection status monitoring
@@ -385,6 +434,7 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 ## 9. Mobile Responsiveness
 
 ### Key Considerations
+
 - **Card Display**: Stack/fan cards appropriately for small screens
 - **Touch Interactions**: Easy card selection and playing
 - **Orientation Support**: Both portrait and landscape modes
@@ -392,6 +442,7 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 - **Accessibility**: Screen reader support, high contrast mode
 
 ### Responsive Breakpoints
+
 - Mobile: < 768px (focus on vertical layout)
 - Tablet: 768px - 1024px (hybrid layout)
 - Desktop: > 1024px (full horizontal layout)
@@ -399,6 +450,7 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 ## 10. Development Phases
 
 ### 🎯 **CURRENT STATUS SUMMARY**
+
 ✅ **Foundation Complete**: Next.js setup, APIs, basic UI components  
 ✅ **Core Game Logic**: Card dealing, bidding system, trick-taking mechanics, scoring, AI players  
 ✅ **Real-time System**: Polling-based updates (Vercel-compatible)  
@@ -411,9 +463,10 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 ### ⚡ **LATEST IMPLEMENTATION: Advanced AI System** ✅ **COMPLETED & TESTED**
 
 **Completed Components:**
+
 - ✅ **Complete AI Architecture**: Base AI class with shared utilities and strategic analysis
 - ✅ **Easy AI**: Conservative play with 20% randomness, perfect for beginners
-- ✅ **Medium AI**: Strategic bidding, card counting, trump management with 10% randomness  
+- ✅ **Medium AI**: Strategic bidding, card counting, trump management with 10% randomness
 - ✅ **Hard AI**: Expert-level analysis, opponent modeling, optimal play with 3% randomness
 - ✅ **AI Manager**: Factory system for creating and managing AI players across sessions
 - ✅ **API Integration**: Enhanced add-ai endpoint with difficulty selection support
@@ -422,6 +475,7 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 - ✅ **Game Integration**: Seamless AI integration into existing game flow and mechanics
 
 **Key Features Implemented:**
+
 - **Strategic Bidding**: Each difficulty uses different approaches from conservative to expert-level analysis
 - **Card Memory**: Medium and Hard AIs track played cards and learn opponent patterns
 - **Trump Management**: Advanced AIs conserve trumps strategically and time their use optimally
@@ -433,6 +487,7 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 ### ⚡ **LATEST IMPLEMENTATION: Final Game Screen** ✅ **COMPLETED & TESTED**
 
 **Completed Components:**
+
 - ✅ **Complete Final Game Flow**: Game ending detection and transition to final screen
 - ✅ **Winner Celebration**: Animated trophy display with confetti effects and achievement badges
 - ✅ **Final Rankings Display**: Comprehensive leaderboard with visual rank indicators
@@ -444,6 +499,7 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 - ✅ **Achievement System**: Dynamic badges for high scores, AI victories, and performance levels
 
 **Key Features Implemented:**
+
 - **Celebration Animation**: Sparkle effects and trophy animations for 3-second celebration
 - **Comprehensive Stats**: Total scores, average per section, perfect bids, and success rates
 - **Achievement Badges**: Dynamic recognition for excellent performance and special accomplishments
@@ -454,6 +510,7 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 ### ⚡ **PREVIOUS IMPLEMENTATION: Trick-Taking Mechanics** ✅ **COMPLETED & TESTED**
 
 **Completed Components:**
+
 - ✅ **Complete Trick Management**: Create, track, and complete tricks with proper turn order
 - ✅ **Card Play Validation**: Suit-following rules, trump card logic, turn validation
 - ✅ **Trick Winner Determination**: Proper winner calculation with trump precedence
@@ -464,6 +521,7 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 - ✅ **Type Safety**: Proper TypeScript types for TrickWithCards and game state
 
 **Key Features Implemented:**
+
 - **Turn-based Play**: Players must play in proper clockwise order from trick leader
 - **Suit Following**: Players must follow the leading suit if they have it
 - **Trump Cards**: Higher trump cards beat lower trump cards and all non-trump cards
@@ -473,6 +531,7 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 - **Build Verified**: All TypeScript compilation errors resolved, production-ready
 
 ### Phase 1: Foundation (Week 1-2)
+
 - [x] Set up Next.js project with TypeScript ✅
 - [x] Configure database and Prisma schema ✅
 - [x] Implement simplified home page with quick join ✅
@@ -483,6 +542,7 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 - [x] Add shareable session links ✅
 
 ### Phase 2: Core Game Logic (Week 3-4)
+
 - [x] Implement card dealing and shuffling ✅
 - [x] Build bidding system ✅
 - [x] Create trick-taking mechanics ✅ **COMPLETED**
@@ -491,12 +551,14 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 - [x] Create AI player system (Random AI implemented) ✅
 
 ### Phase 3: Real-time Features (Week 5)
+
 - [x] Complete polling-based real-time system (replaces Socket.IO for Vercel compatibility) ✅
 - [x] Implement real-time state synchronization ✅
 - [x] Add connection management ✅
 - [x] Handle player disconnections gracefully ✅
 
 ### Phase 4: UI/UX & Effects (Week 6)
+
 - [x] Responsive design implementation ✅
 - [x] Create effect system for trick outcomes (ConnectionStatus component) ✅
 - [ ] Implement client-side success/failure animations
@@ -505,6 +567,7 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 - [ ] QR code generation for session joining
 
 ### Phase 5: Display Mode (Week 7)
+
 - [ ] Implement admin display mode toggle
 - [ ] Create live score graph visualization
 - [ ] Add large-screen trick effect animations
@@ -512,12 +575,14 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 - [ ] Add admin controls for display management
 
 ### Phase 6: Testing & Deployment (Week 8)
+
 - [ ] Unit tests for game logic
 - [ ] Integration tests for multiplayer scenarios
 - [ ] Performance optimization
 - [x] Production deployment setup (Vercel-compatible) ✅
 
 ### Phase 7: Advanced Features (Week 9+)
+
 - [x] AI player system (Basic Random AI implemented) ✅
 - [ ] Enhanced AI with difficulty levels (Easy, Medium, Hard)
 - [ ] Game replay system
@@ -530,29 +595,37 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 ## 11. Technical Challenges & Solutions
 
 ### Challenge 1: Real-time State Synchronization
+
 **Problem**: Keeping all players' game states synchronized
 **Solution**: ✅ **COMPLETED - Implemented polling-based system**
+
 - Single source of truth on server
-- Optimistic updates with rollback capability  
+- Optimistic updates with rollback capability
 - Periodic state reconciliation via polling
 
 ### Challenge 2: Network Disconnections
+
 **Problem**: Players may lose connection during gameplay
 **Solution**:
+
 - Store game state persistently
 - Implement reconnection logic
 - Graceful degradation (pause game for brief disconnections)
 
 ### Challenge 3: Mobile Card Interface
+
 **Problem**: Playing cards on small screens
 **Solution**:
+
 - Intuitive gesture controls
 - Clear visual feedback
 - Adaptive UI based on hand size
 
 ### Challenge 4: Game Rule Validation
+
 **Problem**: Ensuring all game rules are properly enforced
 **Solution**:
+
 - Comprehensive validation on server side
 - Clear error messages for invalid actions
 - Extensive test coverage for edge cases
@@ -560,12 +633,15 @@ GET    /api/sessions/:id/state         - Get current game state ✅
 ## 11.1. AI Player System
 
 ### Overview
+
 An intelligent computer player system that provides practice opponents and fills empty seats when there aren't enough human players. The AI uses strategic decision-making algorithms that simulate realistic human-like play patterns.
 
 ### AI Difficulty Levels
 
 #### Easy AI (Beginner Friendly)
+
 **Bidding Strategy:**
+
 - Conservative bidding approach
 - Bids slightly under what hand analysis suggests
 - 15% randomness factor to simulate uncertainty
@@ -573,6 +649,7 @@ An intelligent computer player system that provides practice opponents and fills
 - No advanced position analysis
 
 **Card Playing Strategy:**
+
 - Follows suit correctly but doesn't optimize
 - Plays high cards when winning tricks needed
 - Plays low cards when avoiding tricks
@@ -582,7 +659,8 @@ An intelligent computer player system that provides practice opponents and fills
 ```typescript
 class EasyAI extends AIPlayer {
   calculateBid(hand: Card[], trumpSuit: Suit): number {
-    const basicStrength = this.countHighCards(hand) + this.countTrumpCards(hand, trumpSuit);
+    const basicStrength =
+      this.countHighCards(hand) + this.countTrumpCards(hand, trumpSuit);
     const estimatedTricks = Math.floor(basicStrength / 3);
     const conservativeBid = Math.max(0, estimatedTricks - 1);
     return this.addRandomness(conservativeBid, 0.15);
@@ -600,7 +678,9 @@ class EasyAI extends AIPlayer {
 ```
 
 #### Medium AI (Intermediate Challenge)
+
 **Bidding Strategy:**
+
 - Analyzes hand strength more comprehensively
 - Considers position relative to dealer
 - Factors in trump suit distribution
@@ -608,6 +688,7 @@ class EasyAI extends AIPlayer {
 - Basic opponent modeling (remembers previous bids)
 
 **Card Playing Strategy:**
+
 - Tracks which cards have been played
 - Basic trump management (saves trump for important tricks)
 - Considers trick count vs bid requirements
@@ -623,7 +704,7 @@ class MediumAI extends AIPlayer {
     const handStrength = this.analyzeHandStrength(hand, trumpSuit);
     const positionAdjustment = this.getPositionAdjustment(position);
     const opponentFactor = this.estimateOpponentStrength();
-    
+
     const estimatedTricks = handStrength + positionAdjustment - opponentFactor;
     return this.addRandomness(Math.max(0, estimatedTricks), 0.1);
   }
@@ -631,22 +712,29 @@ class MediumAI extends AIPlayer {
   selectCard(hand: Card[], currentTrick: Trick, trumpSuit: Suit): Card {
     const gameState = this.analyzeGameState();
     const validCards = this.getValidCards(hand, currentTrick);
-    
+
     if (this.shouldConserveTrump(gameState)) {
       return this.selectNonTrumpCard(validCards, currentTrick);
     }
-    
+
     if (this.canSetOpponent(currentTrick, gameState)) {
       return this.selectSettingCard(validCards, currentTrick);
     }
-    
-    return this.selectOptimalCard(validCards, currentTrick, trumpSuit, gameState);
+
+    return this.selectOptimalCard(
+      validCards,
+      currentTrick,
+      trumpSuit,
+      gameState,
+    );
   }
 }
 ```
 
 #### Hard AI (Expert Level)
+
 **Bidding Strategy:**
+
 - Advanced statistical analysis of hand
 - Position-aware bidding with complex adjustments
 - Opponent modeling and bid history analysis
@@ -655,6 +743,7 @@ class MediumAI extends AIPlayer {
 - Considers section number and game type
 
 **Card Playing Strategy:**
+
 - Complete card counting and memory
 - Advanced trump management and timing
 - Opponent hand reconstruction
@@ -668,35 +757,38 @@ class HardAI extends AIPlayer {
   private opponentProfiles: Record<string, PlayerProfile> = {};
   private cardTracker: CardTracker = new CardTracker();
 
-  calculateBid(hand: Card[], trumpSuit: Suit, gameContext: GameContext): number {
+  calculateBid(
+    hand: Card[],
+    trumpSuit: Suit,
+    gameContext: GameContext,
+  ): number {
     const handAnalysis = this.performDeepHandAnalysis(hand, trumpSuit);
     const positionStrategy = this.calculatePositionalAdvantage(gameContext);
     const opponentModeling = this.modelOpponentHands(gameContext);
     const metaGameFactors = this.analyzeMetaGame(gameContext);
-    
-    const weightedEstimate = (
+
+    const weightedEstimate =
       handAnalysis.strength * 0.4 +
       positionStrategy.adjustment * 0.2 +
       opponentModeling.expectedCompetition * 0.3 +
-      metaGameFactors.sectionBias * 0.1
-    );
-    
+      metaGameFactors.sectionBias * 0.1;
+
     return this.addMinimalRandomness(Math.max(0, weightedEstimate), 0.05);
   }
 
   selectCard(hand: Card[], currentTrick: Trick, gameState: GameState): Card {
     const analysis = this.performCompleteGameAnalysis(gameState);
     const validCards = this.getValidCards(hand, currentTrick);
-    
+
     // Multi-factor decision engine
     const decisions = [
       this.evaluateImmediateTrickValue(validCards, currentTrick, analysis),
       this.evaluateTrumpConservation(validCards, analysis),
       this.evaluateOpponentSetting(validCards, currentTrick, analysis),
       this.evaluateEndgamePositioning(validCards, analysis),
-      this.evaluateRiskManagement(validCards, analysis)
+      this.evaluateRiskManagement(validCards, analysis),
     ];
-    
+
     return this.selectOptimalCardFromAnalysis(decisions, validCards);
   }
 }
@@ -705,13 +797,14 @@ class HardAI extends AIPlayer {
 ### Core AI Components
 
 #### Hand Analysis Engine
+
 ```typescript
 interface HandAnalysis {
   highCardPoints: number;
   trumpStrength: number;
   suitDistribution: Record<Suit, number>;
   defensiveCapability: number;
-  trickPotential: { min: number, max: number, expected: number };
+  trickPotential: { min: number; max: number; expected: number };
 }
 
 class HandAnalyzer {
@@ -721,27 +814,28 @@ class HandAnalyzer {
       trumpStrength: this.evaluateTrumpHolding(hand, trumpSuit),
       suitDistribution: this.analyzeSuitDistribution(hand),
       defensiveCapability: this.assessDefensiveCards(hand, trumpSuit),
-      trickPotential: this.estimateTrickRange(hand, trumpSuit, position)
+      trickPotential: this.estimateTrickRange(hand, trumpSuit, position),
     };
   }
 }
 ```
 
 #### Card Memory System
+
 ```typescript
 class CardTracker {
   private playedCards: Set<string> = new Set();
   private playerHands: Record<string, Set<string>> = {};
-  
+
   recordCardPlay(playerId: string, card: Card): void {
     this.playedCards.add(card.toString());
     this.playerHands[playerId]?.delete(card.toString());
   }
-  
+
   getRemainingCards(suit?: Suit): Card[] {
     // Returns cards not yet played
   }
-  
+
   estimateOpponentHolding(playerId: string, suit: Suit): number {
     // Estimates how many cards of suit opponent likely has
   }
@@ -749,6 +843,7 @@ class CardTracker {
 ```
 
 #### Decision Engine
+
 ```typescript
 interface PlayDecision {
   card: Card;
@@ -759,18 +854,18 @@ interface PlayDecision {
 
 class AIDecisionEngine {
   evaluatePlay(
-    card: Card, 
-    gameState: GameState, 
-    objectives: PlayObjective[]
+    card: Card,
+    gameState: GameState,
+    objectives: PlayObjective[],
   ): PlayDecision {
     const outcomes = this.simulateCardPlay(card, gameState);
     const score = this.scoreOutcomes(outcomes, objectives);
-    
+
     return {
       card,
       confidence: score.confidence,
       reasoning: score.reasoning,
-      expectedOutcome: score.mostLikelyOutcome
+      expectedOutcome: score.mostLikelyOutcome,
     };
   }
 }
@@ -779,18 +874,21 @@ class AIDecisionEngine {
 ### AI Integration Features
 
 #### Session Management
+
 - Admin can add AI players during lobby phase
 - AI players have distinctive names (e.g., "AI-Alice (Medium)")
 - AI difficulty can be changed before game starts
 - Up to 4 AI players maximum per session
 
 #### Real-time Behavior
+
 - AI players make decisions with realistic timing delays
 - Easy: 2-4 seconds, Medium: 3-5 seconds, Hard: 4-6 seconds
 - Simulated "thinking" indicators for human players
 - AI players respond to game events appropriately
 
 #### Learning & Adaptation
+
 - AI tracks opponent patterns over multiple sections
 - Adjusts strategy based on opponent behavior
 - Remembers successful tactics from previous games
@@ -799,9 +897,10 @@ class AIDecisionEngine {
 ### Technical Implementation
 
 #### AI Player Data Model
+
 ```typescript
 interface AIPlayer extends Player {
-  aiDifficulty: 'easy' | 'medium' | 'hard';
+  aiDifficulty: "easy" | "medium" | "hard";
   isAI: true;
   personality: AIPersonality;
   memory: AIMemory;
@@ -810,19 +909,21 @@ interface AIPlayer extends Player {
 
 interface AIPersonality {
   aggressiveness: number; // 0-1 scale
-  riskTolerance: number;  // 0-1 scale  
+  riskTolerance: number; // 0-1 scale
   bluffPropensity: number; // 0-1 scale
-  adaptability: number;   // 0-1 scale
+  adaptability: number; // 0-1 scale
 }
 ```
 
 #### Performance Optimization
+
 - AI calculations run in Web Workers to avoid UI blocking
 - Cached decision trees for common scenarios
 - Incremental game state updates rather than full recalculation
 - Tunable thinking time for different difficulty levels
 
 #### Testing & Balancing
+
 - Automated AI vs AI tournaments for balance testing
 - Human vs AI win rate tracking
 - Difficulty curve validation through statistical analysis
@@ -831,6 +932,7 @@ interface AIPersonality {
 ## 12. Future Enhancements
 
 ### Potential Features
+
 - **AI Players**: Add computer opponents for practice
 - **Tournament System**: Multi-session tournaments with brackets
 - **Game Variants**: Support for different house rules
@@ -841,6 +943,7 @@ interface AIPersonality {
 - **Replay System**: Review completed games
 
 ### Scalability Considerations
+
 - Database optimization for concurrent games
 - Horizontal scaling with load balancers
 - CDN for static assets

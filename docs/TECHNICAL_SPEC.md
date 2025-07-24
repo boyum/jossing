@@ -3,9 +3,11 @@
 ## 1. Database Schema
 
 ### Tables Overview
+
 The application will use the following main entities:
 
 #### game_sessions
+
 ```sql
 CREATE TABLE game_sessions (
   id VARCHAR(8) PRIMARY KEY,           -- Short alphanumeric session code
@@ -21,6 +23,7 @@ CREATE TABLE game_sessions (
 ```
 
 #### players
+
 ```sql
 CREATE TABLE players (
   id VARCHAR(36) PRIMARY KEY,
@@ -38,6 +41,7 @@ CREATE TABLE players (
 ```
 
 #### section_states
+
 ```sql
 CREATE TABLE section_states (
   id VARCHAR(36) PRIMARY KEY,
@@ -55,6 +59,7 @@ CREATE TABLE section_states (
 ```
 
 #### player_hands
+
 ```sql
 CREATE TABLE player_hands (
   id VARCHAR(36) PRIMARY KEY,
@@ -71,6 +76,7 @@ CREATE TABLE player_hands (
 ```
 
 #### tricks
+
 ```sql
 CREATE TABLE tricks (
   id VARCHAR(36) PRIMARY KEY,
@@ -86,6 +92,7 @@ CREATE TABLE tricks (
 ```
 
 #### trick_cards
+
 ```sql
 CREATE TABLE trick_cards (
   id VARCHAR(36) PRIMARY KEY,
@@ -104,12 +111,13 @@ CREATE TABLE trick_cards (
 ### REST Endpoints
 
 #### Session Management
+
 ```typescript
 // POST /api/sessions
 interface CreateSessionRequest {
   adminName: string;
-  gameType: 'up' | 'up-and-down';
-  scoringSystem: 'classic' | 'modern';
+  gameType: "up" | "up-and-down";
+  scoringSystem: "classic" | "modern";
   maxPlayers: number;
 }
 
@@ -140,6 +148,7 @@ interface GameStateResponse {
 ```
 
 #### Game Actions
+
 ```typescript
 // POST /api/sessions/:sessionId/start
 interface StartGameRequest {
@@ -162,56 +171,69 @@ interface PlayCardRequest {
 ### WebSocket Events
 
 #### Client → Server Events
+
 ```typescript
 interface SocketEvents {
-  'join-room': { sessionId: string; playerId: string };
-  'leave-room': { sessionId: string; playerId: string };
-  'player-ready': { sessionId: string; playerId: string };
-  'heartbeat': { playerId: string };
+  "join-room": { sessionId: string; playerId: string };
+  "leave-room": { sessionId: string; playerId: string };
+  "player-ready": { sessionId: string; playerId: string };
+  heartbeat: { playerId: string };
 }
 ```
 
 #### Server → Client Events
+
 ```typescript
 interface SocketEmissions {
-  'player-joined': { player: Player };
-  'player-left': { playerId: string };
-  'game-started': { gameState: GameState };
-  'cards-dealt': { hand: Card[] };
-  'bidding-started': { timeLimit: number };
-  'all-bids-placed': { bids: Record<string, number> };
-  'card-played': { playerId: string; card: Card };
-  'trick-completed': { winner: string; nextLeader: string };
-  'section-completed': { scores: Record<string, number> };
-  'game-ended': { finalScores: Record<string, number>; winner: string };
-  'player-disconnected': { playerId: string };
-  'player-reconnected': { playerId: string };
-  'error': { message: string; code: string };
+  "player-joined": { player: Player };
+  "player-left": { playerId: string };
+  "game-started": { gameState: GameState };
+  "cards-dealt": { hand: Card[] };
+  "bidding-started": { timeLimit: number };
+  "all-bids-placed": { bids: Record<string, number> };
+  "card-played": { playerId: string; card: Card };
+  "trick-completed": { winner: string; nextLeader: string };
+  "section-completed": { scores: Record<string, number> };
+  "game-ended": { finalScores: Record<string, number>; winner: string };
+  "player-disconnected": { playerId: string };
+  "player-reconnected": { playerId: string };
+  error: { message: string; code: string };
 }
 ```
 
 ## 3. Core Game Logic Implementation
 
 ### Card System
+
 ```typescript
 enum Suit {
-  HEARTS = 'hearts',
-  DIAMONDS = 'diamonds',
-  CLUBS = 'clubs',
-  SPADES = 'spades'
+  HEARTS = "hearts",
+  DIAMONDS = "diamonds",
+  CLUBS = "clubs",
+  SPADES = "spades",
 }
 
 enum Rank {
-  TWO = '2', THREE = '3', FOUR = '4', FIVE = '5', SIX = '6',
-  SEVEN = '7', EIGHT = '8', NINE = '9', TEN = '10',
-  JACK = 'J', QUEEN = 'Q', KING = 'K', ACE = 'A'
+  TWO = "2",
+  THREE = "3",
+  FOUR = "4",
+  FIVE = "5",
+  SIX = "6",
+  SEVEN = "7",
+  EIGHT = "8",
+  NINE = "9",
+  TEN = "10",
+  JACK = "J",
+  QUEEN = "Q",
+  KING = "K",
+  ACE = "A",
 }
 
 class Card {
   constructor(
     public suit: Suit,
     public rank: Rank,
-    public value: number = RANK_VALUES[rank]
+    public value: number = RANK_VALUES[rank],
   ) {}
 
   toString(): string {
@@ -224,12 +246,24 @@ class Card {
 }
 
 const RANK_VALUES = {
-  '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
-  'J': 11, 'Q': 12, 'K': 13, 'A': 14
+  "2": 2,
+  "3": 3,
+  "4": 4,
+  "5": 5,
+  "6": 6,
+  "7": 7,
+  "8": 8,
+  "9": 9,
+  "10": 10,
+  J: 11,
+  Q: 12,
+  K: 13,
+  A: 14,
 };
 ```
 
 ### Game Engine
+
 ```typescript
 class JossingGameEngine {
   private session: GameSession;
@@ -250,25 +284,29 @@ class JossingGameEngine {
   async startSection(sectionNumber: number): Promise<void> {
     // Shuffle entire deck for new section
     this.shuffleDeck();
-    
+
     // Set new trump card for this section
     this.setTrumpCard();
-    
+
     const cardsPerPlayer = this.getCardsPerPlayer(sectionNumber);
     const hands = this.dealCards(cardsPerPlayer);
-    
+
     // Store hands in database
     await this.savePlayerHands(sectionNumber, hands);
-    
+
     // Start bidding phase
-    this.session.gamePhase = 'bidding';
-    this.emitToAll('cards-dealt', { sectionNumber, cardsPerPlayer, trumpSuit: this.session.trumpSuit });
+    this.session.gamePhase = "bidding";
+    this.emitToAll("cards-dealt", {
+      sectionNumber,
+      cardsPerPlayer,
+      trumpSuit: this.session.trumpSuit,
+    });
   }
 
   async placeBid(playerId: string, bid: number): Promise<void> {
     // Validate bid
     if (!this.isValidBid(playerId, bid)) {
-      throw new Error('Invalid bid');
+      throw new Error("Invalid bid");
     }
 
     // Store bid
@@ -283,7 +321,7 @@ class JossingGameEngine {
   async playCard(playerId: string, card: Card): Promise<void> {
     // Validate card play
     if (!this.canPlayCard(playerId, card)) {
-      throw new Error('Cannot play this card');
+      throw new Error("Cannot play this card");
     }
 
     // Store card play
@@ -311,7 +349,9 @@ class JossingGameEngine {
 
     // Check suit following rules
     if (currentTrick.leadingSuit) {
-      const hasLeadingSuit = playerHand.some(c => c.suit === currentTrick.leadingSuit);
+      const hasLeadingSuit = playerHand.some(
+        (c) => c.suit === currentTrick.leadingSuit,
+      );
       if (hasLeadingSuit && card.suit !== currentTrick.leadingSuit) {
         return false;
       }
@@ -323,7 +363,7 @@ class JossingGameEngine {
   private getTrickWinner(trick: Trick): string {
     const trumpSuit = this.session.trumpSuit;
     const leadingSuit = trick.leadingSuit;
-    
+
     let winner = trick.leadPlayerId;
     let winningCard = trick.cardsPlayed[winner];
 
@@ -337,41 +377,46 @@ class JossingGameEngine {
     return winner;
   }
 
-  private cardBeats(card: Card, currentWinner: Card, trumpSuit: Suit, leadingSuit: Suit): boolean {
+  private cardBeats(
+    card: Card,
+    currentWinner: Card,
+    trumpSuit: Suit,
+    leadingSuit: Suit,
+  ): boolean {
     // Trump always beats non-trump
     if (card.suit === trumpSuit && currentWinner.suit !== trumpSuit) {
       return true;
     }
-    
+
     // Higher trump beats lower trump
     if (card.suit === trumpSuit && currentWinner.suit === trumpSuit) {
       return card.value > currentWinner.value;
     }
-    
+
     // Non-trump cannot beat trump
     if (card.suit !== trumpSuit && currentWinner.suit === trumpSuit) {
       return false;
     }
-    
+
     // Within leading suit, higher value wins
     if (card.suit === leadingSuit && currentWinner.suit === leadingSuit) {
       return card.value > currentWinner.value;
     }
-    
+
     // Leading suit beats off-suit
     if (card.suit === leadingSuit && currentWinner.suit !== leadingSuit) {
       return true;
     }
-    
+
     return false;
   }
 
   calculateSectionScore(bid: number, tricksWon: number): number {
     const scoringSystem = this.session.scoringSystem;
-    
+
     if (bid === tricksWon) {
       // Exact bid achieved
-      if (scoringSystem === 'classic') {
+      if (scoringSystem === "classic") {
         return 10 + bid;
       } else {
         return 5 * (bid + 1);
@@ -387,6 +432,7 @@ class JossingGameEngine {
 ## 4. Real-time Communication Architecture
 
 ### Connection Management
+
 ```typescript
 class GameSocketManager {
   private io: SocketIOServer;
@@ -396,49 +442,56 @@ class GameSocketManager {
     this.io = new SocketIOServer(server, {
       cors: { origin: "*" },
       pingTimeout: 60000,
-      pingInterval: 25000
+      pingInterval: 25000,
     });
 
     this.setupEventHandlers();
   }
 
   private setupEventHandlers(): void {
-    this.io.on('connection', (socket) => {
-      socket.on('join-room', async ({ sessionId, playerId }) => {
+    this.io.on("connection", (socket) => {
+      socket.on("join-room", async ({ sessionId, playerId }) => {
         await this.handleJoinRoom(socket, sessionId, playerId);
       });
 
-      socket.on('disconnect', () => {
+      socket.on("disconnect", () => {
         this.handleDisconnect(socket);
       });
 
-      socket.on('heartbeat', ({ playerId }) => {
+      socket.on("heartbeat", ({ playerId }) => {
         this.updatePlayerActivity(playerId);
       });
     });
   }
 
-  async handleJoinRoom(socket: Socket, sessionId: string, playerId: string): Promise<void> {
+  async handleJoinRoom(
+    socket: Socket,
+    sessionId: string,
+    playerId: string,
+  ): Promise<void> {
     // Validate session and player
     const isValid = await this.validatePlayerSession(sessionId, playerId);
     if (!isValid) {
-      socket.emit('error', { message: 'Invalid session or player', code: 'INVALID_SESSION' });
+      socket.emit("error", {
+        message: "Invalid session or player",
+        code: "INVALID_SESSION",
+      });
       return;
     }
 
     // Join room and track connection
     socket.join(sessionId);
     this.connectedPlayers.set(playerId, socket.id);
-    
+
     // Update player connection status
     await this.updatePlayerConnection(playerId, true);
-    
+
     // Notify others
-    socket.to(sessionId).emit('player-reconnected', { playerId });
+    socket.to(sessionId).emit("player-reconnected", { playerId });
 
     // Send current game state
     const gameState = await this.getGameState(sessionId, playerId);
-    socket.emit('game-state', gameState);
+    socket.emit("game-state", gameState);
   }
 
   handleDisconnect(socket: Socket): void {
@@ -447,10 +500,10 @@ class GameSocketManager {
     if (playerId) {
       this.connectedPlayers.delete(playerId);
       this.updatePlayerConnection(playerId, false);
-      
+
       // Notify room about disconnection
-      socket.rooms.forEach(room => {
-        socket.to(room).emit('player-disconnected', { playerId });
+      socket.rooms.forEach((room) => {
+        socket.to(room).emit("player-disconnected", { playerId });
       });
     }
   }
@@ -471,6 +524,7 @@ class GameSocketManager {
 ## 5. State Management (Client-side)
 
 ### Zustand Store Structure
+
 ```typescript
 interface GameStore {
   // Session state
@@ -478,21 +532,21 @@ interface GameStore {
   playerId: string | null;
   players: Player[];
   gamePhase: GamePhase;
-  
+
   // Current section state
   currentSection: number;
   playerHand: Card[];
   playerBid: number | null;
   tricksWon: number;
-  
+
   // Current trick state
   currentTrick: Trick | null;
   isPlayerTurn: boolean;
-  
+
   // Scores
   sectionScores: Record<string, number>;
   totalScores: Record<string, number>;
-  
+
   // Actions
   setSessionId: (id: string) => void;
   setPlayerId: (id: string) => void;
@@ -503,7 +557,7 @@ interface GameStore {
   placeBid: (bid: number) => void;
   updateTrick: (trick: Trick) => void;
   updateScores: (scores: Record<string, number>) => void;
-  
+
   // Socket connection
   socket: SocketIOClient | null;
   isConnected: boolean;
@@ -516,7 +570,7 @@ const useGameStore = create<GameStore>((set, get) => ({
   sessionId: null,
   playerId: null,
   players: [],
-  gamePhase: 'waiting',
+  gamePhase: "waiting",
   currentSection: 0,
   playerHand: [],
   playerBid: null,
@@ -534,22 +588,22 @@ const useGameStore = create<GameStore>((set, get) => ({
   updatePlayers: (players) => set({ players }),
   updateGamePhase: (phase) => set({ gamePhase: phase }),
   setPlayerHand: (cards) => set({ playerHand: cards }),
-  
+
   playCard: (card) => {
     const { playerHand, socket, sessionId, playerId } = get();
-    const newHand = playerHand.filter(c => !cardsEqual(c, card));
+    const newHand = playerHand.filter((c) => !cardsEqual(c, card));
     set({ playerHand: newHand });
-    
+
     // Optimistic update - will be rolled back if invalid
-    socket?.emit('play-card', { sessionId, playerId, card });
+    socket?.emit("play-card", { sessionId, playerId, card });
   },
-  
+
   placeBid: (bid) => {
     const { socket, sessionId, playerId } = get();
     set({ playerBid: bid });
-    socket?.emit('place-bid', { sessionId, playerId, bid });
+    socket?.emit("place-bid", { sessionId, playerId, bid });
   },
-  
+
   // ... other actions
 }));
 ```
@@ -557,23 +611,24 @@ const useGameStore = create<GameStore>((set, get) => ({
 ## 6. Component Architecture
 
 ### Key React Components
+
 ```typescript
 // Main game container
 const GameContainer: React.FC = () => {
   const { sessionId, gamePhase } = useGameStore();
-  
+
   if (!sessionId) return <HomePage />;
-  
+
   switch (gamePhase) {
-    case 'waiting':
+    case "waiting":
       return <SessionLobby />;
-    case 'bidding':
+    case "bidding":
       return <BiddingPhase />;
-    case 'playing':
+    case "playing":
       return <GameBoard />;
-    case 'scoring':
+    case "scoring":
       return <SectionScores />;
-    case 'finished':
+    case "finished":
       return <FinalScores />;
     default:
       return <LoadingScreen />;
@@ -595,7 +650,7 @@ const GameBoard: React.FC = () => {
 
 const PlayerHand: React.FC = () => {
   const { playerHand, isPlayerTurn } = useGameStore();
-  
+
   return (
     <div className="flex justify-center p-4 bg-green-800">
       <div className="flex space-x-2">
@@ -624,8 +679,16 @@ const PlayableCard: React.FC<{
       className={`
         w-16 h-24 rounded-lg border-2 flex flex-col items-center justify-center
         transition-all duration-200 transform hover:scale-105
-        ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg cursor-pointer'}
-        ${card.suit === 'hearts' || card.suit === 'diamonds' ? 'text-red-600' : 'text-black'}
+        ${
+          disabled
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:shadow-lg cursor-pointer"
+        }
+        ${
+          card.suit === "hearts" || card.suit === "diamonds"
+            ? "text-red-600"
+            : "text-black"
+        }
         bg-white border-gray-300
       `}
     >
@@ -637,14 +700,15 @@ const PlayableCard: React.FC<{
 ```
 
 ### Tutorial & Learning Components
+
 ```typescript
 // Interactive "How to Play" page components
 const HowToPlayPage: React.FC = () => {
   const [currentSection, setCurrentSection] = useState(0);
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-green-50">
-      <TutorialNavigation 
+      <TutorialNavigation
         currentSection={currentSection}
         onSectionChange={setCurrentSection}
       />
@@ -656,10 +720,15 @@ const HowToPlayPage: React.FC = () => {
 const CardPlaySimulator: React.FC = () => {
   const [currentTrick, setCurrentTrick] = useState<Trick | null>(null);
   const [playerHand, setPlayerHand] = useState<Card[]>(generateSampleHand());
-  const [feedback, setFeedback] = useState<string>('');
-  
+  const [feedback, setFeedback] = useState<string>("");
+
   const handleCardClick = (card: Card) => {
-    const validation = validateCardPlay(card, playerHand, currentTrick, 'hearts');
+    const validation = validateCardPlay(
+      card,
+      playerHand,
+      currentTrick,
+      "hearts",
+    );
     if (validation) {
       setFeedback(`❌ ${validation}`);
       // Show error animation
@@ -691,9 +760,11 @@ const CardPlaySimulator: React.FC = () => {
         </div>
       </div>
       <div className="feedback-area mt-4">
-        <p className={`text-lg font-medium ${
-          feedback.includes('❌') ? 'text-red-600' : 'text-green-600'
-        }`}>
+        <p
+          className={`text-lg font-medium ${
+            feedback.includes("❌") ? "text-red-600" : "text-green-600"
+          }`}
+        >
           {feedback}
         </p>
       </div>
@@ -702,10 +773,12 @@ const CardPlaySimulator: React.FC = () => {
 };
 
 const BiddingTrainer: React.FC = () => {
-  const [scenario, setScenario] = useState<BiddingScenario>(generateRandomScenario());
+  const [scenario, setScenario] = useState<BiddingScenario>(
+    generateRandomScenario(),
+  );
   const [userBid, setUserBid] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
-  
+
   return (
     <div className="bidding-trainer p-6 bg-white rounded-lg shadow-lg">
       <h3 className="text-xl font-bold mb-4">Bidding Practice</h3>
@@ -735,12 +808,14 @@ const BiddingTrainer: React.FC = () => {
 const ScoreCalculator: React.FC = () => {
   const [bid, setBid] = useState<number>(0);
   const [tricksWon, setTricksWon] = useState<number>(0);
-  const [scoringSystem, setScoringSystem] = useState<'classic' | 'modern'>('classic');
-  
+  const [scoringSystem, setScoringSystem] = useState<"classic" | "modern">(
+    "classic",
+  );
+
   const calculatedScore = useMemo(() => {
     return calculateSectionScore(bid, tricksWon, scoringSystem);
   }, [bid, tricksWon, scoringSystem]);
-  
+
   return (
     <div className="score-calculator p-6 bg-white rounded-lg shadow-lg">
       <h3 className="text-xl font-bold mb-4">Score Calculator</h3>
@@ -772,7 +847,9 @@ const ScoreCalculator: React.FC = () => {
         <label className="block text-sm font-medium mb-2">Scoring System</label>
         <select
           value={scoringSystem}
-          onChange={(e) => setScoringSystem(e.target.value as 'classic' | 'modern')}
+          onChange={(e) =>
+            setScoringSystem(e.target.value as "classic" | "modern")
+          }
           className="w-full p-2 border rounded"
         >
           <option value="classic">Classic</option>
@@ -784,10 +861,11 @@ const ScoreCalculator: React.FC = () => {
           Score: <span className="text-blue-600">{calculatedScore} points</span>
         </p>
         <p className="text-sm text-gray-600 mt-2">
-          {bid === tricksWon 
-            ? '✅ Perfect! You achieved your bid exactly.'
-            : `❌ Missed bid by ${Math.abs(bid - tricksWon)} trick${Math.abs(bid - tricksWon) !== 1 ? 's' : ''}.`
-          }
+          {bid === tricksWon
+            ? "✅ Perfect! You achieved your bid exactly."
+            : `❌ Missed bid by ${Math.abs(bid - tricksWon)} trick${
+                Math.abs(bid - tricksWon) !== 1 ? "s" : ""
+              }.`}
         </p>
       </div>
     </div>
@@ -797,7 +875,7 @@ const ScoreCalculator: React.FC = () => {
 const TrumpSuitDemo: React.FC = () => {
   const [currentExample, setCurrentExample] = useState(0);
   const examples = useTrumpExamples();
-  
+
   return (
     <div className="trump-demo p-6 bg-white rounded-lg shadow-lg">
       <h3 className="text-xl font-bold mb-4">Trump Suit Effects</h3>
@@ -808,9 +886,9 @@ const TrumpSuitDemo: React.FC = () => {
               key={index}
               onClick={() => setCurrentExample(index)}
               className={`px-3 py-1 rounded ${
-                currentExample === index 
-                  ? 'bg-blue-500 text-white' 
-                  : 'bg-gray-200 text-gray-700'
+                currentExample === index
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 text-gray-700"
               }`}
             >
               Example {index + 1}
@@ -818,10 +896,7 @@ const TrumpSuitDemo: React.FC = () => {
           ))}
         </div>
       </div>
-      <TrumpExampleDisplay 
-        example={examples[currentExample]}
-        animated={true}
-      />
+      <TrumpExampleDisplay example={examples[currentExample]} animated={true} />
     </div>
   );
 };
@@ -848,22 +923,28 @@ interface TrumpExample {
 ## 7. Error Handling & Validation
 
 ### Client-side Validation
+
 ```typescript
 class GameValidator {
   static validateBid(bid: number, maxBid: number): string | null {
-    if (bid < 0) return 'Bid cannot be negative';
+    if (bid < 0) return "Bid cannot be negative";
     if (bid > maxBid) return `Bid cannot exceed ${maxBid}`;
-    if (!Number.isInteger(bid)) return 'Bid must be a whole number';
+    if (!Number.isInteger(bid)) return "Bid must be a whole number";
     return null;
   }
 
-  static validateCardPlay(card: Card, hand: Card[], trick: Trick, trumpSuit: Suit): string | null {
-    if (!hand.some(c => cardsEqual(c, card))) {
-      return 'You do not have this card';
+  static validateCardPlay(
+    card: Card,
+    hand: Card[],
+    trick: Trick,
+    trumpSuit: Suit,
+  ): string | null {
+    if (!hand.some((c) => cardsEqual(c, card))) {
+      return "You do not have this card";
     }
 
     if (trick.leadingSuit) {
-      const hasLeadingSuit = hand.some(c => c.suit === trick.leadingSuit);
+      const hasLeadingSuit = hand.some((c) => c.suit === trick.leadingSuit);
       if (hasLeadingSuit && card.suit !== trick.leadingSuit) {
         return `You must follow suit (${trick.leadingSuit})`;
       }
@@ -873,17 +954,19 @@ class GameValidator {
   }
 
   static validateSessionCode(code: string): string | null {
-    if (!code) return 'Session code is required';
-    if (code.length !== 6) return 'Session code must be 6 characters';
-    if (!/^[A-Z0-9]+$/.test(code)) return 'Session code must contain only letters and numbers';
+    if (!code) return "Session code is required";
+    if (code.length !== 6) return "Session code must be 6 characters";
+    if (!/^[A-Z0-9]+$/.test(code))
+      return "Session code must contain only letters and numbers";
     return null;
   }
 
   static validatePlayerName(name: string): string | null {
-    if (!name) return 'Name is required';
-    if (name.length < 2) return 'Name must be at least 2 characters';
-    if (name.length > 20) return 'Name must be less than 20 characters';
-    if (!/^[a-zA-Z0-9\s]+$/.test(name)) return 'Name can only contain letters, numbers, and spaces';
+    if (!name) return "Name is required";
+    if (name.length < 2) return "Name must be at least 2 characters";
+    if (name.length > 20) return "Name must be less than 20 characters";
+    if (!/^[a-zA-Z0-9\s]+$/.test(name))
+      return "Name can only contain letters, numbers, and spaces";
     return null;
   }
 }
@@ -892,11 +975,12 @@ class GameValidator {
 ## 8. UI Enhancement Features
 
 ### Effect System
+
 ```typescript
 enum EffectType {
-  SUCCESS = 'success',
-  FAILURE = 'failure', 
-  NEUTRAL = 'neutral'
+  SUCCESS = "success",
+  FAILURE = "failure",
+  NEUTRAL = "neutral",
 }
 
 interface GameEffect {
@@ -909,41 +993,97 @@ interface GameEffect {
 
 class EffectManager {
   private successEffects: GameEffect[] = [
-    { type: EffectType.SUCCESS, message: 'Perfect!', animation: 'fireworks', duration: 3000 },
-    { type: EffectType.SUCCESS, message: 'Excellent!', animation: 'confetti', duration: 3000 },
-    { type: EffectType.SUCCESS, message: 'Fantastic!', animation: 'celebration', duration: 3000 },
-    { type: EffectType.SUCCESS, message: 'Well done!', animation: 'sparkles', duration: 3000 }
+    {
+      type: EffectType.SUCCESS,
+      message: "Perfect!",
+      animation: "fireworks",
+      duration: 3000,
+    },
+    {
+      type: EffectType.SUCCESS,
+      message: "Excellent!",
+      animation: "confetti",
+      duration: 3000,
+    },
+    {
+      type: EffectType.SUCCESS,
+      message: "Fantastic!",
+      animation: "celebration",
+      duration: 3000,
+    },
+    {
+      type: EffectType.SUCCESS,
+      message: "Well done!",
+      animation: "sparkles",
+      duration: 3000,
+    },
   ];
 
   private failureEffects: GameEffect[] = [
-    { type: EffectType.FAILURE, message: 'Too bad!', animation: 'disappointed', duration: 2000 },
-    { type: EffectType.FAILURE, message: 'Almost!', animation: 'sympathetic', duration: 2000 },
-    { type: EffectType.FAILURE, message: 'Better luck next time!', animation: 'encouraging', duration: 2000 }
+    {
+      type: EffectType.FAILURE,
+      message: "Too bad!",
+      animation: "disappointed",
+      duration: 2000,
+    },
+    {
+      type: EffectType.FAILURE,
+      message: "Almost!",
+      animation: "sympathetic",
+      duration: 2000,
+    },
+    {
+      type: EffectType.FAILURE,
+      message: "Better luck next time!",
+      animation: "encouraging",
+      duration: 2000,
+    },
   ];
 
   private neutralEffects: GameEffect[] = [
-    { type: EffectType.NEUTRAL, message: 'Interesting...', animation: 'neutral', duration: 2000 },
-    { type: EffectType.NEUTRAL, message: 'Hmm...', animation: 'thinking', duration: 2000 },
-    { type: EffectType.NEUTRAL, message: 'Okay then!', animation: 'shrug', duration: 2000 }
+    {
+      type: EffectType.NEUTRAL,
+      message: "Interesting...",
+      animation: "neutral",
+      duration: 2000,
+    },
+    {
+      type: EffectType.NEUTRAL,
+      message: "Hmm...",
+      animation: "thinking",
+      duration: 2000,
+    },
+    {
+      type: EffectType.NEUTRAL,
+      message: "Okay then!",
+      animation: "shrug",
+      duration: 2000,
+    },
   ];
 
   getRandomEffect(type: EffectType): GameEffect {
     const effects = {
       [EffectType.SUCCESS]: this.successEffects,
       [EffectType.FAILURE]: this.failureEffects,
-      [EffectType.NEUTRAL]: this.neutralEffects
+      [EffectType.NEUTRAL]: this.neutralEffects,
     };
-    
+
     const typeEffects = effects[type];
     return typeEffects[Math.floor(Math.random() * typeEffects.length)];
   }
 
-  triggerTrickEffect(playerId: string, bid: number, currentTricks: number, isLastTrick: boolean): EffectType {
+  triggerTrickEffect(
+    playerId: string,
+    bid: number,
+    currentTricks: number,
+    isLastTrick: boolean,
+  ): EffectType {
     if (!isLastTrick) {
       // Mid-section trick evaluation
       const tricksNeeded = bid - currentTricks;
       if (tricksNeeded === 0) return EffectType.SUCCESS; // Got exactly what they needed
-      if (tricksNeeded < 0 && Math.abs(tricksNeeded) === 1) return EffectType.FAILURE; // One too many
+      if (tricksNeeded < 0 && Math.abs(tricksNeeded) === 1)
+        return EffectType.FAILURE; // One too many
       return EffectType.NEUTRAL; // Two or more over
     } else {
       // Final evaluation
@@ -954,6 +1094,7 @@ class EffectManager {
 ```
 
 ### Display Mode Features
+
 ```typescript
 interface DisplayModeState {
   isEnabled: boolean;
@@ -965,13 +1106,16 @@ interface DisplayModeState {
 class DisplayModeManager {
   private qrCodeGenerator = new QRCodeGenerator();
   private scoreGraph = new ScoreGraphManager();
-  
+
   generateSessionQR(sessionId: string): string {
     const joinUrl = `${window.location.origin}/join/${sessionId}`;
     return this.qrCodeGenerator.generate(joinUrl);
   }
 
-  updateScoreGraph(players: Player[], sectionScores: Record<string, number[]>): void {
+  updateScoreGraph(
+    players: Player[],
+    sectionScores: Record<string, number[]>,
+  ): void {
     this.scoreGraph.updateData(players, sectionScores);
   }
 
@@ -982,15 +1126,15 @@ class DisplayModeManager {
 
   showLargeTrickEffect(effect: GameEffect, playerName: string): void {
     // Display prominent effect on large screen
-    const effectElement = document.createElement('div');
+    const effectElement = document.createElement("div");
     effectElement.className = `large-effect ${effect.animation}`;
     effectElement.innerHTML = `
       <div class="player-name">${playerName}</div>
       <div class="effect-message">${effect.message}</div>
     `;
-    
+
     document.body.appendChild(effectElement);
-    
+
     setTimeout(() => {
       effectElement.remove();
     }, effect.duration);
@@ -999,6 +1143,7 @@ class DisplayModeManager {
 ```
 
 ### Session Sharing & QR Codes
+
 ```typescript
 class SessionSharingManager {
   generateShareableLink(sessionId: string): string {
@@ -1007,31 +1152,31 @@ class SessionSharingManager {
 
   generateQRCode(sessionId: string): Promise<string> {
     const joinUrl = this.generateShareableLink(sessionId);
-    
+
     // Using QR code library
     return QRCode.toDataURL(joinUrl, {
       width: 256,
       margin: 2,
       color: {
-        dark: '#000000',
-        light: '#FFFFFF'
-      }
+        dark: "#000000",
+        light: "#FFFFFF",
+      },
     });
   }
 
   copyLinkToClipboard(sessionId: string): Promise<boolean> {
     const link = this.generateShareableLink(sessionId);
-    
+
     try {
       await navigator.clipboard.writeText(link);
       return true;
     } catch (error) {
       // Fallback for older browsers
-      const textArea = document.createElement('textarea');
+      const textArea = document.createElement("textarea");
       textArea.value = link;
       document.body.appendChild(textArea);
       textArea.select();
-      document.execCommand('copy');
+      document.execCommand("copy");
       document.body.removeChild(textArea);
       return true;
     }
@@ -1040,6 +1185,7 @@ class SessionSharingManager {
 ```
 
 ### Score Graph Implementation
+
 ```typescript
 interface ScoreDataPoint {
   section: number;
@@ -1052,10 +1198,10 @@ class ScoreGraphManager {
 
   initializeGraph(canvasElement: HTMLCanvasElement): void {
     this.chartInstance = new Chart(canvasElement, {
-      type: 'line',
+      type: "line",
       data: {
         labels: [],
-        datasets: []
+        datasets: [],
       },
       options: {
         responsive: true,
@@ -1065,42 +1211,48 @@ class ScoreGraphManager {
             beginAtZero: true,
             title: {
               display: true,
-              text: 'Total Score'
-            }
+              text: "Total Score",
+            },
           },
           x: {
             title: {
               display: true,
-              text: 'Section'
-            }
-          }
+              text: "Section",
+            },
+          },
         },
         plugins: {
           legend: {
             display: true,
-            position: 'top'
+            position: "top",
           },
           title: {
             display: true,
-            text: 'Score Progress'
-          }
-        }
-      }
+            text: "Score Progress",
+          },
+        },
+      },
     });
   }
 
-  updateData(players: Player[], sectionHistory: Record<string, number[]>): void {
+  updateData(
+    players: Player[],
+    sectionHistory: Record<string, number[]>,
+  ): void {
     if (!this.chartInstance) return;
 
     const sections = Object.values(sectionHistory)[0]?.length || 0;
-    const labels = Array.from({ length: sections }, (_, i) => `Section ${i + 1}`);
+    const labels = Array.from(
+      { length: sections },
+      (_, i) => `Section ${i + 1}`,
+    );
 
     const datasets = players.map((player, index) => ({
       label: player.name,
       data: this.calculateCumulativeScores(sectionHistory[player.id] || []),
       borderColor: this.getPlayerColor(index),
       backgroundColor: this.getPlayerColor(index, 0.1),
-      tension: 0.1
+      tension: 0.1,
     }));
 
     this.chartInstance.data.labels = labels;
@@ -1110,19 +1262,19 @@ class ScoreGraphManager {
 
   private calculateCumulativeScores(sectionScores: number[]): number[] {
     let cumulative = 0;
-    return sectionScores.map(score => cumulative += score);
+    return sectionScores.map((score) => (cumulative += score));
   }
 
   private getPlayerColor(index: number, alpha = 1): string {
     const colors = [
-      `rgba(255, 99, 132, ${alpha})`,   // Red
-      `rgba(54, 162, 235, ${alpha})`,   // Blue  
-      `rgba(255, 205, 86, ${alpha})`,   // Yellow
-      `rgba(75, 192, 192, ${alpha})`,   // Green
-      `rgba(153, 102, 255, ${alpha})`,  // Purple
-      `rgba(255, 159, 64, ${alpha})`,   // Orange
-      `rgba(199, 199, 199, ${alpha})`,  // Grey
-      `rgba(83, 102, 255, ${alpha})`    // Indigo
+      `rgba(255, 99, 132, ${alpha})`, // Red
+      `rgba(54, 162, 235, ${alpha})`, // Blue
+      `rgba(255, 205, 86, ${alpha})`, // Yellow
+      `rgba(75, 192, 192, ${alpha})`, // Green
+      `rgba(153, 102, 255, ${alpha})`, // Purple
+      `rgba(255, 159, 64, ${alpha})`, // Orange
+      `rgba(199, 199, 199, ${alpha})`, // Grey
+      `rgba(83, 102, 255, ${alpha})`, // Indigo
     ];
     return colors[index % colors.length];
   }
@@ -1130,6 +1282,7 @@ class ScoreGraphManager {
 ```
 
 ### Error Recovery
+
 ```typescript
 class ErrorRecoveryManager {
   private reconnectAttempts = 0;
@@ -1138,12 +1291,12 @@ class ErrorRecoveryManager {
 
   async handleSocketDisconnection(): Promise<void> {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      this.showCriticalError('Unable to reconnect to game server');
+      this.showCriticalError("Unable to reconnect to game server");
       return;
     }
 
     this.reconnectAttempts++;
-    
+
     setTimeout(async () => {
       try {
         await this.attemptReconnection();
@@ -1162,7 +1315,7 @@ class ErrorRecoveryManager {
 
   showCriticalError(message: string): void {
     // Show modal with option to refresh or return to home
-    useGameStore.getState().setError(message, 'critical');
+    useGameStore.getState().setError(message, "critical");
   }
 }
 ```
@@ -1170,16 +1323,17 @@ class ErrorRecoveryManager {
 ## 9. AI Player System
 
 ### AI Architecture Overview
+
 ```typescript
 abstract class AIPlayer {
-  protected difficulty: 'easy' | 'medium' | 'hard';
+  protected difficulty: "easy" | "medium" | "hard";
   protected personality: AIPersonality;
   protected memory: AIMemory;
   protected decisionEngine: AIDecisionEngine;
-  
+
   abstract calculateBid(hand: Card[], gameContext: GameContext): number;
   abstract selectCard(hand: Card[], gameState: GameState): Card;
-  
+
   protected addRandomness(value: number, factor: number): number {
     const variance = value * factor;
     return Math.round(value + (Math.random() - 0.5) * variance);
@@ -1190,18 +1344,19 @@ abstract class AIPlayer {
 ### Difficulty Implementation
 
 #### Easy AI Strategy
+
 ```typescript
 class EasyAI extends AIPlayer {
   calculateBid(hand: Card[], trumpSuit: Suit): number {
     let estimatedTricks = 0;
-    
+
     // Count obvious winners
     for (const card of hand) {
       if (card.suit === trumpSuit && card.value >= 12) estimatedTricks++; // High trump
       if (card.value === 14) estimatedTricks += 0.8; // Aces
       if (card.value === 13) estimatedTricks += 0.4; // Kings
     }
-    
+
     // Conservative adjustment
     const conservativeBid = Math.max(0, Math.floor(estimatedTricks * 0.8));
     return this.addRandomness(conservativeBid, 0.15);
@@ -1209,12 +1364,16 @@ class EasyAI extends AIPlayer {
 
   selectCard(hand: Card[], currentTrick: Trick, trumpSuit: Suit): Card {
     const validCards = this.getValidCards(hand, currentTrick);
-    
+
     // Simple heuristic: play high when trying to win, low when trying to lose
     const needsToWin = this.shouldTryToWinTrick(currentTrick);
-    
+
     if (needsToWin) {
-      return this.getHighestCard(validCards, currentTrick.leadingSuit, trumpSuit);
+      return this.getHighestCard(
+        validCards,
+        currentTrick.leadingSuit,
+        trumpSuit,
+      );
     } else {
       return this.getLowestCard(validCards);
     }
@@ -1228,6 +1387,7 @@ class EasyAI extends AIPlayer {
 ```
 
 #### Medium AI Strategy
+
 ```typescript
 class MediumAI extends AIPlayer {
   private opponentProfiles: Map<string, OpponentProfile> = new Map();
@@ -1235,45 +1395,49 @@ class MediumAI extends AIPlayer {
 
   calculateBid(hand: Card[], gameContext: GameContext): number {
     const analysis = this.analyzeHand(hand, gameContext.trumpSuit);
-    const positionFactor = this.calculatePositionAdvantage(gameContext.position);
+    const positionFactor = this.calculatePositionAdvantage(
+      gameContext.position,
+    );
     const opponentFactor = this.estimateOpponentStrength(gameContext);
-    
-    const estimatedTricks = analysis.expectedTricks + positionFactor - opponentFactor;
+
+    const estimatedTricks =
+      analysis.expectedTricks + positionFactor - opponentFactor;
     return this.addRandomness(Math.max(0, estimatedTricks), 0.1);
   }
 
   selectCard(hand: Card[], gameState: GameState): Card {
     const validCards = this.getValidCards(hand, gameState.currentTrick);
     const gameAnalysis = this.analyzeGameSituation(gameState);
-    
+
     // Prioritized decision making
     if (gameAnalysis.canSetOpponent) {
       return this.selectSettingCard(validCards, gameState);
     }
-    
+
     if (gameAnalysis.shouldConserveTrump) {
       return this.selectNonTrumpCard(validCards, gameState);
     }
-    
+
     if (gameAnalysis.desperateForTricks) {
       return this.selectAggressiveCard(validCards, gameState);
     }
-    
+
     return this.selectBalancedCard(validCards, gameState);
   }
 
   private analyzeHand(hand: Card[], trumpSuit: Suit): HandAnalysis {
     return {
-      trumpCount: hand.filter(c => c.suit === trumpSuit).length,
-      highCards: hand.filter(c => c.value >= 12).length,
+      trumpCount: hand.filter((c) => c.suit === trumpSuit).length,
+      highCards: hand.filter((c) => c.value >= 12).length,
       longSuits: this.findLongSuits(hand),
-      expectedTricks: this.calculateExpectedTricks(hand, trumpSuit)
+      expectedTricks: this.calculateExpectedTricks(hand, trumpSuit),
     };
   }
 }
 ```
 
 #### Hard AI Strategy
+
 ```typescript
 class HardAI extends AIPlayer {
   private gameHistory: GameHistory = new GameHistory();
@@ -1283,52 +1447,65 @@ class HardAI extends AIPlayer {
   calculateBid(hand: Card[], gameContext: GameContext): number {
     const deepAnalysis = this.performDeepAnalysis(hand, gameContext);
     const simulationResults = this.runBidSimulations(hand, gameContext, 1000);
-    const opponentModeling = this.opponentModeler.predictOpponentBids(gameContext);
-    
+    const opponentModeling =
+      this.opponentModeler.predictOpponentBids(gameContext);
+
     const optimalBid = this.optimizeBidBasedOnSimulations(
       deepAnalysis,
       simulationResults,
-      opponentModeling
+      opponentModeling,
     );
-    
+
     return this.addRandomness(optimalBid, 0.05);
   }
 
   selectCard(hand: Card[], gameState: GameState): Card {
     const possiblePlays = this.getValidCards(hand, gameState.currentTrick);
-    const evaluations = possiblePlays.map(card => {
+    const evaluations = possiblePlays.map((card) => {
       return {
         card,
         evaluation: this.evaluateCardPlay(card, gameState),
-        simulations: this.runPlaySimulations(card, gameState, 500)
+        simulations: this.runPlaySimulations(card, gameState, 500),
       };
     });
-    
+
     const bestPlay = this.selectOptimalPlay(evaluations);
     this.updateGameKnowledge(bestPlay, gameState);
-    
+
     return bestPlay.card;
   }
 
-  private performDeepAnalysis(hand: Card[], context: GameContext): DeepAnalysis {
+  private performDeepAnalysis(
+    hand: Card[],
+    context: GameContext,
+  ): DeepAnalysis {
     return {
       cardCombinations: this.analyzeCardCombinations(hand),
       suitStrengths: this.analyzeSuitStrengths(hand, context.trumpSuit),
       positionalAdvantage: this.calculateDetailedPosition(context),
       trumpTiming: this.optimizeTrumpUsage(hand, context),
-      defensiveCapability: this.assessDefensiveOptions(hand, context)
+      defensiveCapability: this.assessDefensiveOptions(hand, context),
     };
   }
 
-  private runBidSimulations(hand: Card[], context: GameContext, iterations: number): SimulationResult {
+  private runBidSimulations(
+    hand: Card[],
+    context: GameContext,
+    iterations: number,
+  ): SimulationResult {
     const results = [];
-    
+
     for (let i = 0; i < iterations; i++) {
-      const simulatedOpponentHands = this.generatePlausibleOpponentHands(context);
-      const gameSimulation = new GameSimulation(hand, simulatedOpponentHands, context);
+      const simulatedOpponentHands =
+        this.generatePlausibleOpponentHands(context);
+      const gameSimulation = new GameSimulation(
+        hand,
+        simulatedOpponentHands,
+        context,
+      );
       results.push(gameSimulation.run());
     }
-    
+
     return this.aggregateSimulationResults(results);
   }
 }
@@ -1337,47 +1514,49 @@ class HardAI extends AIPlayer {
 ### Core AI Components
 
 #### Game State Analysis
+
 ```typescript
 class GameAnalyzer {
   analyzePosition(gameState: GameState, playerId: string): PositionAnalysis {
-    const player = gameState.players.find(p => p.id === playerId);
+    const player = gameState.players.find((p) => p.id === playerId);
     const tricksNeeded = player.bid - player.tricksWon;
     const tricksRemaining = this.calculateRemainingTricks(gameState);
-    
+
     return {
       isOnTrack: tricksNeeded === tricksRemaining,
       isAhead: player.tricksWon > player.bid,
       isBehind: tricksNeeded > tricksRemaining,
       canStillMakeBid: tricksNeeded <= tricksRemaining,
-      shouldPlayDefensively: player.tricksWon >= player.bid
+      shouldPlayDefensively: player.tricksWon >= player.bid,
     };
   }
 
   identifyThreats(gameState: GameState, playerId: string): ThreatAnalysis {
     const threats = [];
-    
+
     for (const opponent of gameState.players) {
       if (opponent.id === playerId) continue;
-      
+
       const opponentNeeds = opponent.bid - opponent.tricksWon;
       const remainingTricks = this.calculateRemainingTricks(gameState);
-      
+
       if (opponentNeeds === remainingTricks) {
         threats.push({
           playerId: opponent.id,
-          type: 'exact_bid',
-          priority: 'high',
-          canDisrupt: this.assessDisruptionPotential(opponent, gameState)
+          type: "exact_bid",
+          priority: "high",
+          canDisrupt: this.assessDisruptionPotential(opponent, gameState),
         });
       }
     }
-    
+
     return { threats, overallThreatLevel: this.calculateThreatLevel(threats) };
   }
 }
 ```
 
 #### Card Tracking System
+
 ```typescript
 class CardTracker {
   private playedCards: Set<string> = new Set();
@@ -1390,17 +1569,19 @@ class CardTracker {
 
   getRemainingCards(suit?: Suit): Card[] {
     const allCards = this.generateFullDeck();
-    return allCards.filter(card => {
+    return allCards.filter((card) => {
       const cardKey = `${card.suit}${card.rank}`;
-      return !this.playedCards.has(cardKey) && 
-             (suit === undefined || card.suit === suit);
+      return (
+        !this.playedCards.has(cardKey) &&
+        (suit === undefined || card.suit === suit)
+      );
     });
   }
 
   estimateOpponentHolding(playerId: string, suit: Suit): number {
     const distribution = this.suitDistributions.get(playerId);
     if (!distribution) return 3; // Default estimate
-    
+
     const knownPlays = distribution.suits[suit] || 0;
     const estimatedTotal = this.estimateOriginalSuitLength(playerId, suit);
     return Math.max(0, estimatedTotal - knownPlays);
@@ -1409,39 +1590,40 @@ class CardTracker {
 ```
 
 #### Decision Engine
+
 ```typescript
 class AIDecisionEngine {
   evaluateCardPlay(card: Card, gameState: GameState): PlayEvaluation {
     const immediateValue = this.calculateImmediateValue(card, gameState);
     const strategicValue = this.calculateStrategicValue(card, gameState);
     const riskFactor = this.calculateRiskFactor(card, gameState);
-    
+
     return {
       totalScore: immediateValue + strategicValue - riskFactor,
       breakdown: {
         immediate: immediateValue,
         strategic: strategicValue,
-        risk: riskFactor
+        risk: riskFactor,
       },
       confidence: this.calculateConfidence(card, gameState),
-      reasoning: this.generateReasoning(card, gameState)
+      reasoning: this.generateReasoning(card, gameState),
     };
   }
 
   private calculateImmediateValue(card: Card, gameState: GameState): number {
     const currentTrick = gameState.currentTrick;
     let value = 0;
-    
+
     // Value for winning/losing the trick
     if (this.wouldWinTrick(card, currentTrick, gameState.trumpSuit)) {
       value += this.needsTrick(gameState) ? 10 : -5;
     }
-    
+
     // Value for trump conservation
     if (card.suit === gameState.trumpSuit) {
       value -= this.shouldConserveTrump(gameState) ? 3 : 0;
     }
-    
+
     return value;
   }
 }
@@ -1450,15 +1632,19 @@ class AIDecisionEngine {
 ### AI Integration with Game Engine
 
 #### Server-Side AI Management
+
 ```typescript
 class AIPlayerManager {
   private aiPlayers: Map<string, AIPlayer> = new Map();
   private decisionQueue: AIDecisionQueue = new AIDecisionQueue();
 
-  async addAIPlayer(sessionId: string, difficulty: AIDifficulty): Promise<Player> {
+  async addAIPlayer(
+    sessionId: string,
+    difficulty: AIDifficulty,
+  ): Promise<Player> {
     const aiPlayer = this.createAIPlayer(difficulty);
     const playerData = await this.registerPlayerInSession(sessionId, aiPlayer);
-    
+
     this.aiPlayers.set(playerData.id, aiPlayer);
     return playerData;
   }
@@ -1484,10 +1670,11 @@ class AIPlayerManager {
 ```
 
 #### Client-Side AI Indicators
+
 ```typescript
 const AIPlayerIndicator: React.FC<{ player: Player }> = ({ player }) => {
   const [isThinking, setIsThinking] = useState(false);
-  
+
   useEffect(() => {
     if (player.isAI && player.isCurrentTurn) {
       setIsThinking(true);
@@ -1497,7 +1684,7 @@ const AIPlayerIndicator: React.FC<{ player: Player }> = ({ player }) => {
   }, [player.isCurrentTurn]);
 
   return (
-    <div className={`player-indicator ${player.isAI ? 'ai-player' : ''}`}>
+    <div className={`player-indicator ${player.isAI ? "ai-player" : ""}`}>
       <span className="player-name">
         {player.name} {player.isAI && `(${player.aiDifficulty})`}
       </span>
