@@ -210,15 +210,17 @@ export default function PlayPage() {
                   <p className="text-slate-400 text-center">
                     Need at least 2 players to start. Share the game code with friends!
                   </p>
-                  
-                  {/* Add AI Players Component */}
-                  {isAdmin && players.length < (session?.maxPlayers || 6) && (
-                    <AddAIPlayers
-                      onAddAI={handleAddAI}
-                      isLoading={isLoading}
-                      disabled={false}
-                    />
-                  )}
+                </div>
+              )}
+
+              {/* Add AI Players Component - Always show if admin and room available */}
+              {isAdmin && players.length < (session?.maxPlayers || 6) && (
+                <div className="mt-4">
+                  <AddAIPlayers
+                    onAddAI={handleAddAI}
+                    isLoading={isLoading}
+                    disabled={false}
+                  />
                 </div>
               )}
             </div>
