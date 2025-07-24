@@ -9,44 +9,53 @@ export default function Navigation() {
   const isActive = (path: string) => pathname === path;
   
   return (
-    <nav className="bg-white shadow-md sticky top-0 z-50">
+    <nav className="bg-white shadow-md sticky top-0 z-50 border-b-2" style={{ borderBottomColor: '#717EC3' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             <span className="text-2xl">🃏</span>
-            <span className="text-xl font-bold text-gray-900">Jøssing</span>
+            <span className="text-xl font-bold" style={{ color: '#496DDB' }}>Jøssing</span>
           </Link>
           
           {/* Navigation Links */}
           <div className="hidden md:flex space-x-8">
             <Link 
               href="/"
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-all hover:opacity-90 ${
                 isActive('/') 
-                  ? 'bg-blue-100 text-blue-700' 
-                  : 'text-gray-700 hover:text-blue-600 hover:bg-gray-100'
+                  ? 'text-white' 
+                  : 'text-gray-700 hover:text-white'
               }`}
+              style={{ 
+                backgroundColor: isActive('/') ? '#717EC3' : 'transparent',
+              }}
             >
               Home
             </Link>
             <Link 
               href="/how-to-play"
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-all hover:opacity-90 ${
                 isActive('/how-to-play') 
-                  ? 'bg-blue-100 text-blue-700' 
-                  : 'text-gray-700 hover:text-blue-600 hover:bg-gray-100'
+                  ? 'text-white' 
+                  : 'text-gray-700 hover:text-white'
               }`}
+              style={{ 
+                backgroundColor: isActive('/how-to-play') ? '#496DDB' : 'transparent',
+              }}
             >
               How to Play
             </Link>
             <Link 
               href="/play"
-              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-all hover:opacity-90 ${
                 isActive('/play') 
-                  ? 'bg-blue-100 text-blue-700' 
-                  : 'text-gray-700 hover:text-blue-600 hover:bg-gray-100'
+                  ? 'text-white' 
+                  : 'text-gray-700 hover:text-white'
               }`}
+              style={{ 
+                backgroundColor: isActive('/play') ? '#C95D63' : 'transparent',
+              }}
             >
               Play Game
             </Link>
