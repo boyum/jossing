@@ -46,10 +46,10 @@ const gameFlowSteps = [
     title: 'Scoring',
     description: 'Points are awarded based on bid accuracy',
     details: [
-      'Base: 10 points per trick won',
-      'Exact bid: +10 bonus per bid trick',
-      'Zero bid success: +50 bonus',
-      'Wrong bid: penalty applies'
+      'Exact bid: 10 + bid points',
+      'Any other result: 0 points',
+      'Simple and decisive scoring',
+      'Accuracy is everything!'
     ],
     visual: 'scoring'
   }
@@ -59,10 +59,10 @@ const sampleGameData = {
   section: 3,
   trumpSuit: Suit.HEARTS,
   players: [
-    { name: 'You', bid: 2, tricks: 2, score: 50 },
-    { name: 'Alice', bid: 1, tricks: 0, score: -10 },
-    { name: 'Bob', bid: 0, tricks: 1, score: -50 },
-    { name: 'Carol', bid: 1, tricks: 1, score: 20 }
+    { name: 'You', bid: 2, tricks: 2, score: 12 },
+    { name: 'Alice', bid: 1, tricks: 0, score: 0 },
+    { name: 'Bob', bid: 0, tricks: 1, score: 0 },
+    { name: 'Carol', bid: 1, tricks: 1, score: 11 }
   ],
   totalTricks: 4
 };
@@ -276,10 +276,10 @@ export default function GameFlowWalkthrough() {
               <div>
                 <strong>Scoring:</strong>
                 <ul className="list-disc list-inside ml-4 mt-1">
-                  <li><strong>You:</strong> 2 tricks = 20 base + 20 bonus = 40 points</li>
-                  <li><strong>Alice:</strong> 0 tricks, bid 1 = 0 base - 10 penalty = -10 points</li>
-                  <li><strong>Bob:</strong> 1 trick, bid 0 = 10 base - 50 zero penalty = -40 points</li>
-                  <li><strong>Carol:</strong> 1 trick = 10 base + 10 bonus = 20 points</li>
+                  <li><strong>You:</strong> Bid 2, won 2 = 10 + 2 = 12 points</li>
+                  <li><strong>Alice:</strong> Bid 1, won 0 = 0 points (missed bid)</li>
+                  <li><strong>Bob:</strong> Bid 0, won 1 = 0 points (missed bid)</li>
+                  <li><strong>Carol:</strong> Bid 1, won 1 = 10 + 1 = 11 points</li>
                 </ul>
               </div>
             </div>

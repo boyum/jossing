@@ -3,26 +3,12 @@
 import { useState } from 'react';
 
 // Scoring utility functions
-const calculateTrickScore = (tricks: number): number => tricks * 10;
-
-const calculateBidBonus = (bid: number, tricks: number): number => {
-  if (bid === 0) {
-    return tricks === 0 ? 50 : -50;
+const calculateScore = (bid: number, tricks: number): number => {
+  const isFailure = bid !== tricks;
+  if (isFailure) {
+    return 0;
   }
-  
-  if (bid === tricks) {
-    return bid * 10; // 10 points per bid trick when exact
-  }
-  
-  if (tricks < bid) {
-    return (tricks - bid) * 10; // Penalty for missing tricks
-  }
-  
-  return 0; // No bonus for overbidding
-};
-
-const calculateFinalScore = (bid: number, tricks: number): number => {
-  return calculateTrickScore(tricks) + calculateBidBonus(bid, tricks);
+  return 10 + bid;
 };
 
 interface ScoreExample {
@@ -41,7 +27,7 @@ const scoreExamples: ScoreExample[] = [
     bid: 3,
     tricksWon: 3,
     trumpSuit: 'hearts',
-    description: 'When you bid exactly what you won - you get bonus points!'
+    description: 'When you bid exactly what you won - you get 10 + bid points!'
   },
   {
     id: 'under-bid',
@@ -49,7 +35,7 @@ const scoreExamples: ScoreExample[] = [
     bid: 2,
     tricksWon: 4,
     trumpSuit: 'diamonds',
-    description: 'Won more than bid - still get points for tricks, but no bonus'
+    description: 'Won more than bid - you get zero points'
   },
   {
     id: 'over-bid',
@@ -57,7 +43,7 @@ const scoreExamples: ScoreExample[] = [
     bid: 4,
     tricksWon: 2,
     trumpSuit: 'clubs',
-    description: 'Won fewer than bid - negative points!'
+    description: 'Won fewer than bid - you get zero points'
   },
   {
     id: 'zero-bid',
@@ -65,7 +51,7 @@ const scoreExamples: ScoreExample[] = [
     bid: 0,
     tricksWon: 0,
     trumpSuit: 'spades',
-    description: 'Successfully bid zero and won no tricks - big bonus!'
+    description: 'Successfully bid zero and won no tricks - you get 10 points!'
   },
   {
     id: 'zero-bid-fail',
@@ -73,7 +59,7 @@ const scoreExamples: ScoreExample[] = [
     bid: 0,
     tricksWon: 1,
     trumpSuit: 'hearts',
-    description: 'Failed zero bid - penalty points'
+    description: 'Failed zero bid - you get zero points'
   }
 ];
 
@@ -83,21 +69,19 @@ export default function ScoreCalculator() {
   const [customTricks, setCustomTricks] = useState(2);
   const [showCustom, setShowCustom] = useState(false);
 
-  const calculateScore = (bid: number, tricks: number) => {
-    const trickScore = calculateTrickScore(tricks);
-    const bidBonus = calculateBidBonus(bid, tricks);
-    const finalScore = calculateFinalScore(bid, tricks);
+  const getScoreBreakdown = (bid: number, tricks: number) => {
+    const isExact = bid === tricks;
+    const finalScore = calculateScore(bid, tricks);
     
     return {
-      trickScore,
-      bidBonus,
+      isExact,
       finalScore
     };
   };
 
   const currentScore = showCustom 
-    ? calculateScore(customBid, customTricks)
-    : calculateScore(selectedExample.bid, selectedExample.tricksWon);
+    ? getScoreBreakdown(customBid, customTricks)
+    : getScoreBreakdown(selectedExample.bid, selectedExample.tricksWon);
 
   const currentBid = showCustom ? customBid : selectedExample.bid;
   const currentTricks = showCustom ? customTricks : selectedExample.tricksWon;
@@ -218,14 +202,14 @@ export default function ScoreCalculator() {
           <hr className="border-gray-300" />
           
           <div className="flex justify-between items-center">
-            <span>Base Points (10 × tricks):</span>
-            <span className="font-mono">+{currentScore.trickScore}</span>
+            <span>Bid Achieved:</span>
+            <span className="font-mono">{currentTricks === currentBid ? 'Yes' : 'No'}</span>
           </div>
           
           <div className="flex justify-between items-center">
-            <span>Bid Bonus/Penalty:</span>
-            <span className={`font-mono ${currentScore.bidBonus >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {currentScore.bidBonus >= 0 ? '+' : ''}{currentScore.bidBonus}
+            <span>Score Calculation:</span>
+            <span className="font-mono text-sm">
+              {currentTricks === currentBid ? `10 + ${currentBid} = ${currentScore.finalScore}` : '0'}
             </span>
           </div>
           
@@ -242,13 +226,12 @@ export default function ScoreCalculator() {
 
       {/* Scoring rules reminder */}
       <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-        <h5 className="font-medium text-blue-900 mb-2">Scoring Rules:</h5>
+        <h5 className="font-medium text-blue-900 mb-2">Classic Jøssing Scoring:</h5>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Base: 10 points per trick won</li>
-          <li>• Exact bid: +10 bonus per bid trick</li>
-          <li>• Zero bid success: +50 bonus</li>
-          <li>• Overbid: -10 penalty per missed trick</li>
-          <li>• Zero bid failure: -50 penalty</li>
+          <li>• <strong>Exact bid:</strong> 10 + bid points</li>
+          <li>• <strong>Any other result:</strong> 0 points</li>
+          <li>• Example: Bid 3, win 3 tricks = 13 points</li>
+          <li>• Example: Bid 3, win 2 or 4 tricks = 0 points</li>
         </ul>
       </div>
     </div>

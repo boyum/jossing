@@ -116,33 +116,25 @@ export default function GameInstructions() {
       <section className="mb-8">
         <h4 className="text-xl font-semibold mb-4 text-blue-700">Scoring System</h4>
         <p className="text-gray-700 mb-4">
-          Points are awarded based on how accurately you bid, not just how many tricks you win.
+          Points are awarded only for exact bids (except for zero bids which have special rules). 
+          If you bid incorrectly, you get zero points for that section.
         </p>
         
         <div className="bg-green-50 p-4 rounded-lg mb-4">
           <h5 className="font-semibold text-green-800 mb-2">Scoring Formula</h5>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span><strong>Base Points:</strong></span>
-              <span className="font-mono">10 × tricks won</span>
+              <span><strong>Exact Bid:</strong></span>
+              <span className="font-mono">10 + bid</span>
             </div>
             <div className="flex justify-between">
-              <span><strong>Exact Bid Bonus:</strong></span>
-              <span className="font-mono">+10 × bid (when bid equals tricks won)</span>
-            </div>
-            <div className="flex justify-between">
-              <span><strong>Zero Bid Success:</strong></span>
-              <span className="font-mono">+50 points</span>
-            </div>
-            <div className="flex justify-between">
-              <span><strong>Zero Bid Failure:</strong></span>
-              <span className="font-mono">-50 points</span>
-            </div>
-            <div className="flex justify-between">
-              <span><strong>Wrong Bid Penalty:</strong></span>
-              <span className="font-mono">-10 × |bid - tricks|</span>
+              <span><strong>Wrong Bid (Over/Under):</strong></span>
+              <span className="font-mono">0 points</span>
             </div>
           </div>
+          <p className="text-xs text-green-700 mt-2">
+            <strong>Note:</strong> Zero bids follow the same rule - if you bid 0 and win 0 tricks, you get 10 + 0 = 10 points.
+          </p>
         </div>
 
         <div className="space-y-3">
@@ -150,30 +142,26 @@ export default function GameInstructions() {
           <div className="grid md:grid-cols-2 gap-4 text-sm">
             <div className="bg-white border border-gray-200 p-3 rounded">
               <p className="font-medium text-green-700">Perfect Bid: Bid 3, Won 3</p>
-              <p>Base: 3 × 10 = 30 points</p>
-              <p>Bonus: 3 × 10 = 30 points</p>
-              <p className="font-bold text-green-600">Total: 60 points</p>
+              <p>Exact bid: 10 + 3 = 13 points</p>
+              <p className="font-bold text-green-600">Total: 13 points</p>
             </div>
             
             <div className="bg-white border border-gray-200 p-3 rounded">
-              <p className="font-medium text-blue-700">Overbid: Bid 4, Won 2</p>
-              <p>Base: 2 × 10 = 20 points</p>
-              <p>Penalty: -10 × 2 = -20 points</p>
+              <p className="font-medium text-red-700">Overbid: Bid 4, Won 2</p>
+              <p>Wrong bid (4 ≠ 2)</p>
               <p className="font-bold text-red-600">Total: 0 points</p>
             </div>
             
             <div className="bg-white border border-gray-200 p-3 rounded">
-              <p className="font-medium text-purple-700">Zero Success: Bid 0, Won 0</p>
-              <p>Base: 0 × 10 = 0 points</p>
-              <p>Bonus: +50 points</p>
-              <p className="font-bold text-green-600">Total: 50 points</p>
+              <p className="font-medium text-green-700">Zero Success: Bid 0, Won 0</p>
+              <p>Exact bid: 10 + 0 = 10 points</p>
+              <p className="font-bold text-green-600">Total: 10 points</p>
             </div>
             
             <div className="bg-white border border-gray-200 p-3 rounded">
-              <p className="font-medium text-orange-700">Underbid: Bid 2, Won 4</p>
-              <p>Base: 4 × 10 = 40 points</p>
-              <p>No bonus (not exact)</p>
-              <p className="font-bold text-blue-600">Total: 40 points</p>
+              <p className="font-medium text-red-700">Underbid: Bid 2, Won 4</p>
+              <p>Wrong bid (2 ≠ 4)</p>
+              <p className="font-bold text-red-600">Total: 0 points</p>
             </div>
           </div>
         </div>
@@ -190,8 +178,8 @@ export default function GameInstructions() {
               <li>Aces and Kings in non-trump suits usually win tricks</li>
               <li>Small cards (2-6) rarely win unless they are trump</li>
               <li>Consider what others might bid before you</li>
-              <li>Zero bids are risky but can pay off big</li>
-              <li>Remember: exact bids get bonus points!</li>
+              <li>Zero bids are safer now - you only need 10 points if successful</li>
+              <li>Remember: exact bids get you 10 + your bid points!</li>
             </ul>
           </div>
           
@@ -218,9 +206,9 @@ export default function GameInstructions() {
         </p>
         <div className="bg-purple-50 p-4 rounded-lg">
           <p className="text-sm text-purple-800">
-            <strong>Pro Tip:</strong> Consistency is key in Jøssing. It&apos;s often better to make safe, 
-            accurate bids than to go for high-risk, high-reward plays. The bonus points for exact bids 
-            can really add up over multiple sections!
+            <strong>Pro Tip:</strong> Consistency is key in Jøssing. Higher bids give more points (10 + bid), 
+            but only if you&apos;re exactly right. It&apos;s often better to make safe, accurate bids 
+            than to go for high-risk plays that might give you zero points.
           </p>
         </div>
       </section>
@@ -255,10 +243,8 @@ export default function GameInstructions() {
             <div>
               <h6 className="font-semibold text-gray-800 mb-2">Scoring</h6>
               <ul className="list-disc list-inside space-y-1 text-gray-700">
-                <li>10 pts per trick</li>
-                <li>+10 × bid if exact</li>
-                <li>Zero: +50 or -50</li>
-                <li>Wrong: -10 × difference</li>
+                <li>Exact bid: 10 + bid</li>
+                <li>Wrong bid: 0 points</li>
               </ul>
             </div>
           </div>

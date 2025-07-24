@@ -20,13 +20,11 @@ export default function QuickReference() {
       content: (
         <div className="space-y-4">
           <div className="bg-green-50 p-3 rounded">
-            <h4 className="font-medium text-green-800 mb-2">Scoring Formula</h4>
+            <h4 className="font-medium text-green-800 mb-2">Classic Jøssing Scoring</h4>
             <ul className="text-sm space-y-1">
-              <li><strong>Base Points:</strong> 10 × tricks won</li>
-              <li><strong>Exact Bid Bonus:</strong> +10 × bid (when bid = tricks)</li>
-              <li><strong>Zero Bid Success:</strong> +50 points</li>
-              <li><strong>Zero Bid Failure:</strong> -50 points</li>
-              <li><strong>Wrong Bid:</strong> -10 × |bid - tricks|</li>
+              <li><strong>Exact bid:</strong> 10 + bid points</li>
+              <li><strong>Any other result:</strong> 0 points</li>
+              <li><strong>Simple rule:</strong> Hit your bid exactly or get nothing!</li>
             </ul>
           </div>
           
@@ -35,19 +33,19 @@ export default function QuickReference() {
             <div className="text-sm space-y-1">
               <div className="flex justify-between">
                 <span>Bid 3, Won 3:</span>
-                <span className="font-mono">30 + 30 = 60 pts</span>
+                <span className="font-mono">10 + 3 = 13 pts</span>
               </div>
               <div className="flex justify-between">
                 <span>Bid 2, Won 4:</span>
-                <span className="font-mono">40 + 0 = 40 pts</span>
+                <span className="font-mono">0 pts</span>
               </div>
               <div className="flex justify-between">
                 <span>Bid 4, Won 2:</span>
-                <span className="font-mono">20 - 20 = 0 pts</span>
+                <span className="font-mono">0 pts</span>
               </div>
               <div className="flex justify-between">
                 <span>Bid 0, Won 0:</span>
-                <span className="font-mono">0 + 50 = 50 pts</span>
+                <span className="font-mono">10 + 0 = 10 pts</span>
               </div>
             </div>
           </div>
