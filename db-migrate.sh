@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Database Migration Script for Jøssing Game
-# Converts enums to string literals and updates both local and Turso databases
+# Handles Prisma migrations for both local and Turso databases
 
 # Colors
 RED='\033[0;31m'
@@ -49,7 +49,7 @@ print_warning() {
 
 # Step 1: Generate Migration
 print_status "Generating Prisma migration..." "${WRENCH}"
-if npx prisma migrate dev --name "convert-enums-to-strings" --skip-generate; then
+if npx prisma migrate dev --name "schema_update" --skip-generate; then
     print_success "Migration generated successfully!"
 else
     print_error "Failed to generate migration"
@@ -69,96 +69,92 @@ fi
 
 echo ""
 
-# Step 3: Generate SQL for Turso
-print_status "Checking if Turso migration is needed..." "${DATABASE}"
+# Step 3: Update Turso Database
+print_status "Updating Turso database..." "${DATABASE}"
 
-# First, check if we can pull the current schema from Turso
-print_status "Pulling current Turso schema..." "${HOURGLASS}"
-
-# Create a temporary schema file for Turso introspection
-cat > prisma/turso-temp.prisma << 'EOF'
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "sqlite"
-  url      = env("TURSO_DATABASE_URL")
-}
-EOF
-
-# Try to pull from Turso using the TURSO_DATABASE_URL
-if [ -n "$TURSO_DATABASE_URL" ] && npx prisma db pull --force --schema=prisma/turso-temp.prisma &>/dev/null; then
-    print_success "Successfully pulled current Turso schema!"
-    
-    # Compare schemas to see if migration is needed
-    if npx prisma migrate diff --from-schema-datamodel prisma/turso-temp.prisma --to-schema-datamodel prisma/schema.prisma --script > turso-migration.sql 2>/dev/null; then
-        
-        # Check if migration file has actual content (more than just comments)
-        if [ -s "turso-migration.sql" ] && grep -q -v "^--" turso-migration.sql && grep -q -v "^$" turso-migration.sql; then
-            print_success "Migration needed - SQL changes generated"
+# Ensure TURSO_DATABASE_URL is available
+if [ -z "$TURSO_DATABASE_URL" ]; then
+    print_status "Getting Turso database URL..." "${HOURGLASS}"
+    if command -v turso &> /dev/null; then
+        export TURSO_DATABASE_URL=$(turso db show jossing-game --url)
+        if [ -n "$TURSO_DATABASE_URL" ]; then
+            print_success "Turso database URL obtained!"
         else
-            print_success "No migration needed - schemas are already in sync! 🎉"
-            echo "" > turso-migration.sql  # Clear the file
+            print_error "Failed to get Turso database URL"
+            exit 1
         fi
     else
-        print_warning "Could not compare schemas - assuming no migration needed"
-        echo "" > turso-migration.sql  # Clear the file
+        print_error "Turso CLI not found!"
+        echo -e "${YELLOW}💡${NC} ${WHITE}Install: ${CYAN}curl -sSfL https://get.tur.so/install.sh | bash${NC}"
+        exit 1
     fi
-    
-    # Clean up temporary schema file
-    rm -f prisma/turso-temp.prisma
-else
-    print_warning "Could not pull current schema from Turso"
-    print_warning "Make sure TURSO_DATABASE_URL is set in your environment"
-    print_status "To set it manually run:" "${COMPUTER}"
-    echo -e "${CYAN}export TURSO_DATABASE_URL=\"\$(turso db show jossing-game --url)\"${NC}"
-    print_status "Skipping Turso migration - database likely already up to date" "${CHECKMARK}"
-    echo "" > turso-migration.sql  # Create empty file
-    rm -f prisma/turso-temp.prisma
 fi
 
-echo ""
+# Method 1: Try Prisma db push (preferred method)
+print_status "Attempting to sync schema using Prisma db push..." "${SPARKLES}"
+if TURSO_DATABASE_URL="$TURSO_DATABASE_URL" npx prisma db push --skip-generate; then
+    print_success "Turso database updated successfully with Prisma db push!"
+    TURSO_UPDATED=true
+else
+    print_warning "Prisma db push failed, trying migration SQL approach..."
+    TURSO_UPDATED=false
+fi
 
-# Step 4: Check if Turso CLI is available and apply migration if needed
-print_status "Checking Turso migration status..." "${GLOBE}"
-
-# Check if migration file has actual SQL content
-if [ -s "turso-migration.sql" ] && grep -q -v "^--" turso-migration.sql && grep -q -v "^$" turso-migration.sql; then
-    # Migration is needed
-    if command -v turso &> /dev/null; then
-        print_success "Turso CLI found!"
+# Method 2: Fallback to migration SQL if db push failed
+if [ "$TURSO_UPDATED" = false ]; then
+    print_status "Generating migration SQL for Turso..." "${WRENCH}"
+    
+    # Find the most recent migration file
+    LATEST_MIGRATION=$(ls -t prisma/migrations/*/migration.sql 2>/dev/null | head -n 1)
+    
+    if [ -n "$LATEST_MIGRATION" ] && [ -f "$LATEST_MIGRATION" ]; then
+        print_success "Found migration file: $(basename $(dirname $LATEST_MIGRATION))"
         
-        print_status "Migration SQL to apply:" "${HOURGLASS}"
-        echo -e "${CYAN}$(cat turso-migration.sql)${NC}"
+        print_status "Migration SQL content:" "${HOURGLASS}"
+        echo -e "${CYAN}$(cat $LATEST_MIGRATION)${NC}"
         echo ""
         
-        read -p "🤔 Apply this migration to Turso database? (y/N): " -n 1 -r
+        read -p "🤔 Apply this migration SQL to Turso database? (y/N): " -n 1 -r
         echo ""
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            if turso db shell jossing-game < turso-migration.sql; then
-                print_success "Turso database updated successfully!"
+            if command -v turso &> /dev/null; then
+                if turso db shell jossing-game < "$LATEST_MIGRATION"; then
+                    print_success "Turso database updated successfully with migration SQL!"
+                    TURSO_UPDATED=true
+                else
+                    print_error "Failed to apply migration SQL to Turso database"
+                    echo -e "${YELLOW}💡${NC} ${WHITE}You can manually run: ${CYAN}turso db shell jossing-game < $LATEST_MIGRATION${NC}"
+                fi
             else
-                print_error "Failed to update Turso database"
-                echo -e "${YELLOW}💡${NC} ${WHITE}You can manually run: ${CYAN}turso db shell jossing-game < turso-migration.sql${NC}"
+                print_error "Turso CLI not found!"
+                echo -e "${YELLOW}💡${NC} ${WHITE}Install: ${CYAN}curl -sSfL https://get.tur.so/install.sh | bash${NC}"
+                echo -e "${YELLOW}💡${NC} ${WHITE}Then run: ${CYAN}turso db shell jossing-game < $LATEST_MIGRATION${NC}"
             fi
         else
             print_warning "Skipped Turso migration"
-            echo -e "${YELLOW}💡${NC} ${WHITE}Run manually: ${CYAN}turso db shell jossing-game < turso-migration.sql${NC}"
+            echo -e "${YELLOW}💡${NC} ${WHITE}Run manually: ${CYAN}turso db shell jossing-game < $LATEST_MIGRATION${NC}"
         fi
     else
-        print_warning "Turso CLI not found!"
-        echo -e "${YELLOW}💡${NC} ${WHITE}Install: ${CYAN}curl -sSfL https://get.tur.so/install.sh | bash${NC}"
-        echo -e "${YELLOW}💡${NC} ${WHITE}Then run: ${CYAN}turso db shell jossing-game < turso-migration.sql${NC}"
+        print_warning "No migration file found - this might be normal if no schema changes were needed"
+        TURSO_UPDATED=true  # Assume no changes needed
     fi
-else
-    # No migration needed
-    print_success "Turso database is already up to date! No migration required 🎉"
+fi
+
+# Verify Turso database
+if [ "$TURSO_UPDATED" = true ] && command -v turso &> /dev/null; then
+    print_status "Verifying Turso database tables..." "${GLOBE}"
+    TURSO_TABLES=$(turso db shell jossing-game ".tables" 2>/dev/null || echo "")
+    if [ -n "$TURSO_TABLES" ]; then
+        print_success "Turso database verification completed!"
+        echo -e "${CYAN}Tables: ${TURSO_TABLES}${NC}"
+    else
+        print_warning "Could not verify Turso database tables"
+    fi
 fi
 
 echo ""
 
-# Step 6: Verify local database
+# Step 4: Verify local database
 print_status "Verifying local database..." "${COMPUTER}"
 if npx prisma db push --skip-generate; then
     print_success "Local database verified!"
@@ -168,12 +164,9 @@ fi
 
 echo ""
 
-# Step 7: Clean up
+# Step 5: Clean up
 print_status "Cleaning up temporary files..." "${SPARKLES}"
-if [ -f "turso-migration.sql" ]; then
-    rm turso-migration.sql
-    print_success "Temporary migration file cleaned up!"
-fi
+# Remove any temporary files that might have been created
 if [ -f "prisma/turso-temp.prisma" ]; then
     rm prisma/turso-temp.prisma
     print_success "Temporary schema file cleaned up!"
@@ -186,13 +179,17 @@ echo -e "${GREEN}${ROCKET}===============================================${NC}"
 echo ""
 echo -e "${GREEN}${CHECKMARK}${NC} ${WHITE}Local database updated${NC}"
 echo -e "${GREEN}${CHECKMARK}${NC} ${WHITE}Prisma client regenerated${NC}"
-echo -e "${GREEN}${CHECKMARK}${NC} ${WHITE}TypeScript compilation verified${NC}"
-echo -e "${GLOBE} ${WHITE}Turso database should be updated${NC}"
+if [ "$TURSO_UPDATED" = true ]; then
+    echo -e "${GREEN}${CHECKMARK}${NC} ${WHITE}Turso database synchronized${NC}"
+else
+    echo -e "${YELLOW}⚠️${NC} ${WHITE}Turso database may need manual update${NC}"
+fi
 echo ""
-echo -e "${PURPLE}${SPARKLES}${NC} ${WHITE}Your Jøssing game is ready with string literals! ${PURPLE}${SPARKLES}${NC}"
+echo -e "${PURPLE}${SPARKLES}${NC} ${WHITE}Your Jøssing game database migration is complete! ${PURPLE}${SPARKLES}${NC}"
 echo ""
 echo -e "${CYAN}Next steps:${NC}"
 echo -e "${WHITE}1. ${CYAN}npm run dev${NC} ${WHITE}- Start the development server${NC}"
 echo -e "${WHITE}2. ${CYAN}npm run build${NC} ${WHITE}- Verify everything works${NC}"
-echo -e "${WHITE}3. Deploy to production! ${ROCKET}${NC}"
+echo -e "${WHITE}3. Test your application to ensure both databases work correctly${NC}"
+echo -e "${WHITE}4. Deploy to production! ${ROCKET}${NC}"
 echo ""
