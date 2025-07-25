@@ -96,6 +96,10 @@ export async function POST(request: NextRequest) {
         result = { success: true, message: "Card played successfully" };
         break;
 
+      case 'startPlayingPhase':
+        result = await GameManager.startPlayingPhase(sessionId, playerId);
+        break;
+
       default:
         return NextResponse.json(
           { error: `Unknown action: ${action}` },

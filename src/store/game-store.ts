@@ -54,6 +54,7 @@ interface GameStore {
   startGame: (sessionId: string, adminPlayerId: string) => Promise<boolean>;
   placeBid: (sessionId: string, bid: number) => Promise<boolean>;
   playCard: (sessionId: string, card: Card) => Promise<boolean>;
+  startPlayingPhase: (sessionId: string) => Promise<boolean>;
   addAI: (sessionId: string, difficulty?: string) => Promise<boolean>;
   removeAI: (sessionId: string, playerId: string) => Promise<boolean>;
   refreshGameState: (sessionId: string) => Promise<void>;
@@ -239,6 +240,32 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return result.success;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to play card';
+      set({ 
+        error: errorMessage,
+        isConnected: false
+      });
+      return false;
+    }
+  },
+
+  startPlayingPhase: async (sessionId: string) => {
+    const { playerId } = get();
+    if (!playerId) return false;
+
+    try {
+      const result = await gameApiService.startPlayingPhase(sessionId, playerId);
+      if (result.success) {
+        // Update store state
+        set({ 
+          error: null,
+          isConnected: true
+        });
+        // Trigger a refresh to get updated state
+        get().refreshGameState(sessionId);
+      }
+      return result.success;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start playing phase';
       set({ 
         error: errorMessage,
         isConnected: false

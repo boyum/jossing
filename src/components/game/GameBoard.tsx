@@ -71,6 +71,7 @@ export function GameBoard() {
               </h1>
               <p className="text-gray-600">
                 {currentSection.phase === "bidding" && "Bidding Phase"}
+                {currentSection.phase === "bid_review" && "Bid Review Phase"}
                 {currentSection.phase === "playing" && "Playing Phase"}
                 {currentSection.phase === "dealing" && "Dealing Cards..."}
                 {currentSection.phase === "completed" && "Round Complete"}
@@ -110,7 +111,7 @@ export function GameBoard() {
             />
 
             {/* Phase-specific content */}
-            {currentSection.phase === "bidding" && playerId && (
+            {(currentSection.phase === "bidding" || currentSection.phase === "bid_review") && playerId && (
               <BiddingPhase
                 maxBid={currentSection.sectionNumber}
                 playerId={playerId}

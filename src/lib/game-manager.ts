@@ -63,4 +63,9 @@ export class GameManager {
   static async placeBid(sessionId: string, playerId: string, bidAmount: number) {
     return await dbService.placeBid(sessionId, playerId, bidAmount);
   }
+
+  // Start the playing phase (admin only)
+  static async startPlayingPhase(sessionId: string, adminPlayerId: string) {
+    return await dbService.startPlayingPhase(sessionId, adminPlayerId);
+  }
 }

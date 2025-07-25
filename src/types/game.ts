@@ -31,7 +31,7 @@ export type ScoringSystem = 'classic' | 'modern';
 
 export type GamePhase = 'waiting' | 'bidding' | 'playing' | 'scoring' | 'finished';
 
-export type SectionPhase = 'dealing' | 'bidding' | 'playing' | 'completed';
+export type SectionPhase = 'dealing' | 'bidding' | 'bid_review' | 'playing' | 'completed';
 
 export interface GameSession {
   id: string;

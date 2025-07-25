@@ -39,6 +39,7 @@ enum Suit {
 enum SectionPhase {
   dealing
   bidding
+  bid_review
   playing
   completed
 }

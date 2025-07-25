@@ -12,7 +12,7 @@ interface BiddingPhaseProps {
 
 export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
   const [selectedBid, setSelectedBid] = useState<number | null>(null);
-  const { placeBid, players, currentSection, session, sectionBids, playerHand } = useGameStore();
+  const { placeBid, startPlayingPhase, players, currentSection, session, sectionBids, playerHand } = useGameStore();
 
   // Check if this player has already bid
   const playerBid = sectionBids.find(bid => bid.playerId === playerId);
@@ -45,6 +45,17 @@ export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
 
   const playerBids = getPlayerBids();
   const allBidsPlaced = playerBids.every(pb => pb.hasBid);
+  const isInBidReview = currentSection?.phase === 'bid_review';
+  const isAdmin = players.find(p => p.id === playerId)?.isAdmin || false;
+
+  const handleStartPlaying = async () => {
+    if (!session) return;
+    try {
+      await startPlayingPhase(session.id);
+    } catch (error) {
+      console.error('Failed to start playing phase:', error);
+    }
+  };
 
   // Create bid options array for better keys
   const bidOptions = Array.from({ length: maxBid + 1 }, (_, i) => ({ value: i, label: `${i}` }));
@@ -143,9 +154,14 @@ export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
       {/* Bid Status */}
       <div className="mt-6 border-t pt-4">
         <h4 className="font-semibold text-gray-900 mb-3">Bidding Status</h4>
-        {!allBidsPlaced && (
+        {!allBidsPlaced && !isInBidReview && (
           <div className="mb-3 text-sm text-gray-600 text-center">
             💡 Bids are hidden until all players have placed their bids
+          </div>
+        )}
+        {isInBidReview && (
+          <div className="mb-3 text-sm text-blue-600 text-center font-medium">
+            🎯 All bids are revealed! Review them before starting the playing phase.
           </div>
         )}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -161,7 +177,7 @@ export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
               <div className="font-medium">{playerBidInfo.playerName}</div>
               <div>
                 {playerBidInfo.hasBid ? (
-                  playerBidInfo.bid !== undefined ? (
+                  playerBidInfo.bid !== undefined && (allBidsPlaced || isInBidReview) ? (
                     `Bid: ${playerBidInfo.bid}`
                   ) : (
                     <span className="flex items-center justify-center gap-1">
@@ -177,11 +193,38 @@ export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
           ))}
         </div>
 
-        {allBidsPlaced && (
+        {allBidsPlaced && !isInBidReview && (
           <div className="mt-4 text-center">
             <div className="bg-blue-100 border border-blue-300 rounded-lg p-3">
               <p className="text-blue-800 font-medium">
-                🎯 All bids are in! Starting the playing phase...
+                🎯 All bids are in! Reviewing bids before starting the playing phase...
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isInBidReview && isAdmin && (
+          <div className="mt-4 text-center">
+            <div className="bg-green-100 border border-green-300 rounded-lg p-4">
+              <p className="text-green-800 font-medium mb-3">
+                📋 All bids are revealed! Players can see what everyone bid.
+              </p>
+              <button
+                type="button"
+                onClick={handleStartPlaying}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-md font-semibold"
+              >
+                🚀 Start Playing Phase
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isInBidReview && !isAdmin && (
+          <div className="mt-4 text-center">
+            <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-3">
+              <p className="text-yellow-800 font-medium">
+                ⏳ Waiting for the admin to start the playing phase...
               </p>
             </div>
           </div>

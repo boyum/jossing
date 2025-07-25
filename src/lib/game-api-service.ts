@@ -89,6 +89,11 @@ class GameApiService {
     return this.performGameAction(sessionId, 'playCard', playerId, { card });
   }
 
+  // Start playing phase (admin only)
+  async startPlayingPhase(sessionId: string, playerId: string): Promise<GameActionResponse> {
+    return this.performGameAction(sessionId, 'startPlayingPhase', playerId, {});
+  }
+
   // Generic game action handler
   private async performGameAction(
     sessionId: string,

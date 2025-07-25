@@ -596,24 +596,12 @@ export async function placeBid(
 
   const handsWithBids = playerHands.filter((hand) => hand.bid !== null);
 
-  // If all players have bid, move to playing phase
+  // If all players have bid, move to bid-review phase
   if (handsWithBids.length === allPlayers.length) {
     await db.sectionState.update({
       where: { id: sectionState.id },
       data: {
-        phase: "playing",
-        leadPlayerPosition:
-          (sectionState.dealerPosition % allPlayers.length) + 1, // Player after dealer leads
-      },
-    });
-
-    // Create the first trick for this section
-    await db.trick.create({
-      data: {
-        sectionStateId: sectionState.id,
-        trickNumber: 1,
-        leadPlayerPosition:
-          (sectionState.dealerPosition % allPlayers.length) + 1,
+        phase: "bid_review",
       },
     });
   } else {
@@ -622,6 +610,72 @@ export async function placeBid(
   }
 
   return { success: true, message: "Bid placed successfully" };
+}
+
+export async function startPlayingPhase(
+  sessionId: string,
+  adminPlayerId: string,
+) {
+  // Get the admin player to verify permissions
+  const admin = await db.player.findFirst({
+    where: {
+      id: adminPlayerId,
+      sessionId,
+      isAdmin: true,
+    },
+  });
+
+  if (!admin) {
+    throw new Error("Only admin can start the playing phase");
+  }
+
+  // Get the current session and section
+  const session = await db.gameSession.findUnique({
+    where: { id: sessionId },
+  });
+
+  if (!session || session.gamePhase !== "playing") {
+    throw new Error("Game is not in playing phase");
+  }
+
+  const sectionState = await db.sectionState.findFirst({
+    where: {
+      sessionId,
+      sectionNumber: session.currentSection,
+    },
+  });
+
+  if (!sectionState || sectionState.phase !== "bid_review") {
+    throw new Error("Not in bid-review phase");
+  }
+
+  // Get all players to calculate lead position correctly
+  const allPlayers = await db.player.findMany({
+    where: { sessionId },
+    orderBy: { position: 'asc' },
+  });
+
+  // Transition to playing phase
+  await db.sectionState.update({
+    where: { id: sectionState.id },
+    data: {
+      phase: "playing",
+      leadPlayerPosition:
+        (sectionState.dealerPosition % allPlayers.length) + 1, // Player after dealer leads
+    },
+  });
+
+  // Create the first trick for this section
+  await db.trick.create({
+    data: {
+      sectionStateId: sectionState.id,
+      trickNumber: 1,
+      leadPlayerPosition:
+        (sectionState.dealerPosition % allPlayers.length) + 1,
+    },
+  });
+
+  return { success: true, message: "Playing phase started successfully" };
 }
 
 async function processAIBids(sessionId: string, sectionStateId: string) {
@@ -703,24 +757,12 @@ async function processAIBids(sessionId: string, sectionStateId: string) {
     (hand) => hand.bid !== null,
   );
 
-  // If all players have now bid, move to playing phase
+  // If all players have now bid, move to bid-review phase
   if (updatedHandsWithBids.length === allPlayers.length) {
     await db.sectionState.update({
       where: { id: sectionStateId },
       data: {
-        phase: "playing",
-        leadPlayerPosition:
-          (sectionState.dealerPosition % allPlayers.length) + 1, // Player after dealer leads
-      },
-    });
-
-    // Create the first trick for this section
-    await db.trick.create({
-      data: {
-        sectionStateId: sectionStateId,
-        trickNumber: 1,
-        leadPlayerPosition:
-          (sectionState.dealerPosition % allPlayers.length) + 1,
+        phase: "bid_review",
       },
     });
   }

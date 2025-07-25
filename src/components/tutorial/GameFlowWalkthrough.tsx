@@ -24,9 +24,22 @@ const gameFlowSteps = [
       "All players write down bids simultaneously",
       "Bid from 0 to the number of cards you have",
       "Bids are revealed at the same time",
+      "Admin clicks 'Next' to proceed after reviewing bids",
       "No strategic advantage from bidding order",
     ],
     visual: "bidding",
+  },
+  {
+    id: "bid-review",
+    title: "Bid Review",
+    description: "All bids are revealed for players to see",
+    details: [
+      "Players can see what everyone bid",
+      "Time to assess the situation before playing",
+      "Admin decides when to start the playing phase",
+      "Strategic preparation based on revealed bids",
+    ],
+    visual: "bid-review",
   },
   {
     id: "playing",
@@ -123,6 +136,39 @@ export default function GameFlowWalkthrough() {
               Total bids:{" "}
               {sampleGameData.players.reduce((sum, p) => sum + p.bid, 0)}
               (Total tricks: {sampleGameData.totalTricks})
+            </div>
+          </div>
+        );
+
+      case "bid-review":
+        return (
+          <div className="bg-purple-50 p-4 rounded">
+            <h4 className="font-medium text-center mb-3">All Bids Revealed!</h4>
+            <div className="space-y-2">
+              {sampleGameData.players.map((player) => (
+                <div
+                  key={player.name}
+                  className="flex justify-between items-center bg-white p-2 rounded border"
+                >
+                  <span className={player.name === "You" ? "font-bold" : ""}>
+                    {player.name}:
+                  </span>
+                  <span className="bg-purple-100 px-2 py-1 rounded font-medium">
+                    Bid: {player.bid}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 text-center">
+              <div className="bg-green-100 border border-green-300 rounded p-2">
+                <p className="text-green-800 text-sm font-medium">
+                  🎯 Total bids: {sampleGameData.players.reduce((sum, p) => sum + p.bid, 0)} 
+                  (Available tricks: {sampleGameData.totalTricks})
+                </p>
+                <p className="text-green-700 text-xs mt-1">
+                  Admin can now start the playing phase!
+                </p>
+              </div>
             </div>
           </div>
         );
@@ -295,6 +341,11 @@ export default function GameFlowWalkthrough() {
                     Carol bids 1 (total = 4, but only 3 tricks available!)
                   </li>
                 </ul>
+              </div>
+
+              <div>
+                <strong>Bid Review:</strong> All bids are revealed and everyone can see the situation. 
+                Admin starts the playing phase when ready.
               </div>
 
               <div>
