@@ -54,10 +54,15 @@ export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
       {/* Player's Hand */}
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-3">Your Cards</h3>
-        <div className="flex flex-wrap gap-2 justify-center">
+        <div className="flex flex-wrap gap-3 justify-center">
           {playerHand.map((card: Card, index: number) => (
             <div key={`${card.suit}-${card.rank}-${index}`} className="transform transition-transform hover:scale-105">
-              <CardComponent card={card} size="small" />
+              <CardComponent 
+                card={card} 
+                size="medium"
+                isTrump={card.suit === currentSection?.trumpSuit}
+                className="shadow-md"
+              />
             </div>
           ))}
         </div>

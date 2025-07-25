@@ -82,7 +82,7 @@ export function PlayerHand({ cards, isPlayerTurn, playerId, currentTrick, trumpS
       )}
 
       {/* Hand of cards */}
-      <div className="flex flex-wrap gap-2 justify-center">
+      <div className="flex flex-wrap gap-3 justify-center">
         {cards.map((card, index) => {
           const playable = isCardPlayable(card);
           const isTrump = card.suit === trumpSuit;
@@ -91,21 +91,20 @@ export function PlayerHand({ cards, isPlayerTurn, playerId, currentTrick, trumpS
             <div
               key={`${card.suit}-${card.rank}-${index}`}
               className={`transform transition-all duration-200 ${
-                playable 
-                  ? 'hover:scale-105 hover:-translate-y-2 cursor-pointer' 
-                  : isPlayerTurn 
-                    ? 'opacity-50 cursor-not-allowed' 
-                    : 'cursor-default'
+                playable && isPlayerTurn
+                  ? 'hover:-translate-y-2' 
+                  : ''
               }`}
-              onClick={() => handleCardClick(card)}
             >
               <CardComponent 
                 card={card} 
                 size="medium"
-                className={`shadow-md hover:shadow-lg transition-shadow ${
-                  isTrump ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''
-                } ${
-                  playable ? 'hover:ring-2 hover:ring-jossing-primary' : ''
+                onClick={playable && isPlayerTurn ? () => handleCardClick(card) : undefined}
+                isTrump={isTrump}
+                isPlayable={playable}
+                disabled={!isPlayerTurn}
+                className={`shadow-md transition-all duration-200 ${
+                  playable && isPlayerTurn ? 'hover:shadow-xl' : ''
                 }`}
               />
               {isTrump && (

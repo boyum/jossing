@@ -34,7 +34,7 @@ export function TrickArea({ trick, players, trumpSuit }: TrickAreaProps) {
       </div>
 
       {/* Cards played in the trick */}
-      <div className="flex justify-center items-center space-x-4 min-h-[120px]">
+      <div className="flex justify-center items-center space-x-6 min-h-[140px]">
         {trick.cardsPlayed.length > 0 ? (
           trick.cardsPlayed.map((trickCard) => {
             const player = players[trickCard.playerPosition - 1];
@@ -43,20 +43,24 @@ export function TrickArea({ trick, players, trumpSuit }: TrickAreaProps) {
               rank: trickCard.cardRank,
               value: 0 // Value not needed for display
             };
+            const isTrump = trickCard.cardSuit === trumpSuit;
+            const isLead = trickCard.playerPosition === trick.leadPlayerPosition;
 
             return (
               <div key={trickCard.id} className="text-center">
                 <CardComponent 
                   card={card}
                   size="medium"
+                  isTrump={isTrump}
                   className={`
-                    ${trickCard.cardSuit === trumpSuit ? 'ring-2 ring-yellow-400' : ''}
-                    ${trickCard.playerPosition === trick.leadPlayerPosition ? 'ring-2 ring-blue-400' : ''}
+                    shadow-lg
+                    ${isLead ? 'ring-2 ring-blue-400 ring-opacity-75' : ''}
                   `}
                 />
                 <p className="text-sm text-gray-600 mt-2 font-medium">
                   {player?.name || `Player ${trickCard.playerPosition}`}
-                  {trickCard.playerPosition === trick.leadPlayerPosition && ' (Lead)'}
+                  {isLead && ' (Lead)'}
+                  {isTrump && ' 👑'}
                 </p>
               </div>
             );
