@@ -108,6 +108,7 @@ export async function getGameState(playerId: string) {
   // Get current section state if game is playing
   let currentSection = null;
   let playerHand = [];
+  let currentTrick = null;
   
   if (session.gamePhase === "PLAYING" && session.currentSection > 0) {
     const sectionState = await db.sectionState.findFirst({
@@ -155,6 +156,48 @@ export async function getGameState(playerId: string) {
         bids,
       };
 
+      // Get current trick if in playing phase
+      if (sectionState.phase === "PLAYING") {
+        const trick = await db.trick.findFirst({
+          where: {
+            sectionStateId: sectionState.id,
+            completedAt: null, // Get the current active trick
+          },
+          include: {
+            trickCards: {
+              include: {
+                player: true,
+              },
+            },
+          },
+          orderBy: {
+            trickNumber: 'desc',
+          },
+        });
+
+        if (trick) {
+          currentTrick = {
+            id: trick.id,
+            sectionStateId: trick.sectionStateId,
+            trickNumber: trick.trickNumber,
+            leadPlayerPosition: trick.leadPlayerPosition,
+            leadingSuit: trick.leadingSuit?.toLowerCase(),
+            winnerPosition: trick.winnerPosition,
+            completedAt: trick.completedAt,
+            cardsPlayed: trick.trickCards.map(tc => ({
+              id: tc.id,
+              trickId: tc.trickId,
+              playerId: tc.playerId,
+              playerName: tc.player.name,
+              playerPosition: tc.playerPosition,
+              cardSuit: tc.cardSuit.toLowerCase(),
+              cardRank: tc.cardRank,
+              playedAt: tc.playedAt,
+            })),
+          };
+        }
+      }
+
       // Get player's hand for current section
       const playerHandRecord = await db.playerHand.findFirst({
         where: {
@@ -195,6 +238,7 @@ export async function getGameState(playerId: string) {
     })),
     currentSection,
     playerHand,
+    currentTrick,
     sectionBids: currentSection?.bids || [],
     allBidsPlaced: currentSection ? (currentSection.bids.length >= players.length && currentSection.bids.every(bid => bid.bid >= 0)) : false,
     isPlayerTurn: false, // Will be calculated based on game state
@@ -540,6 +584,15 @@ export async function placeBid(sessionId: string, playerId: string, bidAmount: n
         leadPlayerPosition: ((sectionState.dealerPosition) % allPlayers.length) + 1, // Player after dealer leads
       },
     });
+
+    // Create the first trick for this section
+    await db.trick.create({
+      data: {
+        sectionStateId: sectionState.id,
+        trickNumber: 1,
+        leadPlayerPosition: ((sectionState.dealerPosition) % allPlayers.length) + 1,
+      },
+    });
   } else {
     // Generate AI bids if needed
     await processAIBids(sessionId, sectionState.id);
@@ -607,5 +660,32 @@ async function processAIBids(sessionId: string, sectionStateId: string) {
         data: { bid: aiBid },
       });
     }
+  }
+
+  // After AI bids, check if all players have now bid and transition to PLAYING phase
+  const updatedPlayerHands = await db.playerHand.findMany({
+    where: { sectionStateId },
+  });
+
+  const updatedHandsWithBids = updatedPlayerHands.filter(hand => hand.bid !== null);
+
+  // If all players have now bid, move to playing phase
+  if (updatedHandsWithBids.length === allPlayers.length) {
+    await db.sectionState.update({
+      where: { id: sectionStateId },
+      data: { 
+        phase: "PLAYING",
+        leadPlayerPosition: ((sectionState.dealerPosition) % allPlayers.length) + 1, // Player after dealer leads
+      },
+    });
+
+    // Create the first trick for this section
+    await db.trick.create({
+      data: {
+        sectionStateId: sectionStateId,
+        trickNumber: 1,
+        leadPlayerPosition: ((sectionState.dealerPosition) % allPlayers.length) + 1,
+      },
+    });
   }
 }
