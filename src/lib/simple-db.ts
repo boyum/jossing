@@ -161,6 +161,7 @@ export async function getGameState(playerId: string) {
 
       // Get current trick if in playing phase
       if (sectionState.phase === "playing") {
+        console.debug("[getGameState] In playing phase, looking for active trick");
         const trick = await db.trick.findFirst({
           where: {
             sectionStateId: sectionState.id,
@@ -177,6 +178,8 @@ export async function getGameState(playerId: string) {
             trickNumber: "desc",
           },
         });
+
+        console.debug("[getGameState] Found trick:", trick ? { id: trick.id, trickNumber: trick.trickNumber, cardsPlayed: trick.trickCards.length } : null);
 
         if (trick) {
           currentTrick = {
@@ -199,6 +202,18 @@ export async function getGameState(playerId: string) {
             })),
           };
         }
+
+        // Process AI turns if we're in playing phase and there's an active trick
+        if (trick) {
+          console.debug("[getGameState] Processing AI turns for session:", player.sessionId);
+          try {
+            await processAITurns(player.sessionId);
+          } catch (error) {
+            console.error("Error processing AI turns in getGameState:", error);
+          }
+        }
+      } else {
+        console.debug("[getGameState] Section phase:", sectionState.phase);
       }
 
       // Get player's hand for current section
@@ -774,8 +789,8 @@ export async function playCard(
       trickId: currentTrick.id,
       playerId,
       playerPosition: player.position,
-      cardSuit: card.suit.toUpperCase() as PrismaSchema.$Enums.Suit,
-      cardRank: card.rank.toUpperCase() as PrismaSchema.$Enums.Rank,
+      cardSuit: card.suit.toLowerCase() as PrismaSchema.$Enums.Suit,
+      cardRank: mapCardRankToDb(card.rank as Rank),
     },
   });
 
@@ -966,12 +981,17 @@ function mapCardRankToDb(rank: Rank): PrismaSchema.$Enums.Rank {
 }
 
 async function processAITurns(sessionId: string) {
+  console.debug("[processAITurns] Starting AI turn processing for session:", sessionId);
+  
   // Get current section and trick
   const session = await db.gameSession.findUnique({
     where: { id: sessionId },
   });
 
-  if (!session || session.gamePhase !== "playing") return;
+  if (!session || session.gamePhase !== "playing") {
+    console.debug("[processAITurns] Session not in playing phase:", session?.gamePhase);
+    return;
+  }
 
   const sectionState = await db.sectionState.findFirst({
     where: {
@@ -980,7 +1000,10 @@ async function processAITurns(sessionId: string) {
     },
   });
 
-  if (!sectionState || sectionState.phase !== "playing") return;
+  if (!sectionState || sectionState.phase !== "playing") {
+    console.debug("[processAITurns] Section not in playing phase:", sectionState?.phase);
+    return;
+  }
 
   const currentTrick = await db.trick.findFirst({
     where: {
@@ -994,7 +1017,10 @@ async function processAITurns(sessionId: string) {
     },
   });
 
-  if (!currentTrick) return;
+  if (!currentTrick) {
+    console.debug("[processAITurns] No active trick found");
+    return;
+  }
 
   // Get all players
   const allPlayers = await getPlayersInSession(sessionId);
@@ -1003,9 +1029,18 @@ async function processAITurns(sessionId: string) {
   const nextPlayerPosition = getNextPlayerToPlay(currentTrick, allPlayers);
   const nextPlayer = allPlayers.find(p => p.position === nextPlayerPosition);
 
+  console.debug("[processAITurns] Next player to play:", {
+    position: nextPlayerPosition,
+    playerId: nextPlayer?.id,
+    isAI: nextPlayer?.id.startsWith("ai-")
+  });
+
   if (!nextPlayer || !nextPlayer.id.startsWith("ai-")) {
+    console.debug("[processAITurns] Not an AI's turn, skipping");
     return; // Not an AI's turn
   }
+
+  console.debug("[processAITurns] Processing AI turn for player:", nextPlayer.id);
 
   // Get AI's hand
   const playerHand = await db.playerHand.findFirst({
@@ -1015,14 +1050,26 @@ async function processAITurns(sessionId: string) {
     },
   });
 
-  if (!playerHand) return;
+  if (!playerHand) {
+    console.debug("[processAITurns] Player hand not found for AI:", nextPlayer.id);
+    return;
+  }
 
   const hand: Card[] = JSON.parse(playerHand.cards);
-  if (hand.length === 0) return;
+  if (hand.length === 0) {
+    console.debug("[processAITurns] AI has no cards left:", nextPlayer.id);
+    return;
+  }
 
-  // Import AI manager
+  console.debug("[processAITurns] AI hand:", hand);
+
+  // Import AI manager and create AI
   const { AIManager } = await import("./ai/ai-manager");
   const aiManager = new AIManager();
+  
+  // Extract difficulty from AI player ID and register the AI
+  const difficulty = nextPlayer.id.split("-")[1] as "easy" | "medium" | "hard";
+  aiManager.addAIPlayer(nextPlayer.id, difficulty, nextPlayer.name);
 
   // Get current trick cards
   const currentTrickCards: Card[] = currentTrick.trickCards.map(tc => ({
@@ -1032,6 +1079,12 @@ async function processAITurns(sessionId: string) {
 
   const trumpSuit = sectionState.trumpSuit.toLowerCase() as Suit;
   const leadingSuit = currentTrick.leadingSuit?.toLowerCase() as Suit | undefined;
+
+  console.debug("[processAITurns] Game context:", {
+    trumpSuit,
+    leadingSuit,
+    currentTrickCards: currentTrickCards.length
+  });
 
   // Create game context
   const gameContext: {
@@ -1071,9 +1124,15 @@ async function processAITurns(sessionId: string) {
     gameContext
   );
 
+  console.debug("[processAITurns] AI chose card:", cardToPlay);
+
   if (cardToPlay) {
+    console.debug("[processAITurns] Playing card for AI:", nextPlayer.id, cardToPlay);
     // Play the card for the AI
     await playCard(sessionId, nextPlayer.id, cardToPlay);
+    console.debug("[processAITurns] AI card played successfully");
+  } else {
+    console.debug("[processAITurns] AI did not return a valid card");
   }
 }
 
