@@ -6,7 +6,7 @@ CREATE TABLE "game_sessions" (
     "scoringSystem" TEXT NOT NULL,
     "maxPlayers" INTEGER NOT NULL DEFAULT 6,
     "currentSection" INTEGER NOT NULL DEFAULT 0,
-    "gamePhase" TEXT NOT NULL DEFAULT 'WAITING',
+    "gamePhase" TEXT NOT NULL DEFAULT 'waiting',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );
@@ -33,7 +33,7 @@ CREATE TABLE "section_states" (
     "leadPlayerPosition" INTEGER,
     "trumpSuit" TEXT NOT NULL,
     "trumpCardRank" TEXT NOT NULL,
-    "phase" TEXT NOT NULL DEFAULT 'DEALING',
+    "phase" TEXT NOT NULL DEFAULT 'dealing',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "section_states_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "game_sessions" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
