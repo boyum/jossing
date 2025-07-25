@@ -68,4 +68,9 @@ export class GameManager {
   static async startPlayingPhase(sessionId: string, adminPlayerId: string) {
     return await dbService.startPlayingPhase(sessionId, adminPlayerId);
   }
+
+  // Play a card for a player
+  static async playCard(sessionId: string, playerId: string, card: { suit: string; rank: string }) {
+    return await dbService.playCard(sessionId, playerId, card);
+  }
 }

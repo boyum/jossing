@@ -92,8 +92,7 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        // TODO: Implement play card functionality with GameManager
-        result = { success: true, message: "Card played successfully" };
+        result = await GameManager.playCard(sessionId, playerId, data.card);
         break;
 
       case 'startPlayingPhase':

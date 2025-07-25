@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
-import type { GameType, Rank, ScoringSystem } from "@/types/game";
+import type { GameType, Rank, ScoringSystem, Suit, Card } from "@/types/game";
 import type * as PrismaSchema from "../../node_modules/.prisma/client/index";
 import { db } from "./db";
-import { allRanks, allSuits, generateSessionId } from "./game-utils";
+import { allRanks, allSuits, generateSessionId, getTrickWinner } from "./game-utils";
 
 // Simple database functions to get started
 export async function createGameSession(
@@ -675,7 +675,171 @@ export async function startPlayingPhase(
     },
   });
 
+  // Process AI turns if needed
+  await processAITurns(sessionId);
+
   return { success: true, message: "Playing phase started successfully" };
+}
+
+export async function playCard(
+  sessionId: string,
+  playerId: string,
+  card: { suit: string; rank: string },
+) {
+  // Get the player
+  const player = await db.player.findFirst({
+    where: {
+      id: playerId,
+      sessionId,
+    },
+  });
+
+  if (!player) {
+    throw new Error("Player not found in session");
+  }
+
+  // Get the current session and section
+  const session = await db.gameSession.findUnique({
+    where: { id: sessionId },
+  });
+
+  if (!session || session.gamePhase !== "playing") {
+    throw new Error("Game is not in playing phase");
+  }
+
+  const sectionState = await db.sectionState.findFirst({
+    where: {
+      sessionId,
+      sectionNumber: session.currentSection,
+    },
+  });
+
+  if (!sectionState || sectionState.phase !== "playing") {
+    throw new Error("Not in playing phase");
+  }
+
+  // Get the current trick
+  const currentTrick = await db.trick.findFirst({
+    where: {
+      sectionStateId: sectionState.id,
+      completedAt: null,
+    },
+    include: {
+      trickCards: true,
+    },
+  });
+
+  if (!currentTrick) {
+    throw new Error("No active trick found");
+  }
+
+  // Check if it's the player's turn
+  const expectedPlayerPosition = getNextPlayerToPlay(currentTrick, await getPlayersInSession(sessionId));
+  if (player.position !== expectedPlayerPosition) {
+    throw new Error("Not your turn to play");
+  }
+
+  // Get player's hand
+  const playerHand = await db.playerHand.findFirst({
+    where: {
+      sectionStateId: sectionState.id,
+      playerId,
+    },
+  });
+
+  if (!playerHand) {
+    throw new Error("Player hand not found");
+  }
+
+  const hand: Array<{ suit: string; rank: string }> = JSON.parse(playerHand.cards);
+
+  // Validate the card is in the player's hand
+  const cardInHand = hand.find(c => c.suit === card.suit && c.rank === card.rank);
+  if (!cardInHand) {
+    throw new Error("Card not in player's hand");
+  }
+
+  // Validate card play according to rules (must follow suit if possible)
+  const leadingSuit = currentTrick.leadingSuit;
+  if (leadingSuit && card.suit !== leadingSuit) {
+    const hasSuit = hand.some(c => c.suit === leadingSuit);
+    if (hasSuit) {
+      throw new Error("Must follow suit");
+    }
+  }
+
+  // Play the card
+  await db.trickCard.create({
+    data: {
+      trickId: currentTrick.id,
+      playerId,
+      playerPosition: player.position,
+      cardSuit: card.suit.toUpperCase() as PrismaSchema.$Enums.Suit,
+      cardRank: card.rank.toUpperCase() as PrismaSchema.$Enums.Rank,
+    },
+  });
+
+  // Remove card from player's hand
+  const updatedHand = hand.filter(c => !(c.suit === card.suit && c.rank === card.rank));
+  await db.playerHand.update({
+    where: { id: playerHand.id },
+    data: {
+      cards: JSON.stringify(updatedHand),
+    },
+  });
+
+  // Set leading suit if this is the first card
+  if (!leadingSuit) {
+    await db.trick.update({
+      where: { id: currentTrick.id },
+      data: {
+        leadingSuit: card.suit.toUpperCase() as PrismaSchema.$Enums.Suit,
+      },
+    });
+  }
+
+  // Check if trick is complete
+  const allPlayers = await getPlayersInSession(sessionId);
+  const trickCardsCount = await db.trickCard.count({
+    where: { trickId: currentTrick.id },
+  });
+
+  if (trickCardsCount === allPlayers.length) {
+    // Complete the trick
+    await completeTrick(currentTrick.id, sectionState.trumpSuit);
+    
+    // Check if section is complete
+    const playerHandsWithCards = await db.playerHand.findMany({
+      where: { sectionStateId: sectionState.id },
+    });
+    
+    const anyPlayerHasCards = playerHandsWithCards.some(hand => {
+      const cards = JSON.parse(hand.cards);
+      return cards.length > 0;
+    });
+
+    if (!anyPlayerHasCards) {
+      // Section is complete - calculate scores and move to next section
+      await completeSection(sectionState.id);
+    } else {
+      // Create next trick
+      const winner = await getCurrentTrickWinner(currentTrick.id);
+      if (winner) {
+        await db.trick.create({
+          data: {
+            sectionStateId: sectionState.id,
+            trickNumber: currentTrick.trickNumber + 1,
+            leadPlayerPosition: winner.playerPosition,
+          },
+        });
+      }
+    }
+  }
+
+  // Process AI turns if needed
+  await processAITurns(sessionId);
+
+  return { success: true, message: "Card played successfully" };
 }
 
 async function processAIBids(sessionId: string, sectionStateId: string) {
@@ -798,5 +962,286 @@ function mapCardRankToDb(rank: Rank): PrismaSchema.$Enums.Rank {
       return "two";
     default:
       throw new Error(`Unknown card rank: ${rank}`);
+  }
+}
+
+async function processAITurns(sessionId: string) {
+  // Get current section and trick
+  const session = await db.gameSession.findUnique({
+    where: { id: sessionId },
+  });
+
+  if (!session || session.gamePhase !== "playing") return;
+
+  const sectionState = await db.sectionState.findFirst({
+    where: {
+      sessionId,
+      sectionNumber: session.currentSection,
+    },
+  });
+
+  if (!sectionState || sectionState.phase !== "playing") return;
+
+  const currentTrick = await db.trick.findFirst({
+    where: {
+      sectionStateId: sectionState.id,
+      completedAt: null,
+    },
+    include: {
+      trickCards: {
+        include: { player: true }
+      },
+    },
+  });
+
+  if (!currentTrick) return;
+
+  // Get all players
+  const allPlayers = await getPlayersInSession(sessionId);
+  
+  // Check if it's an AI player's turn
+  const nextPlayerPosition = getNextPlayerToPlay(currentTrick, allPlayers);
+  const nextPlayer = allPlayers.find(p => p.position === nextPlayerPosition);
+
+  if (!nextPlayer || !nextPlayer.id.startsWith("ai-")) {
+    return; // Not an AI's turn
+  }
+
+  // Get AI's hand
+  const playerHand = await db.playerHand.findFirst({
+    where: {
+      sectionStateId: sectionState.id,
+      playerId: nextPlayer.id,
+    },
+  });
+
+  if (!playerHand) return;
+
+  const hand: Card[] = JSON.parse(playerHand.cards);
+  if (hand.length === 0) return;
+
+  // Import AI manager
+  const { AIManager } = await import("./ai/ai-manager");
+  const aiManager = new AIManager();
+
+  // Get current trick cards
+  const currentTrickCards: Card[] = currentTrick.trickCards.map(tc => ({
+    suit: tc.cardSuit.toLowerCase() as Suit,
+    rank: tc.cardRank as Rank,
+  }));
+
+  const trumpSuit = sectionState.trumpSuit.toLowerCase() as Suit;
+  const leadingSuit = currentTrick.leadingSuit?.toLowerCase() as Suit | undefined;
+
+  // Create game context
+  const gameContext: {
+    currentSection: number;
+    totalSections: number;
+    playerBids: Record<string, number>;
+    tricksPlayed: number;
+    totalTricks: number;
+    scores: Record<string, number>;
+  } = {
+    currentSection: sectionState.sectionNumber,
+    totalSections: session.gameType === "up" ? 13 : 20,
+    playerBids: {},
+    tricksPlayed: currentTrick.trickNumber - 1,
+    totalTricks: sectionState.sectionNumber,
+    scores: {},
+  };
+
+  // Get player bids and tricks won
+  const playerHands = await db.playerHand.findMany({
+    where: { sectionStateId: sectionState.id },
+    include: { player: true },
+  });
+
+  for (const ph of playerHands) {
+    gameContext.playerBids[ph.player.name] = ph.bid || 0;
+    gameContext.scores[ph.player.name] = ph.player.totalScore;
+  }
+
+  // Make AI play a card
+  const cardToPlay = await aiManager.playAICard(
+    nextPlayer.id,
+    hand,
+    currentTrickCards,
+    trumpSuit,
+    leadingSuit,
+    gameContext
+  );
+
+  if (cardToPlay) {
+    // Play the card for the AI
+    await playCard(sessionId, nextPlayer.id, cardToPlay);
+  }
+}
+
+async function getPlayersInSession(sessionId: string) {
+  return await db.player.findMany({
+    where: { sessionId },
+    orderBy: { position: 'asc' },
+  });
+}
+
+function getNextPlayerToPlay(trick: { leadPlayerPosition: number; trickCards: Array<{ playerPosition: number }> }, allPlayers: Array<{ position: number }>) {
+  if (!trick.trickCards || trick.trickCards.length === 0) {
+    // First card - lead player plays
+    return trick.leadPlayerPosition;
+  }
+
+  // Find the next player after the last one who played
+  const playedPositions = new Set(trick.trickCards.map(tc => tc.playerPosition));
+  
+  // Start from lead player and find next player who hasn't played
+  let currentPos = trick.leadPlayerPosition;
+  for (let i = 0; i < allPlayers.length; i++) {
+    if (!playedPositions.has(currentPos)) {
+      return currentPos;
+    }
+    currentPos = (currentPos % allPlayers.length) + 1;
+  }
+  
+  return trick.leadPlayerPosition; // Fallback
+}
+
+async function completeTrick(trickId: string, trumpSuit: string) {
+  const trick = await db.trick.findUnique({
+    where: { id: trickId },
+    include: {
+      trickCards: {
+        include: { player: true }
+      },
+    },
+  });
+
+  if (!trick) return;
+
+  // Find the winner
+  const cardsPlayed: Record<number, Card> = {};
+  
+  for (const tc of trick.trickCards) {
+    cardsPlayed[tc.playerPosition] = {
+      suit: tc.cardSuit.toLowerCase() as Suit,
+      rank: tc.cardRank as Rank,
+    };
+  }
+
+  const leadingSuit = trick.leadingSuit?.toLowerCase() as Suit | undefined;
+  if (!leadingSuit) {
+    throw new Error("No leading suit found for completed trick");
+  }
+  const winnerPosition = getTrickWinner(cardsPlayed, trick.leadPlayerPosition, trumpSuit.toLowerCase() as Suit, leadingSuit);
+
+  // Update trick as completed
+  await db.trick.update({
+    where: { id: trickId },
+    data: {
+      winnerPosition,
+      completedAt: new Date(),
+    },
+  });
+
+  // Update winner's tricks won count
+  const winnerCard = trick.trickCards.find(tc => tc.playerPosition === winnerPosition);
+  if (winnerCard) {
+    const playerHand = await db.playerHand.findFirst({
+      where: {
+        sectionStateId: trick.sectionStateId,
+        playerId: winnerCard.playerId,
+      },
+    });
+
+    if (playerHand) {
+      await db.playerHand.update({
+        where: { id: playerHand.id },
+        data: {
+          tricksWon: playerHand.tricksWon + 1,
+        },
+      });
+    }
+  }
+
+  return { winnerPosition };
+}
+
+async function getCurrentTrickWinner(trickId: string) {
+  const trick = await db.trick.findUnique({
+    where: { id: trickId },
+    include: {
+      trickCards: {
+        include: { player: true }
+      },
+    },
+  });
+
+  if (!trick || !trick.winnerPosition) return null;
+
+  return trick.trickCards.find(tc => tc.playerPosition === trick.winnerPosition);
+}
+
+async function completeSection(sectionStateId: string) {
+  // Calculate scores for each player
+  const playerHands = await db.playerHand.findMany({
+    where: { sectionStateId },
+    include: { player: true },
+  });
+
+  for (const hand of playerHands) {
+    const bid = hand.bid || 0;
+    const tricksWon = hand.tricksWon;
+    
+    // Scoring: 10 + bid if exact, 0 otherwise
+    const sectionScore = (bid === tricksWon) ? 10 + bid : 0;
+    
+    await db.playerHand.update({
+      where: { id: hand.id },
+      data: { sectionScore },
+    });
+
+    // Update player's total score
+    await db.player.update({
+      where: { id: hand.playerId },
+      data: {
+        totalScore: {
+          increment: sectionScore,
+        },
+      },
+    });
+  }
+
+  // Mark section as completed
+  await db.sectionState.update({
+    where: { id: sectionStateId },
+    data: { phase: "completed" },
+  });
+
+  // Check if game is complete or start next section
+  const sectionState = await db.sectionState.findUnique({
+    where: { id: sectionStateId },
+    include: { session: true },
+  });
+
+  if (!sectionState) return;
+
+  const session = sectionState.session;
+  const maxSections = session.gameType === "up" ? 13 : 20;
+
+  if (session.currentSection >= maxSections) {
+    // Game is complete
+    await db.gameSession.update({
+      where: { id: session.id },
+      data: { gamePhase: "finished" },
+    });
+  } else {
+    // Start next section
+    const nextSectionNumber = session.currentSection + 1;
+    await db.gameSession.update({
+      where: { id: session.id },
+      data: { currentSection: nextSectionNumber },
+    });
+
+    // Initialize next section
+    await initializeSection(session.id, nextSectionNumber);
   }
 }
