@@ -438,21 +438,21 @@ class JossingGameEngine {
 Current implementation uses HTTP polling with a **1-second interval** for responsive real-time updates:
 
 ```typescript
-// hooks/useGamePolling.ts - Default polling interval: 1000ms (1 second)
+// hooks/useGamePolling.ts - Default polling interval: 2000ms (2 seconds)
 interface UseGamePollingOptions {
   sessionId: string;
   playerId: string;
   enabled?: boolean;
-  pollingInterval?: number; // milliseconds (default: 1000ms)
+  pollingInterval?: number; // milliseconds (default: 2000ms)
 }
 
 export function useGamePolling({
   sessionId,
   playerId,
   enabled = true,
-  pollingInterval = 1000 // 1 second for responsive updates
+  pollingInterval = 2000 // 2 second for responsive updates
 }: UseGamePollingOptions): GamePollingResult {
-  // Implementation fetches game state every 1 second
+  // Implementation fetches game state every 2 seconds
   useEffect(() => {
     const interval = setInterval(fetchGameState, pollingInterval);
     return () => clearInterval(interval);
