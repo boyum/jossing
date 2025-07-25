@@ -256,7 +256,8 @@ export function getSuitSymbol(suit: Suit): string {
     case Suit.SPADES:
       return '♠';
     default:
-      return '';
+      console.error(`Unknown suit: ${suit}`);
+      return 'ERROR';
   }
 }
 

@@ -255,7 +255,7 @@ export async function createSection(
     sectionNumber: section.sectionNumber,
     dealerPosition: section.dealerPosition,
     leadPlayerPosition: section.leadPlayerPosition ?? undefined,
-    trumpSuit: section.trumpSuit as Suit,
+    trumpSuit: mapSuitFromDb(section.trumpSuit),
     trumpCardRank: mapRankFromDb(section.trumpCardRank),
     phase: section.phase as SectionPhase,
     createdAt: section.createdAt,
@@ -354,7 +354,7 @@ export async function getCurrentSection(
     sectionNumber: section.sectionNumber,
     dealerPosition: section.dealerPosition,
     leadPlayerPosition: section.leadPlayerPosition ?? undefined,
-    trumpSuit: section.trumpSuit as Suit,
+    trumpSuit: mapSuitFromDb(section.trumpSuit),
     trumpCardRank: mapRankFromDb(section.trumpCardRank),
     phase: section.phase as SectionPhase,
     createdAt: section.createdAt,
@@ -527,7 +527,9 @@ export async function createTrick(
     sectionStateId: trick.sectionStateId,
     trickNumber: trick.trickNumber,
     leadPlayerPosition: trick.leadPlayerPosition,
-    leadingSuit: trick.leadingSuit as Suit | undefined,
+    leadingSuit: trick.leadingSuit
+      ? mapSuitFromDb(trick.leadingSuit)
+      : undefined,
     winnerPosition: trick.winnerPosition ?? undefined,
     completedAt: trick.completedAt ?? undefined,
   };
@@ -551,7 +553,9 @@ export async function getCurrentTrick(
     sectionStateId: trick.sectionStateId,
     trickNumber: trick.trickNumber,
     leadPlayerPosition: trick.leadPlayerPosition,
-    leadingSuit: trick.leadingSuit as Suit | undefined,
+    leadingSuit: trick.leadingSuit
+      ? mapSuitFromDb(trick.leadingSuit)
+      : undefined,
     winnerPosition: trick.winnerPosition ?? undefined,
     completedAt: trick.completedAt ?? undefined,
   };
