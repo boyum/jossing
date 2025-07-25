@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useGameStore } from '@/store/game-store';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { AddAIPlayers } from '@/components/game/AddAIPlayers';
 import { GameBoard } from '@/components/game/GameBoard';
 import { ConnectionStatus } from '@/components/ui/ConnectionStatus';
-import { AddAIPlayers } from '@/components/game/AddAIPlayers';
-import { AIDifficulty } from '@/types/game';
-import Link from 'next/link';
+import { useGameStore } from '@/store/game-store';
+import type { AIDifficulty } from '@/types/game';
 
 export default function PlayPage() {
   const [mode, setMode] = useState<'setup' | 'demo' | 'multiplayer'>('setup');
@@ -14,6 +14,8 @@ export default function PlayPage() {
   const [joinPlayerName, setJoinPlayerName] = useState('');
   const [gameCode, setGameCode] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isCreatingGame, setIsCreatingGame] = useState(false);
+  const [isJoiningGame, setIsJoiningGame] = useState(false);
 
   const { 
     createSession,
@@ -56,22 +58,26 @@ export default function PlayPage() {
     e.preventDefault();
     if (!createPlayerName.trim()) return;
 
+    setIsCreatingGame(true);
     const result = await createSession(createPlayerName);
     if (result) {
       setSessionId(result.sessionId);
       setMode('multiplayer');
     }
+    setIsCreatingGame(false);
   };
 
   const handleJoinGame = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!joinPlayerName.trim() || !gameCode.trim()) return;
 
+    setIsJoiningGame(true);
     const result = await joinSession(gameCode.toUpperCase(), joinPlayerName);
     if (result) {
       setSessionId(gameCode.toUpperCase());
       setMode('multiplayer');
     }
+    setIsJoiningGame(false);
   };
 
   const handleStartGame = async () => {
@@ -301,10 +307,10 @@ export default function PlayPage() {
                     />
                     <button
                       type="submit"
-                      disabled={isLoading}
+                      disabled={isCreatingGame}
                       className="w-full px-6 py-3 bg-indian-red text-white font-semibold rounded-lg hover:bg-indian-red/90 transition-colors disabled:opacity-50"
                     >
-                      {isLoading ? 'Creating...' : 'Create Game'}
+                      {isCreatingGame ? 'Creating...' : 'Create Game'}
                     </button>
                   </form>
                 </div>
@@ -332,10 +338,10 @@ export default function PlayPage() {
                     />
                     <button
                       type="submit"
-                      disabled={isLoading}
+                      disabled={isJoiningGame}
                       className="w-full px-6 py-3 bg-royal-blue text-white font-semibold rounded-lg hover:bg-royal-blue/90 transition-colors disabled:opacity-50"
                     >
-                      {isLoading ? 'Joining...' : 'Join Game'}
+                      {isJoiningGame ? 'Joining...' : 'Join Game'}
                     </button>
                   </form>
                 </div>
