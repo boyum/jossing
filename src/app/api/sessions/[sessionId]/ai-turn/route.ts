@@ -1,4 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { processAITurns } from "@/lib/simple-db";
+import { db } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,25 +15,64 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { playerId, action } = body;
+    const { action } = body;
 
-    if (!playerId || !action) {
-      return NextResponse.json(
-        { error: "Player ID and action are required" },
-        { status: 400 }
-      );
-    }
+    console.debug("Processing AI turn:", { sessionId, action });
 
-    console.debug("Processing AI turn:", { sessionId, playerId, action });
-
-    // TODO: Implement AI turn processing with GameManager and AIManager
-    // For now, return a placeholder response
-    const result = {
-      success: true,
-      message: "AI turn processed successfully",
-      action,
-      playerId
+    let result: {
+      success: boolean;
+      message: string;
+      action: string;
     };
+
+    switch (action) {
+      case "playCard": {
+        // Check if the session exists and is in playing phase
+        const session = await db.gameSession.findUnique({
+          where: { id: sessionId },
+        });
+        
+        if (!session) {
+          return NextResponse.json(
+            { error: "Session not found" },
+            { status: 404 }
+          );
+        }
+
+        if (session.gamePhase !== "playing") {
+          return NextResponse.json(
+            { error: `Game is in ${session.gamePhase} phase, not playing` },
+            { status: 400 }
+          );
+        }
+
+        // Process AI turns for this session
+        await processAITurns(sessionId);
+        
+        result = {
+          success: true,
+          message: "AI turn processing triggered successfully",
+          action
+        };
+        break;
+      }
+
+      case "bid": {
+        // For future implementation - AI bidding logic
+        result = {
+          success: false,
+          message: "AI bidding not yet implemented",
+          action
+        };
+        break;
+      }
+
+      default:
+        return NextResponse.json(
+          { error: `Unknown action: ${action}` },
+          { status: 400 }
+        );
+    }
 
     return NextResponse.json(result);
   } catch (error) {

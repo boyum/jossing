@@ -1,8 +1,13 @@
 import { v4 as uuidv4 } from "uuid";
 import type { GameType, Rank, ScoringSystem, Suit, Card } from "@/types/game";
-import type * as PrismaSchema from "../../node_modules/.prisma/client/index";
 import { db } from "./db";
-import { allRanks, allSuits, generateSessionId, getTrickWinner } from "./game-utils";
+import {
+  allRanks,
+  allSuits,
+  generateSessionId,
+  getTrickWinner,
+} from "./game-utils";
+import type * as PrismaSchema from ".prisma/client";
 
 // Simple database functions to get started
 export async function createGameSession(
@@ -161,7 +166,9 @@ export async function getGameState(playerId: string) {
 
       // Get current trick if in playing phase
       if (sectionState.phase === "playing") {
-        console.debug("[getGameState] In playing phase, looking for active trick");
+        console.debug(
+          "[getGameState] In playing phase, looking for active trick",
+        );
         const trick = await db.trick.findFirst({
           where: {
             sectionStateId: sectionState.id,
@@ -179,7 +186,16 @@ export async function getGameState(playerId: string) {
           },
         });
 
-        console.debug("[getGameState] Found trick:", trick ? { id: trick.id, trickNumber: trick.trickNumber, cardsPlayed: trick.trickCards.length } : null);
+        console.debug(
+          "[getGameState] Found trick:",
+          trick
+            ? {
+                id: trick.id,
+                trickNumber: trick.trickNumber,
+                cardsPlayed: trick.trickCards.length,
+              }
+            : null,
+        );
 
         if (trick) {
           currentTrick = {
@@ -205,7 +221,10 @@ export async function getGameState(playerId: string) {
 
         // Process AI turns if we're in playing phase and there's an active trick
         if (trick) {
-          console.debug("[getGameState] Processing AI turns for session:", player.sessionId);
+          console.debug(
+            "[getGameState] Processing AI turns for session:",
+            player.sessionId,
+          );
           try {
             await processAITurns(player.sessionId);
           } catch (error) {
@@ -667,7 +686,7 @@ export async function startPlayingPhase(
   // Get all players to calculate lead position correctly
   const allPlayers = await db.player.findMany({
     where: { sessionId },
-    orderBy: { position: 'asc' },
+    orderBy: { position: "asc" },
   });
 
   // Transition to playing phase
@@ -675,8 +694,7 @@ export async function startPlayingPhase(
     where: { id: sectionState.id },
     data: {
       phase: "playing",
-      leadPlayerPosition:
-        (sectionState.dealerPosition % allPlayers.length) + 1, // Player after dealer leads
+      leadPlayerPosition: (sectionState.dealerPosition % allPlayers.length) + 1, // Player after dealer leads
     },
   });
 
@@ -685,8 +703,7 @@ export async function startPlayingPhase(
     data: {
       sectionStateId: sectionState.id,
       trickNumber: 1,
-      leadPlayerPosition:
-        (sectionState.dealerPosition % allPlayers.length) + 1,
+      leadPlayerPosition: (sectionState.dealerPosition % allPlayers.length) + 1,
     },
   });
 
@@ -699,7 +716,7 @@ export async function startPlayingPhase(
 export async function playCard(
   sessionId: string,
   playerId: string,
-  card: { suit: string; rank: string },
+  card: Card,
 ) {
   // Get the player
   const player = await db.player.findFirst({
@@ -749,7 +766,10 @@ export async function playCard(
   }
 
   // Check if it's the player's turn
-  const expectedPlayerPosition = getNextPlayerToPlay(currentTrick, await getPlayersInSession(sessionId));
+  const expectedPlayerPosition = getNextPlayerToPlay(
+    currentTrick,
+    await getPlayersInSession(sessionId),
+  );
   if (player.position !== expectedPlayerPosition) {
     throw new Error("Not your turn to play");
   }
@@ -766,10 +786,14 @@ export async function playCard(
     throw new Error("Player hand not found");
   }
 
-  const hand: Array<{ suit: string; rank: string }> = JSON.parse(playerHand.cards);
+  const hand: Array<{ suit: string; rank: string }> = JSON.parse(
+    playerHand.cards,
+  );
 
   // Validate the card is in the player's hand
-  const cardInHand = hand.find(c => c.suit === card.suit && c.rank === card.rank);
+  const cardInHand = hand.find(
+    (c) => c.suit === card.suit && c.rank === card.rank,
+  );
   if (!cardInHand) {
     throw new Error("Card not in player's hand");
   }
@@ -777,7 +801,7 @@ export async function playCard(
   // Validate card play according to rules (must follow suit if possible)
   const leadingSuit = currentTrick.leadingSuit;
   if (leadingSuit && card.suit !== leadingSuit) {
-    const hasSuit = hand.some(c => c.suit === leadingSuit);
+    const hasSuit = hand.some((c) => c.suit === leadingSuit);
     if (hasSuit) {
       throw new Error("Must follow suit");
     }
@@ -789,13 +813,15 @@ export async function playCard(
       trickId: currentTrick.id,
       playerId,
       playerPosition: player.position,
-      cardSuit: card.suit.toLowerCase() as PrismaSchema.$Enums.Suit,
+      cardSuit: card.suit,
       cardRank: mapCardRankToDb(card.rank as Rank),
     },
   });
 
   // Remove card from player's hand
-  const updatedHand = hand.filter(c => !(c.suit === card.suit && c.rank === card.rank));
+  const updatedHand = hand.filter(
+    (c) => !(c.suit === card.suit && c.rank === card.rank),
+  );
   await db.playerHand.update({
     where: { id: playerHand.id },
     data: {
@@ -808,7 +834,7 @@ export async function playCard(
     await db.trick.update({
       where: { id: currentTrick.id },
       data: {
-        leadingSuit: card.suit.toUpperCase() as PrismaSchema.$Enums.Suit,
+        leadingSuit: card.suit,
       },
     });
   }
@@ -822,13 +848,13 @@ export async function playCard(
   if (trickCardsCount === allPlayers.length) {
     // Complete the trick
     await completeTrick(currentTrick.id, sectionState.trumpSuit);
-    
+
     // Check if section is complete
     const playerHandsWithCards = await db.playerHand.findMany({
       where: { sectionStateId: sectionState.id },
     });
-    
-    const anyPlayerHasCards = playerHandsWithCards.some(hand => {
+
+    const anyPlayerHasCards = playerHandsWithCards.some((hand) => {
       const cards = JSON.parse(hand.cards);
       return cards.length > 0;
     });
@@ -980,16 +1006,22 @@ function mapCardRankToDb(rank: Rank): PrismaSchema.$Enums.Rank {
   }
 }
 
-async function processAITurns(sessionId: string) {
-  console.debug("[processAITurns] Starting AI turn processing for session:", sessionId);
-  
+export async function processAITurns(sessionId: string) {
+  console.debug(
+    "[processAITurns] Starting AI turn processing for session:",
+    sessionId,
+  );
+
   // Get current section and trick
   const session = await db.gameSession.findUnique({
     where: { id: sessionId },
   });
 
   if (!session || session.gamePhase !== "playing") {
-    console.debug("[processAITurns] Session not in playing phase:", session?.gamePhase);
+    console.debug(
+      "[processAITurns] Session not in playing phase:",
+      session?.gamePhase,
+    );
     return;
   }
 
@@ -1001,7 +1033,10 @@ async function processAITurns(sessionId: string) {
   });
 
   if (!sectionState || sectionState.phase !== "playing") {
-    console.debug("[processAITurns] Section not in playing phase:", sectionState?.phase);
+    console.debug(
+      "[processAITurns] Section not in playing phase:",
+      sectionState?.phase,
+    );
     return;
   }
 
@@ -1012,7 +1047,7 @@ async function processAITurns(sessionId: string) {
     },
     include: {
       trickCards: {
-        include: { player: true }
+        include: { player: true },
       },
     },
   });
@@ -1024,15 +1059,15 @@ async function processAITurns(sessionId: string) {
 
   // Get all players
   const allPlayers = await getPlayersInSession(sessionId);
-  
+
   // Check if it's an AI player's turn
   const nextPlayerPosition = getNextPlayerToPlay(currentTrick, allPlayers);
-  const nextPlayer = allPlayers.find(p => p.position === nextPlayerPosition);
+  const nextPlayer = allPlayers.find((p) => p.position === nextPlayerPosition);
 
   console.debug("[processAITurns] Next player to play:", {
     position: nextPlayerPosition,
     playerId: nextPlayer?.id,
-    isAI: nextPlayer?.id.startsWith("ai-")
+    isAI: nextPlayer?.id.startsWith("ai-"),
   });
 
   if (!nextPlayer || !nextPlayer.id.startsWith("ai-")) {
@@ -1040,7 +1075,10 @@ async function processAITurns(sessionId: string) {
     return; // Not an AI's turn
   }
 
-  console.debug("[processAITurns] Processing AI turn for player:", nextPlayer.id);
+  console.debug(
+    "[processAITurns] Processing AI turn for player:",
+    nextPlayer.id,
+  );
 
   // Get AI's hand
   const playerHand = await db.playerHand.findFirst({
@@ -1051,7 +1089,10 @@ async function processAITurns(sessionId: string) {
   });
 
   if (!playerHand) {
-    console.debug("[processAITurns] Player hand not found for AI:", nextPlayer.id);
+    console.debug(
+      "[processAITurns] Player hand not found for AI:",
+      nextPlayer.id,
+    );
     return;
   }
 
@@ -1066,24 +1107,26 @@ async function processAITurns(sessionId: string) {
   // Import AI manager and create AI
   const { AIManager } = await import("./ai/ai-manager");
   const aiManager = new AIManager();
-  
+
   // Extract difficulty from AI player ID and register the AI
   const difficulty = nextPlayer.id.split("-")[1] as "easy" | "medium" | "hard";
   aiManager.addAIPlayer(nextPlayer.id, difficulty, nextPlayer.name);
 
   // Get current trick cards
-  const currentTrickCards: Card[] = currentTrick.trickCards.map(tc => ({
+  const currentTrickCards: Card[] = currentTrick.trickCards.map((tc) => ({
     suit: tc.cardSuit.toLowerCase() as Suit,
     rank: tc.cardRank as Rank,
   }));
 
   const trumpSuit = sectionState.trumpSuit.toLowerCase() as Suit;
-  const leadingSuit = currentTrick.leadingSuit?.toLowerCase() as Suit | undefined;
+  const leadingSuit = currentTrick.leadingSuit?.toLowerCase() as
+    | Suit
+    | undefined;
 
   console.debug("[processAITurns] Game context:", {
     trumpSuit,
     leadingSuit,
-    currentTrickCards: currentTrickCards.length
+    currentTrickCards: currentTrickCards.length,
   });
 
   // Create game context
@@ -1121,13 +1164,17 @@ async function processAITurns(sessionId: string) {
     currentTrickCards,
     trumpSuit,
     leadingSuit,
-    gameContext
+    gameContext,
   );
 
   console.debug("[processAITurns] AI chose card:", cardToPlay);
 
   if (cardToPlay) {
-    console.debug("[processAITurns] Playing card for AI:", nextPlayer.id, cardToPlay);
+    console.debug(
+      "[processAITurns] Playing card for AI:",
+      nextPlayer.id,
+      cardToPlay,
+    );
     // Play the card for the AI
     await playCard(sessionId, nextPlayer.id, cardToPlay);
     console.debug("[processAITurns] AI card played successfully");
@@ -1139,19 +1186,27 @@ async function processAITurns(sessionId: string) {
 async function getPlayersInSession(sessionId: string) {
   return await db.player.findMany({
     where: { sessionId },
-    orderBy: { position: 'asc' },
+    orderBy: { position: "asc" },
   });
 }
 
-function getNextPlayerToPlay(trick: { leadPlayerPosition: number; trickCards: Array<{ playerPosition: number }> }, allPlayers: Array<{ position: number }>) {
+function getNextPlayerToPlay(
+  trick: {
+    leadPlayerPosition: number;
+    trickCards: Array<{ playerPosition: number }>;
+  },
+  allPlayers: Array<{ position: number }>,
+) {
   if (!trick.trickCards || trick.trickCards.length === 0) {
     // First card - lead player plays
     return trick.leadPlayerPosition;
   }
 
   // Find the next player after the last one who played
-  const playedPositions = new Set(trick.trickCards.map(tc => tc.playerPosition));
-  
+  const playedPositions = new Set(
+    trick.trickCards.map((tc) => tc.playerPosition),
+  );
+
   // Start from lead player and find next player who hasn't played
   let currentPos = trick.leadPlayerPosition;
   for (let i = 0; i < allPlayers.length; i++) {
@@ -1160,7 +1215,7 @@ function getNextPlayerToPlay(trick: { leadPlayerPosition: number; trickCards: Ar
     }
     currentPos = (currentPos % allPlayers.length) + 1;
   }
-  
+
   return trick.leadPlayerPosition; // Fallback
 }
 
@@ -1169,7 +1224,7 @@ async function completeTrick(trickId: string, trumpSuit: string) {
     where: { id: trickId },
     include: {
       trickCards: {
-        include: { player: true }
+        include: { player: true },
       },
     },
   });
@@ -1178,7 +1233,7 @@ async function completeTrick(trickId: string, trumpSuit: string) {
 
   // Find the winner
   const cardsPlayed: Record<number, Card> = {};
-  
+
   for (const tc of trick.trickCards) {
     cardsPlayed[tc.playerPosition] = {
       suit: tc.cardSuit.toLowerCase() as Suit,
@@ -1190,7 +1245,12 @@ async function completeTrick(trickId: string, trumpSuit: string) {
   if (!leadingSuit) {
     throw new Error("No leading suit found for completed trick");
   }
-  const winnerPosition = getTrickWinner(cardsPlayed, trick.leadPlayerPosition, trumpSuit.toLowerCase() as Suit, leadingSuit);
+  const winnerPosition = getTrickWinner(
+    cardsPlayed,
+    trick.leadPlayerPosition,
+    trumpSuit.toLowerCase() as Suit,
+    leadingSuit,
+  );
 
   // Update trick as completed
   await db.trick.update({
@@ -1202,7 +1262,9 @@ async function completeTrick(trickId: string, trumpSuit: string) {
   });
 
   // Update winner's tricks won count
-  const winnerCard = trick.trickCards.find(tc => tc.playerPosition === winnerPosition);
+  const winnerCard = trick.trickCards.find(
+    (tc) => tc.playerPosition === winnerPosition,
+  );
   if (winnerCard) {
     const playerHand = await db.playerHand.findFirst({
       where: {
@@ -1229,14 +1291,16 @@ async function getCurrentTrickWinner(trickId: string) {
     where: { id: trickId },
     include: {
       trickCards: {
-        include: { player: true }
+        include: { player: true },
       },
     },
   });
 
   if (!trick || !trick.winnerPosition) return null;
 
-  return trick.trickCards.find(tc => tc.playerPosition === trick.winnerPosition);
+  return trick.trickCards.find(
+    (tc) => tc.playerPosition === trick.winnerPosition,
+  );
 }
 
 async function completeSection(sectionStateId: string) {
@@ -1249,10 +1313,10 @@ async function completeSection(sectionStateId: string) {
   for (const hand of playerHands) {
     const bid = hand.bid || 0;
     const tricksWon = hand.tricksWon;
-    
+
     // Scoring: 10 + bid if exact, 0 otherwise
-    const sectionScore = (bid === tricksWon) ? 10 + bid : 0;
-    
+    const sectionScore = bid === tricksWon ? 10 + bid : 0;
+
     await db.playerHand.update({
       where: { id: hand.id },
       data: { sectionScore },

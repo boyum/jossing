@@ -1,7 +1,7 @@
+import type * as PrismaSchema from ".prisma/client";
 import type {
   AIDifficulty,
   Card,
-  GamePhase,
   GameSession,
   GameType,
   Player,
@@ -11,9 +11,8 @@ import type {
   SectionState,
   Suit,
   Trick,
-  TrickCard,
+  TrickCard
 } from "@/types/game";
-import type * as PrismaSchema from "../../node_modules/.prisma/client/index";
 import { db } from "./db";
 
 // Session Management
@@ -24,7 +23,7 @@ export async function createSession(
   scoringSystem: ScoringSystem,
   maxPlayers: number = 6,
 ): Promise<GameSession> {
-  const session = (await db.gameSession.create({
+  const session = await db.gameSession.create({
     data: {
       id: sessionId,
       adminPlayerId,
@@ -33,17 +32,17 @@ export async function createSession(
       maxPlayers,
       currentSection: 0,
       gamePhase: "waiting",
-    } satisfies Omit<PrismaSchema.GameSession, "createdAt" | "updatedAt">,
-  })) as PrismaSchema.GameSession;
+    },
+  });
 
   return {
     id: session.id,
     adminPlayerId: session.adminPlayerId,
-    gameType: session.gameType as GameType,
-    scoringSystem: session.scoringSystem as ScoringSystem,
+    gameType: session.gameType,
+    scoringSystem: session.scoringSystem,
     maxPlayers: session.maxPlayers,
     currentSection: session.currentSection,
-    gamePhase: session.gamePhase as GamePhase,
+    gamePhase: session.gamePhase,
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,
   };
@@ -52,20 +51,20 @@ export async function createSession(
 export async function getSession(
   sessionId: string,
 ): Promise<GameSession | null> {
-  const session = (await db.gameSession.findUnique({
+  const session = await db.gameSession.findUnique({
     where: { id: sessionId },
-  })) as PrismaSchema.GameSession;
+  });
 
   if (!session) return null;
 
   return {
     id: session.id,
     adminPlayerId: session.adminPlayerId,
-    gameType: session.gameType as GameType,
-    scoringSystem: session.scoringSystem as ScoringSystem,
+    gameType: session.gameType,
+    scoringSystem: session.scoringSystem,
     maxPlayers: session.maxPlayers,
     currentSection: session.currentSection,
-    gamePhase: session.gamePhase as GamePhase,
+    gamePhase: session.gamePhase,
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,
   };
@@ -116,7 +115,7 @@ export async function createPlayer(
   isAI: boolean = false,
   aiDifficulty?: AIDifficulty,
 ): Promise<Player> {
-  const player = (await db.player.create({
+  const player = await db.player.create({
     data: {
       id: playerId,
       sessionId,
@@ -126,7 +125,7 @@ export async function createPlayer(
       totalScore: 0,
       isConnected: true,
     },
-  })) as PrismaSchema.Player;
+  });
 
   return {
     id: player.id,
@@ -143,9 +142,9 @@ export async function createPlayer(
 }
 
 export async function getPlayer(playerId: string): Promise<Player | null> {
-  const player = (await db.player.findUnique({
+  const player = await db.player.findUnique({
     where: { id: playerId },
-  })) as PrismaSchema.Player;
+  });
 
   if (!player) return null;
 
@@ -211,7 +210,7 @@ export async function createSection(
   trumpSuit: Suit,
   trumpCardRank: Rank,
 ): Promise<SectionState> {
-  const section = (await db.sectionState.create({
+  const section = await db.sectionState.create({
     data: {
       sessionId,
       sectionNumber,
@@ -223,7 +222,7 @@ export async function createSection(
       PrismaSchema.SectionState,
       "id" | "createdAt" | "updatedAt" | "leadPlayerPosition"
     >,
-  })) as PrismaSchema.SectionState;
+  });
 
   return {
     id: section.id,
@@ -242,20 +241,20 @@ export async function createSection(
 export async function getCurrentSection(
   sessionId: string,
 ): Promise<SectionState | null> {
-  const session = (await db.gameSession.findUnique({
+  const session = await db.gameSession.findUnique({
     where: { id: sessionId },
-  })) as PrismaSchema.GameSession;
+  });
 
   if (!session || session.currentSection === 0) return null;
 
-  const section = (await db.sectionState.findUnique({
+  const section = await db.sectionState.findUnique({
     where: {
       sessionId_sectionNumber: {
         sessionId,
         sectionNumber: session.currentSection,
       },
     },
-  })) as PrismaSchema.SectionState;
+  });
 
   if (!section) return null;
 
@@ -303,7 +302,7 @@ export async function createPlayerHand(
   playerId: string,
   cards: Card[],
 ): Promise<void> {
-  (await db.playerHand.create({
+  await db.playerHand.create({
     data: {
       sectionStateId,
       playerId,
@@ -311,21 +310,21 @@ export async function createPlayerHand(
       tricksWon: 0,
       sectionScore: 0,
     } satisfies Omit<PrismaSchema.PlayerHand, "id" | "bid">,
-  })) as PrismaSchema.PlayerHand;
+  });
 }
 
 export async function getPlayerHand(
   sectionStateId: string,
   playerId: string,
 ): Promise<Card[]> {
-  const hand = (await db.playerHand.findUnique({
+  const hand = await db.playerHand.findUnique({
     where: {
       sectionStateId_playerId: {
         sectionStateId,
         playerId,
       },
     },
-  })) as PrismaSchema.PlayerHand;
+  });
 
   if (!hand) return [];
 
@@ -372,14 +371,14 @@ export async function getPlayerBid(
   sectionStateId: string,
   playerId: string,
 ): Promise<number | null> {
-  const hand = (await db.playerHand.findUnique({
+  const hand = await db.playerHand.findUnique({
     where: {
       sectionStateId_playerId: {
         sectionStateId,
         playerId,
       },
     },
-  })) as PrismaSchema.PlayerHand;
+  });
 
   return hand?.bid ?? null;
 }
@@ -422,7 +421,7 @@ export async function createTrick(
   trickNumber: number,
   leadPlayerPosition: number,
 ): Promise<Trick> {
-  const trick = (await db.trick.create({
+  const trick = await db.trick.create({
     data: {
       sectionStateId,
       trickNumber,
@@ -431,7 +430,7 @@ export async function createTrick(
       PrismaSchema.Trick,
       "id" | "completedAt" | "leadingSuit" | "winnerPosition"
     >,
-  })) as PrismaSchema.Trick;
+  });
 
   return {
     id: trick.id,
@@ -447,13 +446,13 @@ export async function createTrick(
 export async function getCurrentTrick(
   sectionStateId: string,
 ): Promise<Trick | null> {
-  const trick = (await db.trick.findFirst({
+  const trick = await db.trick.findFirst({
     where: {
       sectionStateId,
       completedAt: null,
     },
     orderBy: { trickNumber: "desc" },
-  })) as PrismaSchema.Trick;
+  });
 
   if (!trick) return null;
 
@@ -500,7 +499,7 @@ export async function playCard(
   playerPosition: number,
   card: Card,
 ): Promise<void> {
-  (await db.trickCard.create({
+  await db.trickCard.create({
     data: {
       trickId,
       playerId,
@@ -511,14 +510,14 @@ export async function playCard(
       PrismaSchema.TrickCard,
       "id" | "createdAt" | "updatedAt" | "leadPlayerPosition" | "playedAt"
     >,
-  })) as PrismaSchema.TrickCard;
+  });
 }
 
 export async function getTrickCards(trickId: string): Promise<TrickCard[]> {
-  const cards = (await db.trickCard.findMany({
+  const cards = await db.trickCard.findMany({
     where: { trickId },
     orderBy: { playedAt: "asc" },
-  })) as PrismaSchema.TrickCard[];
+  });
 
   return cards.map(
     (card) =>
@@ -540,10 +539,10 @@ export async function getAllSessionBids(
   const currentSection = await getCurrentSection(sessionId);
   if (!currentSection) return {};
 
-  const hands = (await db.playerHand.findMany({
+  const hands = await db.playerHand.findMany({
     where: { sectionStateId: currentSection.id },
     include: { player: true },
-  })) as PrismaSchema.PlayerHand[];
+  });
 
   const bids: Record<string, number | null> = {};
   for (const hand of hands) {
@@ -559,9 +558,9 @@ export async function getSectionScores(
   const currentSection = await getCurrentSection(sessionId);
   if (!currentSection) return {};
 
-  const hands = (await db.playerHand.findMany({
+  const hands = await db.playerHand.findMany({
     where: { sectionStateId: currentSection.id },
-  })) as PrismaSchema.PlayerHand[];
+  });
 
   const scores: Record<string, number> = {};
   for (const hand of hands) {

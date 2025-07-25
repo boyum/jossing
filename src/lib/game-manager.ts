@@ -1,4 +1,5 @@
-import {
+import type {
+  Card,
   GameType,
   ScoringSystem,
 } from '@/types/game';
@@ -70,7 +71,7 @@ export class GameManager {
   }
 
   // Play a card for a player
-  static async playCard(sessionId: string, playerId: string, card: { suit: string; rank: string }) {
+  static async playCard(sessionId: string, playerId: string, card: Card) {
     return await dbService.playCard(sessionId, playerId, card);
   }
 }

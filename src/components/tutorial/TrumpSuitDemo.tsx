@@ -131,7 +131,7 @@ export default function TrumpSuitDemo() {
       <div className="mb-6">
         <h4 className="font-medium mb-3">Select Trump Suit:</h4>
         <div className="flex gap-2">
-          {(["hearts", "diamonds", "clubs", "spades"] as Suit[]).map((suit) => (
+          {(["hearts", "diamonds", "clubs", "spades"] as const).map((suit) => (
             <button
               key={suit}
               type="button"
