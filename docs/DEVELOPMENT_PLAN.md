@@ -41,11 +41,11 @@ Create a web-based multiplayer Jøssing card game using Next.js that allows play
 interface GameSession {
   id: string;
   adminPlayerId: string;
-  gameType: "up" | "up-and-down";
-  scoringSystem: "classic" | "modern";
+  gameType: GameType;
+  scoringSystem: ScoringSystem;
   maxPlayers: number;
   currentSection: number;
-  gamePhase: "waiting" | "bidding" | "playing" | "scoring" | "finished";
+  gamePhase: GamePhase;
   createdAt: Date;
   updatedAt: Date;
 }

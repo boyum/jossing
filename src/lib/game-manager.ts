@@ -19,14 +19,14 @@ export class GameManager {
   // Create a new game session
   static async createSession(
     adminPlayerName: string,
-    gameType: GameType = GameType.UP_AND_DOWN,
-    scoringSystem: ScoringSystem = ScoringSystem.CLASSIC,
+    gameType: GameType = "up",
+    scoringSystem: ScoringSystem = "classic",
     maxPlayers: number = 6
   ): Promise<{ sessionId: string; playerId: string }> {
     return await dbService.createGameSession(
       adminPlayerName,
-      gameType === GameType.UP ? 'UP' : 'UP_AND_DOWN',
-      scoringSystem === ScoringSystem.CLASSIC ? 'CLASSIC' : 'MODERN',
+      gameType,
+      scoringSystem,
       maxPlayers
     );
   }

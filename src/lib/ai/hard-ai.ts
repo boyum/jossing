@@ -1,4 +1,5 @@
-import { AIDifficulty, type Card, RANK_VALUES, Suit } from "@/types/game";
+import type { Card, Suit } from "@/types/game";
+import { RANK_VALUES } from "@/types/game";
 import { BaseAI, type GameContext, type HandStrength } from "./base-ai";
 
 /**
@@ -37,7 +38,7 @@ export class HardAI extends BaseAI {
   private sectionHistory: SectionData[] = [];
 
   constructor(playerName: string = "Hard AI") {
-    super(playerName, AIDifficulty.HARD);
+    super(playerName, "hard");
   }
 
   /**
@@ -217,11 +218,11 @@ export class HardAI extends BaseAI {
     }
 
     // Trump suit considerations (some suits stronger than others)
-    const trumpStrengthMap = {
-      [Suit.SPADES]: 0.1,
-      [Suit.HEARTS]: 0.05,
-      [Suit.DIAMONDS]: 0.05,
-      [Suit.CLUBS]: 0,
+    const trumpStrengthMap: Record<Suit, number> = {
+      spades: 0.1,
+      hearts: 0.05,
+      diamonds: 0.05,
+      clubs: 0,
     };
 
     adjustment += trumpStrengthMap[trumpSuit] || 0;
@@ -310,7 +311,7 @@ export class HardAI extends BaseAI {
     let strength = 0;
 
     // Count defensive cards in each suit
-    const suits = [Suit.HEARTS, Suit.DIAMONDS, Suit.CLUBS, Suit.SPADES];
+    const suits: Suit[] = ["hearts", "diamonds", "clubs", "spades"];
 
     for (const suit of suits) {
       const suitCards = this.getCardsOfSuit(hand, suit);
@@ -487,11 +488,13 @@ export class HardAI extends BaseAI {
     const nonTrumps = validCards.filter((card) => card.suit !== trumpSuit);
     if (nonTrumps.length > 0) {
       return nonTrumps.reduce((highest, current) =>
-        current.value > highest.value ? current : highest,
+        RANK_VALUES[current.rank] > RANK_VALUES[highest.rank]
+          ? current
+          : highest,
       );
     }
     return validCards.reduce((highest, current) =>
-      current.value > highest.value ? current : highest,
+      RANK_VALUES[current.rank] > RANK_VALUES[highest.rank] ? current : highest,
     );
   }
 
@@ -499,11 +502,11 @@ export class HardAI extends BaseAI {
     const nonTrumps = validCards.filter((card) => card.suit !== trumpSuit);
     if (nonTrumps.length > 0) {
       return nonTrumps.reduce((lowest, current) =>
-        current.value < lowest.value ? current : lowest,
+        RANK_VALUES[current.rank] < RANK_VALUES[lowest.rank] ? current : lowest,
       );
     }
     return validCards.reduce((lowest, current) =>
-      current.value < lowest.value ? current : lowest,
+      RANK_VALUES[current.rank] < RANK_VALUES[lowest.rank] ? current : lowest,
     );
   }
 
@@ -526,7 +529,7 @@ export class HardAI extends BaseAI {
 
     // Use lowest winning card
     return winningCards.reduce((lowest, current) =>
-      current.value < lowest.value ? current : lowest,
+      RANK_VALUES[current.rank] < RANK_VALUES[lowest.rank] ? current : lowest,
     );
   }
 
@@ -542,12 +545,14 @@ export class HardAI extends BaseAI {
 
     if (nonWinningCards.length > 0) {
       return nonWinningCards.reduce((highest, current) =>
-        current.value > highest.value ? current : highest,
+        RANK_VALUES[current.rank] > RANK_VALUES[highest.rank]
+          ? current
+          : highest,
       );
     }
 
     return validCards.reduce((lowest, current) =>
-      current.value < lowest.value ? current : lowest,
+      RANK_VALUES[current.rank] < RANK_VALUES[lowest.rank] ? current : lowest,
     );
   }
 
@@ -559,7 +564,7 @@ export class HardAI extends BaseAI {
     const nonTrumps = validCards.filter((card) => card.suit !== trumpSuit);
     if (nonTrumps.length > 0) {
       return nonTrumps.reduce((lowest, current) =>
-        current.value < lowest.value ? current : lowest,
+        RANK_VALUES[current.rank] < RANK_VALUES[lowest.rank] ? current : lowest,
       );
     }
     return validCards[0];

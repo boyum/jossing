@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { CardComponent } from '@/components/ui/card';
-import { useGameStore } from '@/store/game-store';
-import type { Card, Suit, Trick } from '@/types/game';
+import { CardComponent } from "@/components/ui/card";
+import { useGameStore } from "@/store/game-store";
+import { RANK_VALUES, type Card, type Suit, type Trick } from "@/types/game";
 
 interface PlayerHandProps {
   cards: Card[];
@@ -12,7 +12,13 @@ interface PlayerHandProps {
   trumpSuit: Suit;
 }
 
-export function PlayerHand({ cards, isPlayerTurn, playerId, currentTrick, trumpSuit }: PlayerHandProps) {
+export function PlayerHand({
+  cards,
+  isPlayerTurn,
+  playerId,
+  currentTrick,
+  trumpSuit,
+}: PlayerHandProps) {
   const { playCard, session } = useGameStore();
 
   const handleCardClick = async (card: Card) => {
@@ -21,7 +27,7 @@ export function PlayerHand({ cards, isPlayerTurn, playerId, currentTrick, trumpS
     try {
       await playCard(session.id, card);
     } catch (error) {
-      console.error('Failed to play card:', error);
+      console.error("Failed to play card:", error);
     }
   };
 
@@ -32,7 +38,7 @@ export function PlayerHand({ cards, isPlayerTurn, playerId, currentTrick, trumpS
     if (!currentTrick.leadingSuit) return true;
 
     // Must follow suit if possible
-    const hasSuit = cards.some(c => c.suit === currentTrick.leadingSuit);
+    const hasSuit = cards.some((c) => c.suit === currentTrick.leadingSuit);
     if (hasSuit) {
       return card.suit === currentTrick.leadingSuit;
     }
@@ -55,7 +61,7 @@ export function PlayerHand({ cards, isPlayerTurn, playerId, currentTrick, trumpS
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-bold text-gray-900">Your Hand</h3>
         <div className="text-sm text-gray-600">
-          {cards.length} card{cards.length !== 1 ? 's' : ''} remaining
+          {cards.length} card{cards.length !== 1 ? "s" : ""} remaining
         </div>
       </div>
 
@@ -74,8 +80,11 @@ export function PlayerHand({ cards, isPlayerTurn, playerId, currentTrick, trumpS
           </p>
           {currentTrick.leadingSuit && (
             <p className="text-sm text-green-700 mt-1">
-              Leading suit: <span className="font-semibold capitalize">{currentTrick.leadingSuit}</span>
-              {currentTrick.leadingSuit === trumpSuit && ' (Trump!)'}
+              Leading suit:{" "}
+              <span className="font-semibold capitalize">
+                {currentTrick.leadingSuit}
+              </span>
+              {currentTrick.leadingSuit === trumpSuit && " (Trump!)"}
             </p>
           )}
         </div>
@@ -86,25 +95,27 @@ export function PlayerHand({ cards, isPlayerTurn, playerId, currentTrick, trumpS
         {cards.map((card, index) => {
           const playable = isCardPlayable(card);
           const isTrump = card.suit === trumpSuit;
-          
+
           return (
             <div
               key={`${card.suit}-${card.rank}-${index}`}
               className={`transform transition-all duration-200 ${
-                playable && isPlayerTurn
-                  ? 'hover:-translate-y-2' 
-                  : ''
+                playable && isPlayerTurn ? "hover:-translate-y-2" : ""
               }`}
             >
-              <CardComponent 
-                card={card} 
+              <CardComponent
+                card={card}
                 size="medium"
-                onClick={playable && isPlayerTurn ? () => handleCardClick(card) : undefined}
+                onClick={
+                  playable && isPlayerTurn
+                    ? () => handleCardClick(card)
+                    : undefined
+                }
                 isTrump={isTrump}
                 isPlayable={playable}
                 disabled={!isPlayerTurn}
                 className={`shadow-md transition-all duration-200 ${
-                  playable && isPlayerTurn ? 'hover:shadow-xl' : ''
+                  playable && isPlayerTurn ? "hover:shadow-xl" : ""
                 }`}
               />
               {isTrump && (
@@ -121,10 +132,11 @@ export function PlayerHand({ cards, isPlayerTurn, playerId, currentTrick, trumpS
       <div className="mt-4 pt-4 border-t border-gray-200">
         <div className="flex justify-between text-sm text-gray-600">
           <span>
-            Trump cards: {cards.filter(c => c.suit === trumpSuit).length}
+            Trump cards: {cards.filter((c) => c.suit === trumpSuit).length}
           </span>
           <span>
-            High cards (J+): {cards.filter(c => c.value >= 11).length}
+            High cards (J+):{" "}
+            {cards.filter((c) => RANK_VALUES[c.rank] >= 11).length}
           </span>
         </div>
       </div>

@@ -1,5 +1,4 @@
-import type { Card, Suit } from "@/types/game";
-import { AIDifficulty } from "@/types/game";
+import { RANK_VALUES, type Card, type Suit } from "@/types/game";
 import { BaseAI, type HandStrength, type GameContext } from "./base-ai";
 
 /**
@@ -20,7 +19,7 @@ import { BaseAI, type HandStrength, type GameContext } from "./base-ai";
  */
 export class EasyAI extends BaseAI {
   constructor(playerName: string = "Easy AI") {
-    super(playerName, AIDifficulty.EASY);
+    super(playerName, "easy");
   }
 
   /**
@@ -124,7 +123,9 @@ export class EasyAI extends BaseAI {
     if (nonTrumpCards.length > 0) {
       // Lead highest non-trump card
       return nonTrumpCards.reduce((highest, current) =>
-        current.value > highest.value ? current : highest,
+        RANK_VALUES[current.rank] > RANK_VALUES[highest.rank]
+          ? current
+          : highest,
       );
     }
 
@@ -149,13 +150,13 @@ export class EasyAI extends BaseAI {
     if (winningCards.length > 0) {
       // Play the lowest winning card
       return winningCards.reduce((lowest, current) =>
-        current.value < lowest.value ? current : lowest,
+        RANK_VALUES[current.rank] < RANK_VALUES[lowest.rank] ? current : lowest,
       );
     }
 
     // Can't win, play lowest card
     return validCards.reduce((lowest, current) =>
-      current.value < lowest.value ? current : lowest,
+      RANK_VALUES[current.rank] < RANK_VALUES[lowest.rank] ? current : lowest,
     );
   }
 
@@ -175,13 +176,13 @@ export class EasyAI extends BaseAI {
 
     if (nonWinningCards.length > 0) {
       return nonWinningCards.reduce((lowest, current) =>
-        current.value < lowest.value ? current : lowest,
+        RANK_VALUES[current.rank] < RANK_VALUES[lowest.rank] ? current : lowest,
       );
     }
 
     // All cards would win, play the lowest
     return validCards.reduce((lowest, current) =>
-      current.value < lowest.value ? current : lowest,
+      RANK_VALUES[current.rank] < RANK_VALUES[lowest.rank] ? current : lowest,
     );
   }
 

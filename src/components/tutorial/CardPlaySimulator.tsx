@@ -93,6 +93,7 @@ export default function CardPlaySimulator() {
 
   const scenario = scenarios[currentScenario];
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setSelectedCard(null);
     setFeedback('');

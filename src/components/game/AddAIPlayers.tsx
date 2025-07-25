@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { AIDifficulty } from '@/types/game';
+import { useState } from "react";
+import type { AIDifficulty } from "@/types/game";
 
 interface AddAIPlayersProps {
   onAddAI: (difficulty?: AIDifficulty) => void;
@@ -9,9 +9,14 @@ interface AddAIPlayersProps {
   disabled?: boolean;
 }
 
-export function AddAIPlayers({ onAddAI, isLoading = false, disabled = false }: AddAIPlayersProps) {
+export function AddAIPlayers({
+  onAddAI,
+  isLoading = false,
+  disabled = false,
+}: AddAIPlayersProps) {
   const [isAdding, setIsAdding] = useState(false);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<AIDifficulty>(AIDifficulty.EASY);
+  const [selectedDifficulty, setSelectedDifficulty] =
+    useState<AIDifficulty>("easy");
   const [showDifficultyOptions, setShowDifficultyOptions] = useState(false);
 
   const handleAddAI = async () => {
@@ -25,26 +30,33 @@ export function AddAIPlayers({ onAddAI, isLoading = false, disabled = false }: A
 
   const difficultyOptions = [
     {
-      value: AIDifficulty.EASY,
-      label: 'Easy',
-      description: 'Conservative play, great for beginners',
-      emoji: '😊'
+      value: "easy",
+      label: "Easy",
+      description: "Conservative play, great for beginners",
+      emoji: "😊",
     },
     {
-      value: AIDifficulty.MEDIUM,
-      label: 'Medium',
-      description: 'Strategic play with card counting',
-      emoji: '🤔'
+      value: "medium",
+      label: "Medium",
+      description: "Strategic play with card counting",
+      emoji: "🤔",
     },
     {
-      value: AIDifficulty.HARD,
-      label: 'Hard',
-      description: 'Expert-level analysis and optimal play',
-      emoji: '🧠'
-    }
-  ];
+      value: "hard",
+      label: "Hard",
+      description: "Expert-level analysis and optimal play",
+      emoji: "🧠",
+    },
+  ] as const satisfies {
+    value: AIDifficulty;
+    label: string;
+    description: string;
+    emoji: string;
+  }[];
 
-  const selectedOption = difficultyOptions.find(opt => opt.value === selectedDifficulty) || difficultyOptions[0];
+  const selectedOption =
+    difficultyOptions.find((opt) => opt.value === selectedDifficulty) ||
+    difficultyOptions[0];
 
   return (
     <div className="bg-white rounded-lg border-2 border-dashed border-gray-300 p-6 text-center">
@@ -72,17 +84,26 @@ export function AddAIPlayers({ onAddAI, isLoading = false, disabled = false }: A
               <span className="flex items-center gap-2">
                 <span>{selectedOption.emoji}</span>
                 <span className="font-medium">{selectedOption.label}</span>
-                <span className="text-sm text-gray-500">- {selectedOption.description}</span>
+                <span className="text-sm text-gray-500">
+                  - {selectedOption.description}
+                </span>
               </span>
-              <svg 
-                className={`w-4 h-4 transition-transform ${showDifficultyOptions ? 'rotate-180' : ''}`} 
-                fill="none" 
-                stroke="currentColor" 
+              <svg
+                className={`w-4 h-4 transition-transform ${
+                  showDifficultyOptions ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
                 aria-hidden="true"
               >
                 <title>Toggle dropdown</title>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </span>
           </button>
@@ -98,14 +119,18 @@ export function AddAIPlayers({ onAddAI, isLoading = false, disabled = false }: A
                     setShowDifficultyOptions(false);
                   }}
                   className={`w-full px-4 py-3 text-left hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
-                    selectedDifficulty === option.value ? 'bg-blue-50 text-blue-700' : ''
+                    selectedDifficulty === option.value
+                      ? "bg-blue-50 text-blue-700"
+                      : ""
                   }`}
                 >
                   <div className="flex items-center gap-2">
                     <span>{option.emoji}</span>
                     <div>
                       <div className="font-medium">{option.label}</div>
-                      <div className="text-sm text-gray-500">{option.description}</div>
+                      <div className="text-sm text-gray-500">
+                        {option.description}
+                      </div>
                     </div>
                   </div>
                 </button>
@@ -114,15 +139,15 @@ export function AddAIPlayers({ onAddAI, isLoading = false, disabled = false }: A
           )}
         </div>
       </div>
-      
+
       <button
         type="button"
         onClick={handleAddAI}
         disabled={disabled || isLoading || isAdding}
         className={`px-6 py-3 rounded-lg font-semibold transition-all ${
           disabled || isLoading || isAdding
-            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl'
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+            : "bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl"
         }`}
       >
         {isAdding ? (
@@ -136,7 +161,9 @@ export function AddAIPlayers({ onAddAI, isLoading = false, disabled = false }: A
       </button>
 
       <div className="mt-3 text-sm text-gray-500">
-        <p>{selectedOption.label} AI: {selectedOption.description}</p>
+        <p>
+          {selectedOption.label} AI: {selectedOption.description}
+        </p>
       </div>
     </div>
   );
@@ -148,10 +175,10 @@ interface AIPlayerIndicatorProps {
   thought?: string;
 }
 
-export function AIPlayerIndicator({ 
-  playerName, 
-  isThinking = false, 
-  thought = "Thinking..." 
+export function AIPlayerIndicator({
+  playerName,
+  isThinking = false,
+  thought = "Thinking...",
 }: AIPlayerIndicatorProps) {
   return (
     <div className="flex items-center gap-2 text-sm">
@@ -159,7 +186,7 @@ export function AIPlayerIndicator({
         <span className="text-blue-600">🤖</span>
         <span className="font-medium text-blue-600">{playerName}</span>
       </div>
-      
+
       {isThinking && (
         <div className="flex items-center gap-1 text-gray-500">
           <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin" />

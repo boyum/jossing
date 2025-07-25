@@ -1,5 +1,5 @@
-import type { Card, Suit } from '@/types/game';
-import { RANK_VALUES, AIDifficulty } from '@/types/game';
+import type { Card, Suit, AIDifficulty } from '@/types/game';
+import { RANK_VALUES } from '@/types/game';
 
 /**
  * Base AI player class with common utility methods
@@ -232,10 +232,10 @@ export abstract class BaseAI {
    * Simulate thinking time for realistic AI behavior
    */
   async simulateThinking(): Promise<void> {
-    const thinkingTimes = {
-      [AIDifficulty.EASY]: [1000, 3000],
-      [AIDifficulty.MEDIUM]: [2000, 4000],
-      [AIDifficulty.HARD]: [3000, 6000]
+    const thinkingTimes: Record<AIDifficulty, [number, number]> = {
+      'easy': [1000, 3000],
+      'medium': [2000, 4000],
+      'hard': [3000, 6000]
     };
 
     const [min, max] = thinkingTimes[this.difficulty];

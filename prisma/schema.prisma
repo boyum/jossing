@@ -12,35 +12,51 @@ datasource db {
 }
 
 enum GameType {
-  UP
-  UP_AND_DOWN
+  up
+  up_and_down
 }
 
 enum ScoringSystem {
-  CLASSIC
-  MODERN
+  classic
+  modern
 }
 
 enum GamePhase {
-  WAITING
-  BIDDING
-  PLAYING
-  SCORING
-  FINISHED
+  waiting
+  bidding
+  playing
+  scoring
+  finished
 }
 
 enum Suit {
-  HEARTS
-  DIAMONDS
-  CLUBS
-  SPADES
+  hearts
+  diamonds
+  clubs
+  spades
 }
 
 enum SectionPhase {
-  DEALING
-  BIDDING
-  PLAYING
-  COMPLETED
+  dealing
+  bidding
+  playing
+  completed
+}
+
+enum Rank {
+  ace
+  king
+  queen
+  jack
+  ten
+  nine
+  eight
+  seven
+  six  
+  five
+  four
+  three
+  two
 }
 
 model GameSession {
@@ -50,7 +66,7 @@ model GameSession {
   scoringSystem  ScoringSystem
   maxPlayers     Int         @default(6)
   currentSection Int         @default(0)
-  gamePhase      GamePhase   @default(WAITING)
+  gamePhase      GamePhase   @default(waiting)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -88,8 +104,8 @@ model SectionState {
   dealerPosition     Int
   leadPlayerPosition Int?
   trumpSuit          Suit
-  trumpCardRank      String
-  phase              SectionPhase @default(DEALING)
+  trumpCardRank      Rank
+  phase              SectionPhase @default(dealing)
   createdAt          DateTime     @default(now())
 
   // Relations
@@ -141,7 +157,7 @@ model TrickCard {
   playerId       String
   playerPosition Int
   cardSuit       Suit
-  cardRank       String
+  cardRank       Rank
   playedAt       DateTime @default(now())
 
   // Relations

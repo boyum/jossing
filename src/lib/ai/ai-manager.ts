@@ -1,5 +1,4 @@
-import type { Card, Suit } from '@/types/game';
-import { AIDifficulty } from '@/types/game';
+import type { Card, Suit, AIDifficulty } from '@/types/game';
 import { BaseAI, type GameContext } from './base-ai';
 import { EasyAI } from './easy-ai';
 import { MediumAI } from './medium-ai';
@@ -10,14 +9,14 @@ import { HardAI } from './hard-ai';
  */
 export function createAI(difficulty: AIDifficulty, playerName?: string): BaseAI {
   switch (difficulty) {
-    case AIDifficulty.EASY:
+    case 'easy':
       return new EasyAI(playerName || generateAIName(difficulty));
-    case AIDifficulty.MEDIUM:
+    case 'medium':
       return new MediumAI(playerName || generateAIName(difficulty));
-    case AIDifficulty.HARD:
+    case 'hard':
       return new HardAI(playerName || generateAIName(difficulty));
     default:
-      return new EasyAI(playerName || generateAIName(AIDifficulty.EASY));
+      return new EasyAI(playerName || generateAIName('easy'));
   }
 }
 
@@ -25,8 +24,8 @@ export function createAI(difficulty: AIDifficulty, playerName?: string): BaseAI 
  * Generate a thematic name for an AI based on difficulty
  */
 function generateAIName(difficulty: AIDifficulty): string {
-  const names = {
-    [AIDifficulty.EASY]: [
+  const names: Record<AIDifficulty, string[]> = {
+    'easy': [
       'Rookie Riley',
       'Beginner Bob',
       'Cautious Clara',
@@ -34,21 +33,21 @@ function generateAIName(difficulty: AIDifficulty): string {
       'Learning Lucy',
       'Careful Carl'
     ],
-    [AIDifficulty.MEDIUM]: [
+    'medium': [
       'Strategic Steve',
       'Tactical Tom',
       'Clever Claire',
-      'Thoughtful Tina',
-      'Balanced Ben',
-      'Smart Sarah'
+      'Methodical Mike',
+      'Analytical Anna',
+      'Calculating Cal'
     ],
-    [AIDifficulty.HARD]: [
-      'Expert Emma',
-      'Master Mike',
-      'Genius Grace',
-      'Professor Paul',
-      'Brilliant Bella',
-      'Wizard Will'
+    'hard': [
+      'Master Magnus',
+      'Expert Elena',
+      'Grandmaster Gary',
+      'Prodigy Petra',
+      'Genius Greg',
+      'Virtuoso Vera'
     ]
   };
 
@@ -60,17 +59,17 @@ function generateAIName(difficulty: AIDifficulty): string {
  * Get all available AI difficulties
  */
 export function getAvailableDifficulties(): AIDifficulty[] {
-  return [AIDifficulty.EASY, AIDifficulty.MEDIUM, AIDifficulty.HARD];
+  return ['easy', 'medium', 'hard'];
 }
 
 /**
  * Get difficulty display names
  */
 export function getDifficultyDisplayName(difficulty: AIDifficulty): string {
-  const displayNames = {
-    [AIDifficulty.EASY]: 'Easy (Beginner Friendly)',
-    [AIDifficulty.MEDIUM]: 'Medium (Strategic Play)',
-    [AIDifficulty.HARD]: 'Hard (Expert Level)'
+  const displayNames: Record<AIDifficulty, string> = {
+    'easy': 'Easy (Beginner Friendly)',
+    'medium': 'Medium (Strategic Play)',
+    'hard': 'Hard (Expert Level)'
   };
   return displayNames[difficulty];
 }
@@ -79,10 +78,10 @@ export function getDifficultyDisplayName(difficulty: AIDifficulty): string {
  * Get difficulty descriptions
  */
 export function getDifficultyDescription(difficulty: AIDifficulty): string {
-  const descriptions = {
-    [AIDifficulty.EASY]: 'Conservative bidding, basic card play, 20% random decisions for unpredictability.',
-    [AIDifficulty.MEDIUM]: 'Strategic bidding with position awareness, card counting, trump management.',
-    [AIDifficulty.HARD]: 'Expert analysis, opponent modeling, optimal play with minimal randomness.'
+  const descriptions: Record<AIDifficulty, string> = {
+    'easy': 'Conservative bidding, basic card play, 20% random decisions for unpredictability.',
+    'medium': 'Strategic bidding with position awareness, card counting, trump management.',
+    'hard': 'Expert analysis, opponent modeling, optimal play with minimal randomness.'
   };
   return descriptions[difficulty];
 }

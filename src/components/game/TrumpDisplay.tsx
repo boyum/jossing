@@ -1,6 +1,6 @@
 'use client';
 
-import { type Rank, Suit } from '@/types/game';
+import type { Rank, Suit } from '@/types/game';
 import { getSuitSymbol } from '@/lib/game-utils';
 
 interface TrumpDisplayProps {
@@ -10,7 +10,7 @@ interface TrumpDisplayProps {
 
 export function TrumpDisplay({ trumpSuit, trumpCardRank }: TrumpDisplayProps) {
   const getSuitColor = (suit: Suit) => {
-    return suit === Suit.HEARTS || suit === Suit.DIAMONDS ? 'text-red-600' : 'text-black';
+    return suit === 'hearts' || suit === 'diamonds' ? 'text-red-600' : 'text-black';
   };
 
   return (

@@ -12,7 +12,7 @@ The application will use the following main entities:
 CREATE TABLE game_sessions (
   id VARCHAR(8) PRIMARY KEY,           -- Short alphanumeric session code
   admin_player_id VARCHAR(36) NOT NULL,
-  game_type ENUM('up', 'up-and-down') NOT NULL,
+  game_type ENUM('up', 'up_and_down') NOT NULL,
   scoring_system ENUM('classic', 'modern') NOT NULL,
   max_players INTEGER NOT NULL DEFAULT 6,
   current_section INTEGER NOT NULL DEFAULT 0,
@@ -116,8 +116,8 @@ CREATE TABLE trick_cards (
 // POST /api/sessions
 interface CreateSessionRequest {
   adminName: string;
-  gameType: "up" | "up-and-down";
-  scoringSystem: "classic" | "modern";
+  gameType: GameType;
+  scoringSystem: ScoringSystem;
   maxPlayers: number;
 }
 

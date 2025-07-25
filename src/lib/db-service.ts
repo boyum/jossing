@@ -1,19 +1,19 @@
-import {
-  type AIDifficulty,
-  type Card,
-  type GamePhase,
-  type GameSession,
+import type {
+  AIDifficulty,
+  Card,
+  GamePhase,
+  GameSession,
   GameType,
-  type Player,
+  Player,
   Rank,
   ScoringSystem,
   SectionPhase,
-  type SectionState,
+  SectionState,
   Suit,
-  type Trick,
-  type TrickCard,
+  Trick,
+  TrickCard,
 } from "@/types/game";
-import * as PrismaSchema from "../../node_modules/.prisma/client/index";
+import type * as PrismaSchema from "../../node_modules/.prisma/client/index";
 import { db } from "./db";
 
 // Session Management
@@ -28,11 +28,11 @@ export async function createSession(
     data: {
       id: sessionId,
       adminPlayerId,
-      gameType: mapGameTypeToDb(gameType),
-      scoringSystem: mapScoringSystemToDb(scoringSystem),
+      gameType,
+      scoringSystem,
       maxPlayers,
       currentSection: 0,
-      gamePhase: PrismaSchema.$Enums.GamePhase.WAITING,
+      gamePhase: "waiting",
     } satisfies Omit<PrismaSchema.GameSession, "createdAt" | "updatedAt">,
   })) as PrismaSchema.GameSession;
 
@@ -48,30 +48,6 @@ export async function createSession(
     updatedAt: session.updatedAt,
   };
 }
-
-const mapGameTypeToDb = (gameType: GameType): PrismaSchema.$Enums.GameType => {
-  switch (gameType) {
-    case GameType.UP:
-      return PrismaSchema.$Enums.GameType.UP;
-    case GameType.UP_AND_DOWN:
-      return PrismaSchema.$Enums.GameType.UP_AND_DOWN;
-    default:
-      throw new Error(`Unknown game type: ${gameType}`);
-  }
-};
-
-const mapScoringSystemToDb = (
-  scoringSystem: ScoringSystem,
-): PrismaSchema.$Enums.ScoringSystem => {
-  switch (scoringSystem) {
-    case ScoringSystem.CLASSIC:
-      return PrismaSchema.$Enums.ScoringSystem.CLASSIC;
-    case ScoringSystem.MODERN:
-      return PrismaSchema.$Enums.ScoringSystem.MODERN;
-    default:
-      throw new Error(`Unknown scoring system: ${scoringSystem}`);
-  }
-};
 
 export async function getSession(
   sessionId: string,
@@ -122,7 +98,7 @@ export async function startGame(sessionId: string, adminPlayerId: string) {
   await db.gameSession.update({
     where: { id: sessionId },
     data: {
-      gamePhase: "PLAYING",
+      gamePhase: "playing",
       currentSection: 1,
     },
   });
@@ -233,16 +209,16 @@ export async function createSection(
   sectionNumber: number,
   dealerPosition: number,
   trumpSuit: Suit,
-  trumpCardRank: string,
+  trumpCardRank: Rank,
 ): Promise<SectionState> {
   const section = (await db.sectionState.create({
     data: {
       sessionId,
       sectionNumber,
       dealerPosition,
-      trumpSuit: mapSuitToDb(trumpSuit),
-      trumpCardRank,
-      phase: mapPhaseToDb(SectionPhase.DEALING),
+      trumpSuit,
+      trumpCardRank: mapCardRankToDb(trumpCardRank),
+      phase: "dealing",
     } satisfies Omit<
       PrismaSchema.SectionState,
       "id" | "createdAt" | "updatedAt" | "leadPlayerPosition"
@@ -255,78 +231,13 @@ export async function createSection(
     sectionNumber: section.sectionNumber,
     dealerPosition: section.dealerPosition,
     leadPlayerPosition: section.leadPlayerPosition ?? undefined,
-    trumpSuit: mapSuitFromDb(section.trumpSuit),
-    trumpCardRank: mapRankFromDb(section.trumpCardRank),
+    trumpSuit: section.trumpSuit,
+    trumpCardRank: mapCardRankFromDb(section.trumpCardRank),
     phase: section.phase as SectionPhase,
     createdAt: section.createdAt,
     bids: [], // Will be populated separately
   };
 }
-
-const mapRankFromDb = (rank: string): Rank => {
-  switch (rank) {
-    case "ACE":
-      return Rank.ACE;
-    case "KING":
-      return Rank.KING;
-    case "QUEEN":
-      return Rank.QUEEN;
-    case "JACK":
-      return Rank.JACK;
-    case "TEN":
-      return Rank.TEN;
-    case "NINE":
-      return Rank.NINE;
-    case "EIGHT":
-      return Rank.EIGHT;
-    case "SEVEN":
-      return Rank.SEVEN;
-    case "SIX":
-      return Rank.SIX;
-    case "FIVE":
-      return Rank.FIVE;
-    case "FOUR":
-      return Rank.FOUR;
-    case "THREE":
-      return Rank.THREE;
-    case "TWO":
-      return Rank.TWO;
-    default:
-      throw new Error(`Unknown rank: ${rank}`);
-  }
-};
-
-const mapSuitToDb = (suit: Suit): PrismaSchema.$Enums.Suit => {
-  switch (suit) {
-    case Suit.HEARTS:
-      return PrismaSchema.$Enums.Suit.HEARTS;
-    case Suit.DIAMONDS:
-      return PrismaSchema.$Enums.Suit.DIAMONDS;
-    case Suit.CLUBS:
-      return PrismaSchema.$Enums.Suit.CLUBS;
-    case Suit.SPADES:
-      return PrismaSchema.$Enums.Suit.SPADES;
-    default:
-      throw new Error(`Unknown suit: ${suit}`);
-  }
-};
-
-const mapPhaseToDb = (
-  phase: SectionPhase,
-): PrismaSchema.$Enums.SectionPhase => {
-  switch (phase) {
-    case SectionPhase.DEALING:
-      return PrismaSchema.$Enums.SectionPhase.DEALING;
-    case SectionPhase.BIDDING:
-      return PrismaSchema.$Enums.SectionPhase.BIDDING;
-    case SectionPhase.PLAYING:
-      return PrismaSchema.$Enums.SectionPhase.PLAYING;
-    case SectionPhase.COMPLETED:
-      return PrismaSchema.$Enums.SectionPhase.COMPLETED;
-    default:
-      throw new Error(`Unknown section phase: ${phase}`);
-  }
-};
 
 export async function getCurrentSection(
   sessionId: string,
@@ -354,8 +265,8 @@ export async function getCurrentSection(
     sectionNumber: section.sectionNumber,
     dealerPosition: section.dealerPosition,
     leadPlayerPosition: section.leadPlayerPosition ?? undefined,
-    trumpSuit: mapSuitFromDb(section.trumpSuit),
-    trumpCardRank: mapRankFromDb(section.trumpCardRank),
+    trumpSuit: section.trumpSuit,
+    trumpCardRank: mapCardRankFromDb(section.trumpCardRank),
     phase: section.phase as SectionPhase,
     createdAt: section.createdAt,
     bids: [], // Will be populated separately
@@ -369,7 +280,7 @@ export async function updateSectionPhase(
   await db.sectionState.update({
     where: { id: sectionId },
     data: {
-      phase: mapPhaseToDb(phase),
+      phase,
     } satisfies Partial<PrismaSchema.SectionState>,
   });
 }
@@ -527,9 +438,7 @@ export async function createTrick(
     sectionStateId: trick.sectionStateId,
     trickNumber: trick.trickNumber,
     leadPlayerPosition: trick.leadPlayerPosition,
-    leadingSuit: trick.leadingSuit
-      ? mapSuitFromDb(trick.leadingSuit)
-      : undefined,
+    leadingSuit: trick.leadingSuit ? trick.leadingSuit : undefined,
     winnerPosition: trick.winnerPosition ?? undefined,
     completedAt: trick.completedAt ?? undefined,
   };
@@ -553,9 +462,7 @@ export async function getCurrentTrick(
     sectionStateId: trick.sectionStateId,
     trickNumber: trick.trickNumber,
     leadPlayerPosition: trick.leadPlayerPosition,
-    leadingSuit: trick.leadingSuit
-      ? mapSuitFromDb(trick.leadingSuit)
-      : undefined,
+    leadingSuit: trick.leadingSuit ? trick.leadingSuit : undefined,
     winnerPosition: trick.winnerPosition ?? undefined,
     completedAt: trick.completedAt ?? undefined,
   };
@@ -568,7 +475,7 @@ export async function updateTrickLeadingSuit(
   await db.trick.update({
     where: { id: trickId },
     data: {
-      leadingSuit: mapSuitToDb(leadingSuit),
+      leadingSuit: leadingSuit,
     } satisfies Partial<PrismaSchema.Trick>,
   });
 }
@@ -598,8 +505,8 @@ export async function playCard(
       trickId,
       playerId,
       playerPosition,
-      cardSuit: mapSuitToDb(card.suit),
-      cardRank: card.rank,
+      cardSuit: card.suit,
+      cardRank: mapCardRankToDb(card.rank),
     } satisfies Omit<
       PrismaSchema.TrickCard,
       "id" | "createdAt" | "updatedAt" | "leadPlayerPosition" | "playedAt"
@@ -613,30 +520,18 @@ export async function getTrickCards(trickId: string): Promise<TrickCard[]> {
     orderBy: { playedAt: "asc" },
   })) as PrismaSchema.TrickCard[];
 
-  return cards.map((card) => ({
-    id: card.id,
-    trickId: card.trickId,
-    playerPosition: card.playerPosition,
-    cardSuit: mapSuitFromDb(card.cardSuit),
-    cardRank: mapRankFromDb(card.cardRank),
-    playedAt: card.playedAt,
-  }));
+  return cards.map(
+    (card) =>
+      ({
+        id: card.id,
+        trickId: card.trickId,
+        playerPosition: card.playerPosition,
+        cardSuit: card.cardSuit,
+        cardRank: mapCardRankFromDb(card.cardRank),
+        playedAt: card.playedAt,
+      } satisfies TrickCard),
+  );
 }
-
-const mapSuitFromDb = (suit: PrismaSchema.$Enums.Suit): Suit => {
-  switch (suit) {
-    case PrismaSchema.$Enums.Suit.HEARTS:
-      return Suit.HEARTS;
-    case PrismaSchema.$Enums.Suit.DIAMONDS:
-      return Suit.DIAMONDS;
-    case PrismaSchema.$Enums.Suit.CLUBS:
-      return Suit.CLUBS;
-    case PrismaSchema.$Enums.Suit.SPADES:
-      return Suit.SPADES;
-    default:
-      throw new Error(`Unknown suit: ${suit}`);
-  }
-};
 
 // Utility Methods
 export async function getAllSessionBids(
@@ -674,4 +569,70 @@ export async function getSectionScores(
   }
 
   return scores;
+}
+
+function mapCardRankFromDb(rank: PrismaSchema.$Enums.Rank): Rank {
+  switch (rank) {
+    case "ace":
+      return "A";
+    case "king":
+      return "K";
+    case "queen":
+      return "Q";
+    case "jack":
+      return "J";
+    case "ten":
+      return "10";
+    case "nine":
+      return "9";
+    case "eight":
+      return "8";
+    case "seven":
+      return "7";
+    case "six":
+      return "6";
+    case "five":
+      return "5";
+    case "four":
+      return "4";
+    case "three":
+      return "3";
+    case "two":
+      return "2";
+    default:
+      throw new Error(`Unknown card rank: ${rank}`);
+  }
+}
+
+function mapCardRankToDb(rank: Rank): PrismaSchema.$Enums.Rank {
+  switch (rank) {
+    case "A":
+      return "ace";
+    case "K":
+      return "king";
+    case "Q":
+      return "queen";
+    case "J":
+      return "jack";
+    case "10":
+      return "ten";
+    case "9":
+      return "nine";
+    case "8":
+      return "eight";
+    case "7":
+      return "seven";
+    case "6":
+      return "six";
+    case "5":
+      return "five";
+    case "4":
+      return "four";
+    case "3":
+      return "three";
+    case "2":
+      return "two";
+    default:
+      throw new Error(`Unknown card rank: ${rank}`);
+  }
 }

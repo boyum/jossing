@@ -1,52 +1,63 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { AIDifficulty } from '@/types/game';
-import { getDifficultyDisplayName, getDifficultyDescription } from '@/lib/ai/ai-manager';
+import { useState } from "react";
+import {
+  getDifficultyDescription,
+  getDifficultyDisplayName,
+} from "@/lib/ai/ai-manager";
+import type { AIDifficulty } from "@/types/game";
 
 interface AIDemonstrationProps {
   onSelectDifficulty: (difficulty: AIDifficulty) => void;
   selectedDifficulty?: AIDifficulty;
 }
 
-export function AIDemonstration({ onSelectDifficulty, selectedDifficulty }: AIDemonstrationProps) {
+export function AIDemonstration({
+  onSelectDifficulty,
+  selectedDifficulty,
+}: AIDemonstrationProps) {
   const [showDetails, setShowDetails] = useState(false);
 
   const difficulties = [
     {
-      value: AIDifficulty.EASY,
-      emoji: '😊',
-      color: 'green',
+      value: "easy",
+      emoji: "😊",
+      color: "green",
       features: [
-        'Conservative bidding strategy',
-        'Basic card play logic',
-        '20% random decisions for unpredictability',
-        'Great for learning the game'
-      ]
+        "Conservative bidding strategy",
+        "Basic card play logic",
+        "20% random decisions for unpredictability",
+        "Great for learning the game",
+      ],
     },
     {
-      value: AIDifficulty.MEDIUM,
-      emoji: '🤔',
-      color: 'blue',
+      value: "medium",
+      emoji: "🤔",
+      color: "blue",
       features: [
-        'Strategic bidding with position awareness',
-        'Card counting and memory',
-        'Basic trump management',
-        '10% random decisions'
-      ]
+        "Strategic bidding with position awareness",
+        "Card counting and memory",
+        "Basic trump management",
+        "10% random decisions",
+      ],
     },
     {
-      value: AIDifficulty.HARD,
-      emoji: '🧠',
-      color: 'purple',
+      value: "hard",
+      emoji: "🧠",
+      color: "purple",
       features: [
-        'Expert-level hand analysis',
-        'Advanced opponent modeling',
-        'Optimal card play strategy',
-        'Only 3% random decisions'
-      ]
-    }
-  ];
+        "Expert-level hand analysis",
+        "Advanced opponent modeling",
+        "Optimal card play strategy",
+        "Only 3% random decisions",
+      ],
+    },
+  ] as const satisfies {
+    value: AIDifficulty;
+    emoji: string;
+    color: "green" | "blue" | "purple";
+    features: string[];
+  }[];
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
@@ -57,7 +68,7 @@ export function AIDemonstration({ onSelectDifficulty, selectedDifficulty }: AIDe
           onClick={() => setShowDetails(!showDetails)}
           className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
         >
-          {showDetails ? 'Hide Details' : 'Show Details'}
+          {showDetails ? "Hide Details" : "Show Details"}
         </button>
       </div>
 
@@ -66,28 +77,34 @@ export function AIDemonstration({ onSelectDifficulty, selectedDifficulty }: AIDe
           const isSelected = selectedDifficulty === difficulty.value;
           const colorClasses = {
             green: {
-              border: isSelected ? 'border-green-500 ring-2 ring-green-200' : 'border-green-200 hover:border-green-300',
-              bg: isSelected ? 'bg-green-50' : 'bg-white hover:bg-green-50',
-              text: 'text-green-700',
-              badge: 'bg-green-100 text-green-800'
+              border: isSelected
+                ? "border-green-500 ring-2 ring-green-200"
+                : "border-green-200 hover:border-green-300",
+              bg: isSelected ? "bg-green-50" : "bg-white hover:bg-green-50",
+              text: "text-green-700",
+              badge: "bg-green-100 text-green-800",
             },
             blue: {
-              border: isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-blue-200 hover:border-blue-300',
-              bg: isSelected ? 'bg-blue-50' : 'bg-white hover:bg-blue-50',
-              text: 'text-blue-700',
-              badge: 'bg-blue-100 text-blue-800'
+              border: isSelected
+                ? "border-blue-500 ring-2 ring-blue-200"
+                : "border-blue-200 hover:border-blue-300",
+              bg: isSelected ? "bg-blue-50" : "bg-white hover:bg-blue-50",
+              text: "text-blue-700",
+              badge: "bg-blue-100 text-blue-800",
             },
             purple: {
-              border: isSelected ? 'border-purple-500 ring-2 ring-purple-200' : 'border-purple-200 hover:border-purple-300',
-              bg: isSelected ? 'bg-purple-50' : 'bg-white hover:bg-purple-50',
-              text: 'text-purple-700',
-              badge: 'bg-purple-100 text-purple-800'
-            }
+              border: isSelected
+                ? "border-purple-500 ring-2 ring-purple-200"
+                : "border-purple-200 hover:border-purple-300",
+              bg: isSelected ? "bg-purple-50" : "bg-white hover:bg-purple-50",
+              text: "text-purple-700",
+              badge: "bg-purple-100 text-purple-800",
+            },
           }[difficulty.color] || {
-            border: 'border-gray-200',
-            bg: 'bg-white',
-            text: 'text-gray-700',
-            badge: 'bg-gray-100 text-gray-800'
+            border: "border-gray-200",
+            bg: "bg-white",
+            text: "text-gray-700",
+            badge: "bg-gray-100 text-gray-800",
           };
 
           return (
@@ -110,7 +127,9 @@ export function AIDemonstration({ onSelectDifficulty, selectedDifficulty }: AIDe
                   </div>
                 </div>
                 {isSelected && (
-                  <div className={`px-2 py-1 rounded text-xs font-medium ${colorClasses.badge}`}>
+                  <div
+                    className={`px-2 py-1 rounded text-xs font-medium ${colorClasses.badge}`}
+                  >
                     Selected
                   </div>
                 )}
@@ -118,7 +137,9 @@ export function AIDemonstration({ onSelectDifficulty, selectedDifficulty }: AIDe
 
               {showDetails && (
                 <div className="mt-3 pt-3 border-t border-gray-200">
-                  <h5 className="text-sm font-medium text-gray-700 mb-2">Key Features:</h5>
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">
+                    Key Features:
+                  </h5>
                   <ul className="text-sm text-gray-600 space-y-1">
                     {difficulty.features.map((feature) => (
                       <li key={feature} className="flex items-start gap-2">
@@ -138,7 +159,7 @@ export function AIDemonstration({ onSelectDifficulty, selectedDifficulty }: AIDe
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-lg">
-              {difficulties.find(d => d.value === selectedDifficulty)?.emoji}
+              {difficulties.find((d) => d.value === selectedDifficulty)?.emoji}
             </span>
             <span className="font-medium text-gray-800">
               {getDifficultyDisplayName(selectedDifficulty)} AI Selected

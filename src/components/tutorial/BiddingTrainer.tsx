@@ -1,8 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { CardComponent } from '@/components/ui/card';
-import type { Card as CardType, Suit, Rank } from '@/types/game';
+import { useState, useEffect } from "react";
+import { CardComponent } from "@/components/ui/card";
+import {
+  type Card as CardType,
+  type Suit,
+  type Rank,
+  RANK_VALUES,
+} from "@/types/game";
 
 interface BiddingScenario {
   id: string;
@@ -20,106 +25,116 @@ interface BiddingScenario {
 
 const scenarios: BiddingScenario[] = [
   {
-    id: 'strong-hand',
-    title: 'Strong Hand with Trump',
-    description: 'You have a powerful hand with high trump cards.',
+    id: "strong-hand",
+    title: "Strong Hand with Trump",
+    description: "You have a powerful hand with high trump cards.",
     handSize: 5,
     playerHand: [
-      { suit: 'spades' as Suit, rank: 'A' as Rank, value: 14 },
-      { suit: 'spades' as Suit, rank: 'K' as Rank, value: 13 },
-      { suit: 'hearts' as Suit, rank: 'A' as Rank, value: 14 },
-      { suit: 'clubs' as Suit, rank: 'K' as Rank, value: 13 },
-      { suit: 'diamonds' as Suit, rank: '7' as Rank, value: 7 },
+      { suit: "spades" as Suit, rank: "A" },
+      { suit: "spades" as Suit, rank: "K" },
+      { suit: "hearts" as Suit, rank: "A" },
+      { suit: "clubs" as Suit, rank: "K" },
+      { suit: "diamonds" as Suit, rank: "7" },
     ],
-    trumpSuit: 'spades' as Suit,
+    trumpSuit: "spades" as Suit,
     playerPosition: 1,
     dealerPosition: 0,
     sectionNumber: 5,
     optimalBid: 3,
-    reasoning: 'With A♠ and K♠ as trump, plus A♥ and K♣, you should win 3-4 tricks. Bid conservatively at 3.'
+    reasoning:
+      "With A♠ and K♠ as trump, plus A♥ and K♣, you should win 3-4 tricks. Bid conservatively at 3.",
   },
   {
-    id: 'weak-hand',
-    title: 'Weak Hand - Conservative Bidding',
-    description: 'Your hand has mostly low cards with little trump strength.',
+    id: "weak-hand",
+    title: "Weak Hand - Conservative Bidding",
+    description: "Your hand has mostly low cards with little trump strength.",
     handSize: 4,
     playerHand: [
-      { suit: 'hearts' as Suit, rank: '7' as Rank, value: 7 },
-      { suit: 'clubs' as Suit, rank: '6' as Rank, value: 6 },
-      { suit: 'diamonds' as Suit, rank: '5' as Rank, value: 5 },
-      { suit: 'diamonds' as Suit, rank: '4' as Rank, value: 4 },
+      { suit: "hearts" as Suit, rank: "7" as Rank },
+      { suit: "clubs" as Suit, rank: "6" as Rank },
+      { suit: "diamonds" as Suit, rank: "5" as Rank },
+      { suit: "diamonds" as Suit, rank: "4" as Rank },
     ],
-    trumpSuit: 'spades' as Suit,
+    trumpSuit: "spades" as Suit,
     playerPosition: 2,
     dealerPosition: 1,
     sectionNumber: 4,
     optimalBid: 0,
-    reasoning: 'No trump cards and all low values. Very unlikely to win any tricks. Bid 0 to play it safe.'
+    reasoning:
+      "No trump cards and all low values. Very unlikely to win any tricks. Bid 0 to play it safe.",
   },
   {
-    id: 'medium-hand',
-    title: 'Balanced Hand - Strategic Thinking',
-    description: 'A moderate hand requiring careful evaluation.',
+    id: "medium-hand",
+    title: "Balanced Hand - Strategic Thinking",
+    description: "A moderate hand requiring careful evaluation.",
     handSize: 6,
     playerHand: [
-      { suit: 'spades' as Suit, rank: 'J' as Rank, value: 11 },
-      { suit: 'hearts' as Suit, rank: 'Q' as Rank, value: 12 },
-      { suit: 'hearts' as Suit, rank: '9' as Rank, value: 9 },
-      { suit: 'clubs' as Suit, rank: 'A' as Rank, value: 14 },
-      { suit: 'diamonds' as Suit, rank: '8' as Rank, value: 8 },
-      { suit: 'diamonds' as Suit, rank: '3' as Rank, value: 3 },
+      { suit: "spades" as Suit, rank: "J" as Rank },
+      { suit: "hearts" as Suit, rank: "Q" as Rank },
+      { suit: "hearts" as Suit, rank: "9" as Rank },
+      { suit: "clubs" as Suit, rank: "A" as Rank },
+      { suit: "diamonds" as Suit, rank: "8" as Rank },
+      { suit: "diamonds" as Suit, rank: "3" as Rank },
     ],
-    trumpSuit: 'spades' as Suit,
+    trumpSuit: "spades" as Suit,
     playerPosition: 3,
     dealerPosition: 2,
     sectionNumber: 6,
     optimalBid: 2,
-    reasoning: 'J♠ (trump), A♣, and Q♥ are likely winners. The 9♥ might win in hearts. Bid 2 for safety.'
-  }
+    reasoning:
+      "J♠ (trump), A♣, and Q♥ are likely winners. The 9♥ might win in hearts. Bid 2 for safety.",
+  },
 ];
 
 export default function BiddingTrainer() {
   const [currentScenario, setCurrentScenario] = useState(0);
   const [userBid, setUserBid] = useState<number>(0);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [feedback, setFeedback] = useState<string>('');
-  const [feedbackType, setFeedbackType] = useState<'success' | 'warning' | 'info'>('info');
+  const [feedback, setFeedback] = useState<string>("");
+  const [feedbackType, setFeedbackType] = useState<
+    "success" | "warning" | "info"
+  >("info");
 
   const scenario = scenarios[currentScenario];
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setUserBid(0);
     setShowExplanation(false);
-    setFeedback('');
-    setFeedbackType('info');
+    setFeedback("");
+    setFeedbackType("info");
   }, [currentScenario]);
 
   const handleBidSubmit = () => {
     const optimal = scenario.optimalBid;
     const difference = Math.abs(userBid - optimal);
-    
+
     if (difference === 0) {
-      setFeedback('🎯 Perfect! You found the optimal bid.');
-      setFeedbackType('success');
+      setFeedback("🎯 Perfect! You found the optimal bid.");
+      setFeedbackType("success");
     } else if (difference === 1) {
       setFeedback(`👍 Very good! Your bid is close to optimal (${optimal}).`);
-      setFeedbackType('success');
+      setFeedbackType("success");
     } else if (difference === 2) {
-      setFeedback(`⚠️ Decent bid, but consider the optimal choice (${optimal}).`);
-      setFeedbackType('warning');
+      setFeedback(
+        `⚠️ Decent bid, but consider the optimal choice (${optimal}).`,
+      );
+      setFeedbackType("warning");
     } else {
-      setFeedback(`❌ Your bid is quite different from optimal (${optimal}). Review the hand strength.`);
-      setFeedbackType('warning');
+      setFeedback(
+        `❌ Your bid is quite different from optimal (${optimal}). Review the hand strength.`,
+      );
+      setFeedbackType("warning");
     }
-    
+
     setShowExplanation(true);
   };
 
   const resetScenario = () => {
     setUserBid(0);
     setShowExplanation(false);
-    setFeedback('');
-    setFeedbackType('info');
+    setFeedback("");
+    setFeedbackType("info");
   };
 
   const nextScenario = () => {
@@ -127,14 +142,20 @@ export default function BiddingTrainer() {
   };
 
   const prevScenario = () => {
-    setCurrentScenario((prev) => (prev - 1 + scenarios.length) % scenarios.length);
+    setCurrentScenario(
+      (prev) => (prev - 1 + scenarios.length) % scenarios.length,
+    );
   };
 
   // Calculate basic hand analysis for display
   const handAnalysis = {
-    trumpCards: scenario.playerHand.filter(card => card.suit === scenario.trumpSuit).length,
-    highCards: scenario.playerHand.filter(card => card.value >= 12).length,
-    aces: scenario.playerHand.filter(card => card.rank === 'A').length,
+    trumpCards: scenario.playerHand.filter(
+      (card) => card.suit === scenario.trumpSuit,
+    ).length,
+    highCards: scenario.playerHand.filter(
+      (card) => RANK_VALUES[card.rank] >= 12,
+    ).length,
+    aces: scenario.playerHand.filter((card) => card.rank === "A").length,
   };
 
   return (
@@ -148,8 +169,8 @@ export default function BiddingTrainer() {
             onClick={() => setCurrentScenario(index)}
             className={`px-3 py-1 rounded-md text-sm ${
               currentScenario === index
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? "bg-blue-500 text-white"
+                : "bg-gray-200 text-gray-700 hover:bg-gray-300"
             }`}
           >
             Scenario {index + 1}
@@ -163,17 +184,19 @@ export default function BiddingTrainer() {
         <p className="text-gray-700 mb-3">{scenario.description}</p>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <strong>Section:</strong> {scenario.sectionNumber} (cards per player: {scenario.handSize})
+            <strong>Section:</strong> {scenario.sectionNumber} (cards per
+            player: {scenario.handSize})
           </div>
           <div>
-            <strong>Trump Suit:</strong> {scenario.trumpSuit} 
-            {scenario.trumpSuit === 'spades' && ' ♠'}
-            {scenario.trumpSuit === 'hearts' && ' ♥'}
-            {scenario.trumpSuit === 'diamonds' && ' ♦'}
-            {scenario.trumpSuit === 'clubs' && ' ♣'}
+            <strong>Trump Suit:</strong> {scenario.trumpSuit}
+            {scenario.trumpSuit === "spades" && " ♠"}
+            {scenario.trumpSuit === "hearts" && " ♥"}
+            {scenario.trumpSuit === "diamonds" && " ♦"}
+            {scenario.trumpSuit === "clubs" && " ♣"}
           </div>
           <div>
-            <strong>Your Position:</strong> {scenario.playerPosition} (Dealer: {scenario.dealerPosition})
+            <strong>Your Position:</strong> {scenario.playerPosition} (Dealer:{" "}
+            {scenario.dealerPosition})
           </div>
           <div>
             <strong>Bidding Range:</strong> 0 to {scenario.handSize}
@@ -186,16 +209,18 @@ export default function BiddingTrainer() {
         <h4 className="font-medium mb-3">Your Hand</h4>
         <div className="flex justify-center space-x-2 mb-4">
           {scenario.playerHand.map((card) => (
-            <CardComponent 
+            <CardComponent
               key={`${card.suit}-${card.rank}`}
               card={card}
               size="medium"
               disabled={false}
-              className={card.suit === scenario.trumpSuit ? 'ring-2 ring-yellow-400' : ''}
+              className={
+                card.suit === scenario.trumpSuit ? "ring-2 ring-yellow-400" : ""
+              }
             />
           ))}
         </div>
-        
+
         {/* Quick Analysis */}
         <div className="bg-white p-3 rounded border">
           <h5 className="font-medium mb-2">Quick Analysis:</h5>
@@ -217,7 +242,9 @@ export default function BiddingTrainer() {
       <div className="bg-yellow-50 p-4 rounded-lg">
         <h4 className="font-medium mb-3">Make Your Bid</h4>
         <div className="flex items-center space-x-4 mb-4">
-          <label htmlFor="bid-input" className="font-medium">Your bid:</label>
+          <label htmlFor="bid-input" className="font-medium">
+            Your bid:
+          </label>
           <div className="flex items-center space-x-2">
             <button
               type="button"
@@ -233,12 +260,21 @@ export default function BiddingTrainer() {
               min="0"
               max={scenario.handSize}
               value={userBid}
-              onChange={(e) => setUserBid(Math.max(0, Math.min(scenario.handSize, parseInt(e.target.value) || 0)))}
+              onChange={(e) =>
+                setUserBid(
+                  Math.max(
+                    0,
+                    Math.min(scenario.handSize, parseInt(e.target.value) || 0),
+                  ),
+                )
+              }
               className="w-16 text-center p-2 border rounded"
             />
             <button
               type="button"
-              onClick={() => setUserBid(Math.min(scenario.handSize, userBid + 1))}
+              onClick={() =>
+                setUserBid(Math.min(scenario.handSize, userBid + 1))
+              }
               disabled={userBid >= scenario.handSize}
               className="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
             >
@@ -253,7 +289,7 @@ export default function BiddingTrainer() {
             Submit Bid
           </button>
         </div>
-        
+
         <p className="text-sm text-gray-600">
           How many tricks do you think you can win with this hand?
         </p>
@@ -261,22 +297,34 @@ export default function BiddingTrainer() {
 
       {/* Feedback */}
       {feedback && (
-        <div className={`p-4 rounded-lg ${
-          feedbackType === 'success' ? 'bg-green-100 border border-green-300' :
-          feedbackType === 'warning' ? 'bg-yellow-100 border border-yellow-300' :
-          'bg-blue-100 border border-blue-300'
-        }`}>
-          <p className={`font-medium ${
-            feedbackType === 'success' ? 'text-green-800' :
-            feedbackType === 'warning' ? 'text-yellow-800' :
-            'text-blue-800'
-          }`}>
+        <div
+          className={`p-4 rounded-lg ${
+            feedbackType === "success"
+              ? "bg-green-100 border border-green-300"
+              : feedbackType === "warning"
+              ? "bg-yellow-100 border border-yellow-300"
+              : "bg-blue-100 border border-blue-300"
+          }`}
+        >
+          <p
+            className={`font-medium ${
+              feedbackType === "success"
+                ? "text-green-800"
+                : feedbackType === "warning"
+                ? "text-yellow-800"
+                : "text-blue-800"
+            }`}
+          >
             {feedback}
           </p>
           {showExplanation && (
             <div className="mt-3 text-sm text-gray-700">
-              <p><strong>Optimal bid:</strong> {scenario.optimalBid}</p>
-              <p><strong>Reasoning:</strong> {scenario.reasoning}</p>
+              <p>
+                <strong>Optimal bid:</strong> {scenario.optimalBid}
+              </p>
+              <p>
+                <strong>Reasoning:</strong> {scenario.reasoning}
+              </p>
             </div>
           )}
         </div>
@@ -291,7 +339,7 @@ export default function BiddingTrainer() {
         >
           Previous Scenario
         </button>
-        
+
         <button
           type="button"
           onClick={resetScenario}
@@ -299,7 +347,7 @@ export default function BiddingTrainer() {
         >
           Reset
         </button>
-        
+
         <button
           type="button"
           onClick={nextScenario}

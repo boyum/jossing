@@ -1,74 +1,37 @@
 // Core game types for Jøssing card game
 
-export enum Suit {
-  HEARTS = 'hearts',
-  DIAMONDS = 'diamonds',
-  CLUBS = 'clubs',
-  SPADES = 'spades'
-}
+export type Suit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
 
-export enum Rank {
-  TWO = '2',
-  THREE = '3',
-  FOUR = '4',
-  FIVE = '5',
-  SIX = '6',
-  SEVEN = '7',
-  EIGHT = '8',
-  NINE = '9',
-  TEN = '10',
-  JACK = 'J',
-  QUEEN = 'Q',
-  KING = 'K',
-  ACE = 'A'
-}
+export type Rank = '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A';
 
 export const RANK_VALUES: Record<Rank, number> = {
-  [Rank.TWO]: 2,
-  [Rank.THREE]: 3,
-  [Rank.FOUR]: 4,
-  [Rank.FIVE]: 5,
-  [Rank.SIX]: 6,
-  [Rank.SEVEN]: 7,
-  [Rank.EIGHT]: 8,
-  [Rank.NINE]: 9,
-  [Rank.TEN]: 10,
-  [Rank.JACK]: 11,
-  [Rank.QUEEN]: 12,
-  [Rank.KING]: 13,
-  [Rank.ACE]: 14
+  '2': 2,
+  '3': 3,
+  '4': 4,
+  '5': 5,
+  '6': 6,
+  '7': 7,
+  '8': 8,
+  '9': 9,
+  '10': 10,
+  'J': 11,
+  'Q': 12,
+  'K': 13,
+  'A': 14
 };
 
 export interface Card {
   suit: Suit;
   rank: Rank;
-  value: number;
 }
 
-export enum GameType {
-  UP = 'up',
-  UP_AND_DOWN = 'up-and-down'
-}
+export type GameType = 'up' | 'up_and_down';
 
-export enum ScoringSystem {
-  CLASSIC = 'classic',
-  MODERN = 'modern'
-}
+export type ScoringSystem = 'classic' | 'modern';
 
-export enum GamePhase {
-  WAITING = 'waiting',
-  BIDDING = 'bidding',
-  PLAYING = 'playing',
-  SCORING = 'scoring',
-  FINISHED = 'finished'
-}
+export type GamePhase = 'waiting' | 'bidding' | 'playing' | 'scoring' | 'finished';
 
-export enum SectionPhase {
-  DEALING = 'dealing',
-  BIDDING = 'bidding',
-  PLAYING = 'playing',
-  COMPLETED = 'completed'
-}
+export type SectionPhase = 'dealing' | 'bidding' | 'playing' | 'completed';
 
 export interface GameSession {
   id: string;
@@ -82,11 +45,7 @@ export interface GameSession {
   updatedAt: Date;
 }
 
-export enum AIDifficulty {
-  EASY = 'easy',
-  MEDIUM = 'medium', 
-  HARD = 'hard'
-}
+export type AIDifficulty = 'easy' | 'medium' | 'hard';
 
 export interface Player {
   id: string;

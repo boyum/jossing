@@ -1,13 +1,14 @@
 import { v4 as uuidv4 } from "uuid";
-import type { Player } from "@/types/game";
+import type { GameType, Rank, ScoringSystem } from "@/types/game";
+import type * as PrismaSchema from "../../node_modules/.prisma/client/index";
 import { db } from "./db";
-import { generateSessionId } from "./game-utils";
+import { allRanks, allSuits, generateSessionId } from "./game-utils";
 
 // Simple database functions to get started
 export async function createGameSession(
   adminPlayerName: string,
-  gameType: "UP" | "UP_AND_DOWN" = "UP_AND_DOWN",
-  scoringSystem: "CLASSIC" | "MODERN" = "CLASSIC",
+  gameType: GameType = "up_and_down",
+  scoringSystem: ScoringSystem = "classic",
   maxPlayers: number = 6,
 ) {
   const sessionId = generateSessionId();
@@ -22,8 +23,8 @@ export async function createGameSession(
       scoringSystem,
       maxPlayers,
       currentSection: 0,
-      gamePhase: "WAITING",
-    },
+      gamePhase: "waiting",
+    } satisfies Omit<PrismaSchema.GameSession, "createdAt" | "updatedAt">,
   });
 
   // Create admin player
@@ -36,7 +37,7 @@ export async function createGameSession(
       position: 1,
       totalScore: 0,
       isConnected: true,
-    },
+    } satisfies Omit<PrismaSchema.Player, "joinedAt">,
   });
 
   return {
@@ -51,7 +52,7 @@ export async function joinGameSession(sessionId: string, playerName: string) {
     where: { id: sessionId },
   });
 
-  if (!session || session.gamePhase !== "WAITING") {
+  if (!session || session.gamePhase !== "waiting") {
     return null;
   }
 
@@ -100,17 +101,19 @@ export async function getGameState(playerId: string) {
   if (!session) return null;
 
   // Get all players in session
-  const players = (await db.player.findMany({
+  const players = await db.player.findMany({
     where: { sessionId: player.sessionId },
     orderBy: { position: "asc" },
-  })) as Player[];
+  });
 
   // Get current section state if game is playing
   let currentSection = null;
   let playerHand = [];
   let currentTrick = null;
-  
-  if (session.gamePhase === "PLAYING" && session.currentSection > 0) {
+
+  const isInPlayingPhase =
+    session.gamePhase === "playing" && session.currentSection > 0;
+  if (isInPlayingPhase) {
     const sectionState = await db.sectionState.findFirst({
       where: {
         sessionId: player.sessionId,
@@ -130,13 +133,13 @@ export async function getGameState(playerId: string) {
         where: { sessionId: player.sessionId },
       });
 
-      const handsWithBids = playerHands.filter(hand => hand.bid !== null);
+      const handsWithBids = playerHands.filter((hand) => hand.bid !== null);
       const allPlayersHaveBid = handsWithBids.length === allPlayers.length;
 
       // Only show actual bid amounts if all players have bid, otherwise just show who has bid
       const bids = playerHands
-        .filter(hand => hand.bid !== null)
-        .map(hand => ({
+        .filter((hand) => hand.bid !== null)
+        .map((hand) => ({
           playerId: hand.playerId,
           playerName: hand.player.name,
           bid: allPlayersHaveBid ? (hand.bid as number) : -1, // Use -1 to indicate bid placed but hidden
@@ -157,7 +160,7 @@ export async function getGameState(playerId: string) {
       };
 
       // Get current trick if in playing phase
-      if (sectionState.phase === "PLAYING") {
+      if (sectionState.phase === "playing") {
         const trick = await db.trick.findFirst({
           where: {
             sectionStateId: sectionState.id,
@@ -171,7 +174,7 @@ export async function getGameState(playerId: string) {
             },
           },
           orderBy: {
-            trickNumber: 'desc',
+            trickNumber: "desc",
           },
         });
 
@@ -184,7 +187,7 @@ export async function getGameState(playerId: string) {
             leadingSuit: trick.leadingSuit?.toLowerCase(),
             winnerPosition: trick.winnerPosition,
             completedAt: trick.completedAt,
-            cardsPlayed: trick.trickCards.map(tc => ({
+            cardsPlayed: trick.trickCards.map((tc) => ({
               id: tc.id,
               trickId: tc.trickId,
               playerId: tc.playerId,
@@ -233,14 +236,17 @@ export async function getGameState(playerId: string) {
       totalScore: p.totalScore,
       isConnected: p.isConnected,
       joinedAt: p.joinedAt,
-      isAI: p.id.startsWith('ai-'),
-      aiDifficulty: p.id.startsWith('ai-') ? p.id.split('-')[1] : undefined,
+      isAI: p.id.startsWith("ai-"),
+      aiDifficulty: p.id.startsWith("ai-") ? p.id.split("-")[1] : undefined,
     })),
     currentSection,
     playerHand,
     currentTrick,
     sectionBids: currentSection?.bids || [],
-    allBidsPlaced: currentSection ? (currentSection.bids.length >= players.length && currentSection.bids.every(bid => bid.bid >= 0)) : false,
+    allBidsPlaced: currentSection
+      ? currentSection.bids.length >= players.length &&
+        currentSection.bids.every((bid) => bid.bid >= 0)
+      : false,
     isPlayerTurn: false, // Will be calculated based on game state
   };
 }
@@ -272,7 +278,7 @@ export async function startGame(sessionId: string, adminPlayerId: string) {
   await db.gameSession.update({
     where: { id: sessionId },
     data: {
-      gamePhase: "PLAYING",
+      gamePhase: "playing",
       currentSection: 1,
     },
   });
@@ -294,16 +300,14 @@ async function initializeSection(sessionId: string, sectionNumber: number) {
   const dealerPosition = ((sectionNumber - 1) % players.length) + 1;
 
   // Create a deck and shuffle
-  const suits = ['HEARTS', 'DIAMONDS', 'CLUBS', 'SPADES'];
-  const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
   const deck = [];
-  
-  for (const suit of suits) {
-    for (const rank of ranks) {
+
+  for (const suit of allSuits) {
+    for (const rank of allRanks) {
       deck.push({ suit, rank });
     }
   }
-  
+
   // Shuffle the deck
   for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -315,16 +319,16 @@ async function initializeSection(sessionId: string, sectionNumber: number) {
   if (!trumpCard) {
     throw new Error("Not enough cards in deck");
   }
-  
+
   // Create section state
   const sectionState = await db.sectionState.create({
     data: {
       sessionId,
       sectionNumber,
       dealerPosition,
-      trumpSuit: trumpCard.suit as "HEARTS" | "DIAMONDS" | "CLUBS" | "SPADES",
-      trumpCardRank: trumpCard.rank,
-      phase: "DEALING",
+      trumpSuit: trumpCard.suit,
+      trumpCardRank: mapCardRankToDb(trumpCard.rank),
+      phase: "dealing",
     },
   });
 
@@ -333,7 +337,7 @@ async function initializeSection(sessionId: string, sectionNumber: number) {
   for (let i = 0; i < players.length; i++) {
     const player = players[i];
     const playerCards = deck.splice(0, cardsPerPlayer);
-    
+
     await db.playerHand.create({
       data: {
         sectionStateId: sectionState.id,
@@ -348,17 +352,24 @@ async function initializeSection(sessionId: string, sectionNumber: number) {
   // Update section to bidding phase
   await db.sectionState.update({
     where: { id: sectionState.id },
-    data: { phase: "BIDDING" },
+    data: { phase: "bidding" },
   });
 }
 
-export async function addAIPlayer(sessionId: string, difficulty: string = 'medium') {
+export async function addAIPlayer(
+  sessionId: string,
+  difficulty: string = "medium",
+) {
   // Check if session exists and is in lobby
   const session = await db.gameSession.findUnique({
     where: { id: sessionId },
   });
 
-  if (!session || session.gamePhase !== "WAITING") {
+  const sessionDoesNotExist = !session;
+  const sessionIsNotJoinable =
+    sessionDoesNotExist || session.gamePhase !== "waiting";
+
+  if (sessionIsNotJoinable) {
     throw new Error("Session not found or not in lobby");
   }
 
@@ -373,15 +384,17 @@ export async function addAIPlayer(sessionId: string, difficulty: string = 'mediu
 
   // Generate AI player name and ID
   const aiNames = {
-    easy: ['AI Bot', 'Simple Sam', 'Easy Eddie'],
-    medium: ['Smart AI', 'Clever Clara', 'Medium Mike'],
-    hard: ['Expert AI', 'Genius Gina', 'Hard Harry']
+    easy: ["AI Bot", "Simple Sam", "Easy Eddie"],
+    medium: ["Smart AI", "Clever Clara", "Medium Mike"],
+    hard: ["Expert AI", "Genius Gina", "Hard Harry"],
   };
-  
+
   const names = aiNames[difficulty as keyof typeof aiNames] || aiNames.medium;
   const baseName = names[Math.floor(Math.random() * names.length)];
   const aiName = `${baseName} ${playerCount + 1}`;
-  const aiPlayerId = `ai-${difficulty}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const aiPlayerId = `ai-${difficulty}-${Date.now()}-${Math.random()
+    .toString(36)
+    .substr(2, 9)}`;
 
   // Create AI player
   await db.player.create({
@@ -416,13 +429,17 @@ export async function addAIPlayer(sessionId: string, difficulty: string = 'mediu
       totalScore: p.totalScore,
       isConnected: p.isConnected,
       joinedAt: p.joinedAt,
-      isAI: p.id.startsWith('ai-'),
-      aiDifficulty: p.id.startsWith('ai-') ? difficulty : undefined,
-    }))
+      isAI: p.id.startsWith("ai-"),
+      aiDifficulty: p.id.startsWith("ai-") ? difficulty : undefined,
+    })),
   };
 }
 
-export async function removeAIPlayer(sessionId: string, playerId: string, adminPlayerId: string) {
+export async function removeAIPlayer(
+  sessionId: string,
+  playerId: string,
+  adminPlayerId: string,
+) {
   // Verify admin
   const admin = await db.player.findFirst({
     where: {
@@ -441,7 +458,7 @@ export async function removeAIPlayer(sessionId: string, playerId: string, adminP
     where: { id: sessionId },
   });
 
-  if (!session || session.gamePhase !== "WAITING") {
+  if (!session || session.gamePhase !== "waiting") {
     throw new Error("Can only remove AI players in lobby");
   }
 
@@ -457,7 +474,7 @@ export async function removeAIPlayer(sessionId: string, playerId: string, adminP
     throw new Error("Player not found");
   }
 
-  if (!player.id.startsWith('ai-')) {
+  if (!player.id.startsWith("ai-")) {
     throw new Error("Can only remove AI players");
   }
 
@@ -498,13 +515,17 @@ export async function removeAIPlayer(sessionId: string, playerId: string, adminP
       totalScore: p.totalScore,
       isConnected: p.isConnected,
       joinedAt: p.joinedAt,
-      isAI: p.id.startsWith('ai-'),
-      aiDifficulty: p.id.startsWith('ai-') ? p.id.split('-')[1] : undefined,
-    }))
+      isAI: p.id.startsWith("ai-"),
+      aiDifficulty: p.id.startsWith("ai-") ? p.id.split("-")[1] : undefined,
+    })),
   };
 }
 
-export async function placeBid(sessionId: string, playerId: string, bidAmount: number) {
+export async function placeBid(
+  sessionId: string,
+  playerId: string,
+  bidAmount: number,
+) {
   // Get the player
   const player = await db.player.findFirst({
     where: {
@@ -522,7 +543,7 @@ export async function placeBid(sessionId: string, playerId: string, bidAmount: n
     where: { id: sessionId },
   });
 
-  if (!session || session.gamePhase !== "PLAYING") {
+  if (!session || session.gamePhase !== "playing") {
     throw new Error("Game is not in playing phase");
   }
 
@@ -533,7 +554,7 @@ export async function placeBid(sessionId: string, playerId: string, bidAmount: n
     },
   });
 
-  if (!sectionState || sectionState.phase !== "BIDDING") {
+  if (!sectionState || sectionState.phase !== "bidding") {
     throw new Error("Not in bidding phase");
   }
 
@@ -573,15 +594,16 @@ export async function placeBid(sessionId: string, playerId: string, bidAmount: n
     where: { sectionStateId: sectionState.id },
   });
 
-  const handsWithBids = playerHands.filter(hand => hand.bid !== null);
+  const handsWithBids = playerHands.filter((hand) => hand.bid !== null);
 
   // If all players have bid, move to playing phase
   if (handsWithBids.length === allPlayers.length) {
     await db.sectionState.update({
       where: { id: sectionState.id },
-      data: { 
-        phase: "PLAYING",
-        leadPlayerPosition: ((sectionState.dealerPosition) % allPlayers.length) + 1, // Player after dealer leads
+      data: {
+        phase: "playing",
+        leadPlayerPosition:
+          (sectionState.dealerPosition % allPlayers.length) + 1, // Player after dealer leads
       },
     });
 
@@ -590,7 +612,8 @@ export async function placeBid(sessionId: string, playerId: string, bidAmount: n
       data: {
         sectionStateId: sectionState.id,
         trickNumber: 1,
-        leadPlayerPosition: ((sectionState.dealerPosition) % allPlayers.length) + 1,
+        leadPlayerPosition:
+          (sectionState.dealerPosition % allPlayers.length) + 1,
       },
     });
   } else {
@@ -611,9 +634,13 @@ async function processAIBids(sessionId: string, sectionStateId: string) {
     where: { sectionStateId },
   });
 
-  const handsWithBids = new Set(playerHands.filter(hand => hand.bid !== null).map(hand => hand.playerId));
-  const aiPlayersWithoutBids = allPlayers.filter(p => 
-    p.id.startsWith('ai-') && !handsWithBids.has(p.id)
+  const handsWithBids = new Set(
+    playerHands
+      .filter((hand) => hand.bid !== null)
+      .map((hand) => hand.playerId),
+  );
+  const aiPlayersWithoutBids = allPlayers.filter(
+    (p) => p.id.startsWith("ai-") && !handsWithBids.has(p.id),
   );
 
   // Get section info for max bid
@@ -625,24 +652,29 @@ async function processAIBids(sessionId: string, sectionStateId: string) {
 
   // Generate AI bids
   for (const aiPlayer of aiPlayersWithoutBids) {
-    const difficulty = aiPlayer.id.split('-')[1] || 'medium';
+    const difficulty = aiPlayer.id.split("-")[1] || "medium";
     const maxBid = sectionState.sectionNumber;
-    
+
     // Simple AI bidding logic based on difficulty
     let aiBid: number;
-    
+
     switch (difficulty) {
-      case 'easy':
+      case "easy":
         // Easy AI bids randomly
         aiBid = Math.floor(Math.random() * (maxBid + 1));
         break;
-      case 'hard':
+      case "hard":
         // Hard AI bids more strategically (simplified)
-        aiBid = Math.min(maxBid, Math.floor(maxBid * 0.6) + Math.floor(Math.random() * 2));
+        aiBid = Math.min(
+          maxBid,
+          Math.floor(maxBid * 0.6) + Math.floor(Math.random() * 2),
+        );
         break;
       default: // medium
         // Medium AI bids somewhat strategically
-        aiBid = Math.floor(Math.random() * Math.max(1, maxBid * 0.8)) + Math.floor(Math.random() * 2);
+        aiBid =
+          Math.floor(Math.random() * Math.max(1, maxBid * 0.8)) +
+          Math.floor(Math.random() * 2);
         aiBid = Math.min(aiBid, maxBid);
     }
 
@@ -662,20 +694,23 @@ async function processAIBids(sessionId: string, sectionStateId: string) {
     }
   }
 
-  // After AI bids, check if all players have now bid and transition to PLAYING phase
+  // After AI bids, check if all players have now bid and transition to playing phase
   const updatedPlayerHands = await db.playerHand.findMany({
     where: { sectionStateId },
   });
 
-  const updatedHandsWithBids = updatedPlayerHands.filter(hand => hand.bid !== null);
+  const updatedHandsWithBids = updatedPlayerHands.filter(
+    (hand) => hand.bid !== null,
+  );
 
   // If all players have now bid, move to playing phase
   if (updatedHandsWithBids.length === allPlayers.length) {
     await db.sectionState.update({
       where: { id: sectionStateId },
-      data: { 
-        phase: "PLAYING",
-        leadPlayerPosition: ((sectionState.dealerPosition) % allPlayers.length) + 1, // Player after dealer leads
+      data: {
+        phase: "playing",
+        leadPlayerPosition:
+          (sectionState.dealerPosition % allPlayers.length) + 1, // Player after dealer leads
       },
     });
 
@@ -684,8 +719,42 @@ async function processAIBids(sessionId: string, sectionStateId: string) {
       data: {
         sectionStateId: sectionStateId,
         trickNumber: 1,
-        leadPlayerPosition: ((sectionState.dealerPosition) % allPlayers.length) + 1,
+        leadPlayerPosition:
+          (sectionState.dealerPosition % allPlayers.length) + 1,
       },
     });
+  }
+}
+
+function mapCardRankToDb(rank: Rank): PrismaSchema.$Enums.Rank {
+  switch (rank) {
+    case "A":
+      return "ace";
+    case "K":
+      return "king";
+    case "Q":
+      return "queen";
+    case "J":
+      return "jack";
+    case "10":
+      return "ten";
+    case "9":
+      return "nine";
+    case "8":
+      return "eight";
+    case "7":
+      return "seven";
+    case "6":
+      return "six";
+    case "5":
+      return "five";
+    case "4":
+      return "four";
+    case "3":
+      return "three";
+    case "2":
+      return "two";
+    default:
+      throw new Error(`Unknown card rank: ${rank}`);
   }
 }

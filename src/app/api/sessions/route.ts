@@ -1,6 +1,6 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { GameManager } from '@/lib/game-manager';
-import { GameType, ScoringSystem } from '@/types/game';
+import { type NextRequest, NextResponse } from "next/server";
+import { GameManager } from "@/lib/game-manager";
+import { isValidGameType, isValidScoringSystem } from "@/lib/game-utils";
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,31 +8,32 @@ export async function POST(request: NextRequest) {
     const { adminName, gameType, scoringSystem, maxPlayers } = body;
 
     // Validate input
-    if (!adminName || typeof adminName !== 'string' || adminName.trim().length === 0) {
+    if (
+      !adminName ||
+      typeof adminName !== "string" ||
+      adminName.trim().length === 0
+    ) {
       return NextResponse.json(
-        { error: 'Admin name is required' },
-        { status: 400 }
+        { error: "Admin name is required" },
+        { status: 400 },
       );
     }
 
-    if (!Object.values(GameType).includes(gameType)) {
-      return NextResponse.json(
-        { error: 'Invalid game type' },
-        { status: 400 }
-      );
+    if (!isValidGameType(gameType)) {
+      return NextResponse.json({ error: "Invalid game type" }, { status: 400 });
     }
 
-    if (!Object.values(ScoringSystem).includes(scoringSystem)) {
+    if (!isValidScoringSystem(scoringSystem)) {
       return NextResponse.json(
-        { error: 'Invalid scoring system' },
-        { status: 400 }
+        { error: "Invalid scoring system" },
+        { status: 400 },
       );
     }
 
     if (!maxPlayers || maxPlayers < 2 || maxPlayers > 6) {
       return NextResponse.json(
-        { error: 'Max players must be between 2 and 6' },
-        { status: 400 }
+        { error: "Max players must be between 2 and 6" },
+        { status: 400 },
       );
     }
 
@@ -41,15 +42,15 @@ export async function POST(request: NextRequest) {
       adminName.trim(),
       gameType,
       scoringSystem,
-      maxPlayers
+      maxPlayers,
     );
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error creating session:', error);
+    console.error("Error creating session:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

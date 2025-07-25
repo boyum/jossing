@@ -1,5 +1,5 @@
 import type { Card, Suit } from "@/types/game";
-import { AIDifficulty, RANK_VALUES } from "@/types/game";
+import { RANK_VALUES } from "@/types/game";
 import { BaseAI, type HandStrength, type GameContext } from "./base-ai";
 
 /**
@@ -24,7 +24,7 @@ export class MediumAI extends BaseAI {
   private sectionOpponentBids: Record<string, number> = {};
 
   constructor(playerName: string = "Medium AI") {
-    super(playerName, AIDifficulty.MEDIUM);
+    super(playerName, "medium");
   }
 
   /**
@@ -219,7 +219,9 @@ export class MediumAI extends BaseAI {
     const nonTrumps = validCards.filter((card) => card.suit !== trumpSuit);
     if (nonTrumps.length > 0) {
       return nonTrumps.reduce((highest, current) =>
-        current.value > highest.value ? current : highest,
+        RANK_VALUES[current.rank] > RANK_VALUES[highest.rank]
+          ? current
+          : highest,
       );
     }
 
@@ -240,7 +242,7 @@ export class MediumAI extends BaseAI {
     const nonTrumps = validCards.filter((card) => card.suit !== trumpSuit);
     if (nonTrumps.length > 0) {
       return nonTrumps.reduce((lowest, current) =>
-        current.value < lowest.value ? current : lowest,
+        RANK_VALUES[current.rank] < RANK_VALUES[lowest.rank] ? current : lowest,
       );
     }
 
@@ -271,13 +273,13 @@ export class MediumAI extends BaseAI {
     );
     if (nonTrumpWinners.length > 0) {
       return nonTrumpWinners.reduce((lowest, current) =>
-        current.value < lowest.value ? current : lowest,
+        RANK_VALUES[current.rank] < RANK_VALUES[lowest.rank] ? current : lowest,
       );
     }
 
     // Use lowest trump that wins
     return winningCards.reduce((lowest, current) =>
-      current.value < lowest.value ? current : lowest,
+      RANK_VALUES[current.rank] < RANK_VALUES[lowest.rank] ? current : lowest,
     );
   }
 
@@ -297,13 +299,15 @@ export class MediumAI extends BaseAI {
     if (nonWinningCards.length > 0) {
       // Play highest non-winning card to get rid of high cards safely
       return nonWinningCards.reduce((highest, current) =>
-        current.value > highest.value ? current : highest,
+        RANK_VALUES[current.rank] > RANK_VALUES[highest.rank]
+          ? current
+          : highest,
       );
     }
 
     // All cards win - play lowest
     return validCards.reduce((lowest, current) =>
-      current.value < lowest.value ? current : lowest,
+      RANK_VALUES[current.rank] < RANK_VALUES[lowest.rank] ? current : lowest,
     );
   }
 
@@ -315,7 +319,7 @@ export class MediumAI extends BaseAI {
     const nonTrumps = validCards.filter((card) => card.suit !== trumpSuit);
     if (nonTrumps.length > 0) {
       return nonTrumps.reduce((lowest, current) =>
-        current.value < lowest.value ? current : lowest,
+        RANK_VALUES[current.rank] < RANK_VALUES[lowest.rank] ? current : lowest,
       );
     }
 
@@ -339,7 +343,9 @@ export class MediumAI extends BaseAI {
     const nonTrumps = validCards.filter((card) => card.suit !== trumpSuit);
     if (nonTrumps.length > 0) {
       return nonTrumps.reduce((highest, current) =>
-        current.value > highest.value ? current : highest,
+        RANK_VALUES[current.rank] > RANK_VALUES[highest.rank]
+          ? current
+          : highest,
       );
     }
     return validCards[0];

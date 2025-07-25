@@ -1,14 +1,13 @@
-'use client';
+"use client";
 
-import { useGameStore } from '@/store/game-store';
-import { SectionPhase, GamePhase } from '@/types/game';
-import { PlayerList } from './PlayerList';
-import { PlayerHand } from './PlayerHand';
-import { TrickArea } from './TrickArea';
-import { BiddingPhase } from './BiddingPhase';
-import { ScoreBoard } from './ScoreBoard';
-import { TrumpDisplay } from './TrumpDisplay';
-import { FinalGameScreen } from './FinalGameScreen';
+import { useGameStore } from "@/store/game-store";
+import { BiddingPhase } from "./BiddingPhase";
+import { FinalGameScreen } from "./FinalGameScreen";
+import { PlayerHand } from "./PlayerHand";
+import { PlayerList } from "./PlayerList";
+import { ScoreBoard } from "./ScoreBoard";
+import { TrickArea } from "./TrickArea";
+import { TrumpDisplay } from "./TrumpDisplay";
 
 export function GameBoard() {
   const {
@@ -21,11 +20,11 @@ export function GameBoard() {
     totalScores,
     playerId,
     isPlayerTurn,
-    resetGameState
+    resetGameState,
   } = useGameStore();
 
   // Show final game screen if game is finished
-  if (session && session.gamePhase === GamePhase.FINISHED) {
+  if (session && session.gamePhase === "finished") {
     return (
       <FinalGameScreen
         session={session}
@@ -33,11 +32,11 @@ export function GameBoard() {
         totalScores={totalScores}
         onNewGame={() => {
           resetGameState();
-          window.location.href = '/play';
+          window.location.href = "/play";
         }}
         onLeaveGame={() => {
           resetGameState();
-          window.location.href = '/';
+          window.location.href = "/";
         }}
       />
     );
@@ -48,14 +47,16 @@ export function GameBoard() {
       <div className="min-h-screen bg-jossing-play flex items-center justify-center">
         <div className="bg-white rounded-xl shadow-xl p-8 text-center">
           <div className="text-6xl mb-4">⏳</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Waiting for Game</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Waiting for Game
+          </h2>
           <p className="text-gray-600">Setting up the game...</p>
         </div>
       </div>
     );
   }
 
-  const currentPlayer = players.find(p => p.id === playerId);
+  const currentPlayer = players.find((p) => p.id === playerId);
   const isDealer = currentPlayer?.position === currentSection.dealerPosition;
 
   return (
@@ -69,10 +70,10 @@ export function GameBoard() {
                 Jøssing Game - Round {currentSection.sectionNumber}
               </h1>
               <p className="text-gray-600">
-                {currentSection.phase === SectionPhase.BIDDING && 'Bidding Phase'}
-                {currentSection.phase === SectionPhase.PLAYING && 'Playing Phase'}
-                {currentSection.phase === SectionPhase.DEALING && 'Dealing Cards...'}
-                {currentSection.phase === SectionPhase.COMPLETED && 'Round Complete'}
+                {currentSection.phase === "bidding" && "Bidding Phase"}
+                {currentSection.phase === "playing" && "Playing Phase"}
+                {currentSection.phase === "dealing" && "Dealing Cards..."}
+                {currentSection.phase === "completed" && "Round Complete"}
               </p>
             </div>
             <div className="text-right">
@@ -92,8 +93,8 @@ export function GameBoard() {
           {/* Left Sidebar - Players and Scores */}
           <div className="lg:col-span-1 space-y-4">
             <PlayerList players={players} currentPlayerId={playerId} />
-            <ScoreBoard 
-              players={players} 
+            <ScoreBoard
+              players={players}
               sectionScores={sectionScores}
               totalScores={totalScores}
               currentSection={currentSection.sectionNumber}
@@ -103,30 +104,30 @@ export function GameBoard() {
           {/* Main Game Area */}
           <div className="lg:col-span-3 space-y-4">
             {/* Trump Display */}
-            <TrumpDisplay 
+            <TrumpDisplay
               trumpSuit={currentSection.trumpSuit}
               trumpCardRank={currentSection.trumpCardRank}
             />
 
             {/* Phase-specific content */}
-            {currentSection.phase === SectionPhase.BIDDING && playerId && (
-              <BiddingPhase 
+            {currentSection.phase === "bidding" && playerId && (
+              <BiddingPhase
                 maxBid={currentSection.sectionNumber}
                 playerId={playerId}
               />
             )}
 
-            {currentSection.phase === SectionPhase.PLAYING && playerId && (
+            {currentSection.phase === "playing" && playerId && (
               <>
                 {/* Trick Area */}
-                <TrickArea 
+                <TrickArea
                   trick={currentTrick}
                   players={players}
                   trumpSuit={currentSection.trumpSuit}
                 />
 
                 {/* Player's Hand */}
-                <PlayerHand 
+                <PlayerHand
                   cards={playerHand}
                   isPlayerTurn={isPlayerTurn}
                   playerId={playerId}
@@ -136,7 +137,7 @@ export function GameBoard() {
               </>
             )}
 
-            {currentSection.phase === SectionPhase.COMPLETED && (
+            {currentSection.phase === "completed" && (
               <div className="bg-white rounded-lg shadow-lg p-6 text-center">
                 <h3 className="text-2xl font-bold text-gray-900 mb-4">
                   Round {currentSection.sectionNumber} Complete!

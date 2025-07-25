@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { GameType, ScoringSystem } from '@/types/game';
+import { useState } from "react";
+import type { GameType, ScoringSystem } from "@/types/game";
 
 interface GameSetupProps {
   onCreateGame: (config: GameConfig) => void;
@@ -16,16 +16,20 @@ interface GameConfig {
   maxPlayers: number;
 }
 
-export function GameSetup({ onCreateGame, onJoinGame, isLoading }: GameSetupProps) {
-  const [mode, setMode] = useState<'create' | 'join'>('create');
+export function GameSetup({
+  onCreateGame,
+  onJoinGame,
+  isLoading,
+}: GameSetupProps) {
+  const [mode, setMode] = useState<"create" | "join">("create");
   const [config, setConfig] = useState<GameConfig>({
-    adminName: '',
-    gameType: GameType.UP_AND_DOWN,
-    scoringSystem: ScoringSystem.CLASSIC,
-    maxPlayers: 6
+    adminName: "",
+    gameType: "up_and_down",
+    scoringSystem: "classic",
+    maxPlayers: 6,
   });
-  const [joinSessionId, setJoinSessionId] = useState('');
-  const [joinPlayerName, setJoinPlayerName] = useState('');
+  const [joinSessionId, setJoinSessionId] = useState("");
+  const [joinPlayerName, setJoinPlayerName] = useState("");
 
   const handleCreateGame = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,38 +62,44 @@ export function GameSetup({ onCreateGame, onJoinGame, isLoading }: GameSetupProp
         <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
           <button
             type="button"
-            onClick={() => setMode('create')}
+            onClick={() => setMode("create")}
             className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
-              mode === 'create'
-                ? 'bg-white text-jossing-primary shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+              mode === "create"
+                ? "bg-white text-jossing-primary shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
             }`}
           >
             Create Game
           </button>
           <button
             type="button"
-            onClick={() => setMode('join')}
+            onClick={() => setMode("join")}
             className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
-              mode === 'join'
-                ? 'bg-white text-jossing-primary shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+              mode === "join"
+                ? "bg-white text-jossing-primary shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
             }`}
           >
             Join Game
           </button>
         </div>
 
-        {mode === 'create' ? (
+        {mode === "create" ? (
           <form onSubmit={handleCreateGame} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                className="block text-sm font-medium text-gray-700 mb-1"
+                htmlFor="admin-name"
+              >
                 Your Name
               </label>
               <input
+                id="admin-name"
                 type="text"
                 value={config.adminName}
-                onChange={(e) => setConfig(prev => ({ ...prev, adminName: e.target.value }))}
+                onChange={(e) =>
+                  setConfig((prev) => ({ ...prev, adminName: e.target.value }))
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jossing-primary focus:border-transparent"
                 placeholder="Enter your name"
                 required
@@ -97,40 +107,69 @@ export function GameSetup({ onCreateGame, onJoinGame, isLoading }: GameSetupProp
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                className="block text-sm font-medium text-gray-700 mb-1"
+                htmlFor="game-type"
+              >
                 Game Type
               </label>
               <select
+                id="game-type"
                 value={config.gameType}
-                onChange={(e) => setConfig(prev => ({ ...prev, gameType: e.target.value as GameType }))}
+                onChange={(e) =>
+                  setConfig((prev) => ({
+                    ...prev,
+                    gameType: e.target.value as GameType,
+                  }))
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jossing-primary focus:border-transparent"
               >
-                <option value={GameType.UP_AND_DOWN}>Up and Down (1-10-1 cards)</option>
-                <option value={GameType.UP}>Up Only (1-10 cards)</option>
+                <option value={"up_and_down"}>
+                  Up and Down (1-10-1 cards)
+                </option>
+                <option value={"up"}>Up Only (1-10 cards)</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                className="block text-sm font-medium text-gray-700 mb-1"
+                htmlFor="scoring-system"
+              >
                 Scoring System
               </label>
               <select
+                id="scoring-system"
                 value={config.scoringSystem}
-                onChange={(e) => setConfig(prev => ({ ...prev, scoringSystem: e.target.value as ScoringSystem }))}
+                onChange={(e) =>
+                  setConfig((prev) => ({
+                    ...prev,
+                    scoringSystem: e.target.value as ScoringSystem,
+                  }))
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jossing-primary focus:border-transparent"
               >
-                <option value={ScoringSystem.CLASSIC}>Classic (10 + bid)</option>
-                <option value={ScoringSystem.MODERN}>Modern (bid × 2 + 10)</option>
+                <option value={"classic"}>Classic (10 + bid)</option>
+                <option value={"modern"}>Modern (bid × 2 + 10)</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                className="block text-sm font-medium text-gray-700 mb-1"
+                htmlFor="max-players"
+              >
                 Max Players
               </label>
               <select
+                id="max-players"
                 value={config.maxPlayers}
-                onChange={(e) => setConfig(prev => ({ ...prev, maxPlayers: parseInt(e.target.value) }))}
+                onChange={(e) =>
+                  setConfig((prev) => ({
+                    ...prev,
+                    maxPlayers: parseInt(e.target.value),
+                  }))
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jossing-primary focus:border-transparent"
               >
                 <option value={2}>2 Players</option>
@@ -146,20 +185,24 @@ export function GameSetup({ onCreateGame, onJoinGame, isLoading }: GameSetupProp
               disabled={isLoading || !config.adminName.trim()}
               className={`w-full py-3 rounded-lg font-semibold transition-all ${
                 isLoading || !config.adminName.trim()
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-jossing-primary text-white hover:opacity-90 shadow-lg hover:shadow-xl'
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-jossing-primary text-white hover:opacity-90 shadow-lg hover:shadow-xl"
               }`}
             >
-              {isLoading ? 'Creating Game...' : 'Create Game'}
+              {isLoading ? "Creating Game..." : "Create Game"}
             </button>
           </form>
         ) : (
           <form onSubmit={handleJoinGame} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                className="block text-sm font-medium text-gray-700 mb-1"
+                htmlFor="join-session-id"
+              >
                 Game Code
               </label>
               <input
+                id="join-session-id"
                 type="text"
                 value={joinSessionId}
                 onChange={(e) => setJoinSessionId(e.target.value.toUpperCase())}
@@ -170,10 +213,14 @@ export function GameSetup({ onCreateGame, onJoinGame, isLoading }: GameSetupProp
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                className="block text-sm font-medium text-gray-700 mb-1"
+                htmlFor="join-player-name"
+              >
                 Your Name
               </label>
               <input
+                id="join-player-name"
                 type="text"
                 value={joinPlayerName}
                 onChange={(e) => setJoinPlayerName(e.target.value)}
@@ -185,22 +232,27 @@ export function GameSetup({ onCreateGame, onJoinGame, isLoading }: GameSetupProp
 
             <button
               type="submit"
-              disabled={isLoading || !joinSessionId.trim() || !joinPlayerName.trim()}
+              disabled={
+                isLoading || !joinSessionId.trim() || !joinPlayerName.trim()
+              }
               className={`w-full py-3 rounded-lg font-semibold transition-all ${
                 isLoading || !joinSessionId.trim() || !joinPlayerName.trim()
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-jossing-primary text-white hover:opacity-90 shadow-lg hover:shadow-xl'
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-jossing-primary text-white hover:opacity-90 shadow-lg hover:shadow-xl"
               }`}
             >
-              {isLoading ? 'Joining Game...' : 'Join Game'}
+              {isLoading ? "Joining Game..." : "Join Game"}
             </button>
           </form>
         )}
 
         <div className="mt-6 text-center text-sm text-gray-500">
           <p>
-            Need help? Check out our{' '}
-            <a href="/how-to-play" className="text-jossing-primary hover:underline">
+            Need help? Check out our{" "}
+            <a
+              href="/how-to-play"
+              className="text-jossing-primary hover:underline"
+            >
               game rules
             </a>
           </p>
