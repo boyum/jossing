@@ -10,12 +10,7 @@ import type { AIDifficulty } from "@/types/game";
 
 export default function PlayPage() {
 	const [mode, setMode] = useState<"setup" | "demo" | "multiplayer">("setup");
-	const [createPlayerName, setCreatePlayerName] = useState("");
-	const [joinPlayerName, setJoinPlayerName] = useState("");
-	const [gameCode, setGameCode] = useState("");
 	const [sessionId, setSessionId] = useState<string | null>(null);
-	const [isCreatingGame, setIsCreatingGame] = useState(false);
-	const [isJoiningGame, setIsJoiningGame] = useState(false);
 
 	const {
 		createSession,
@@ -53,32 +48,6 @@ export default function PlayPage() {
 			refreshGameState(sessionId);
 		}
 	}, [sessionId, playerId, refreshGameState]);
-
-	const handleCreateGame = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!createPlayerName.trim()) return;
-
-		setIsCreatingGame(true);
-		const result = await createSession(createPlayerName);
-		if (result) {
-			setSessionId(result.sessionId);
-			setMode("multiplayer");
-		}
-		setIsCreatingGame(false);
-	};
-
-	const handleJoinGame = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!joinPlayerName.trim() || !gameCode.trim()) return;
-
-		setIsJoiningGame(true);
-		const result = await joinSession(gameCode.toUpperCase(), joinPlayerName);
-		if (result) {
-			setSessionId(gameCode.toUpperCase());
-			setMode("multiplayer");
-		}
-		setIsJoiningGame(false);
-	};
 
 	const handleStartGame = async () => {
 		if (sessionId && playerId) {
@@ -287,91 +256,14 @@ export default function PlayPage() {
 					</div>
 
 					<div className="grid gap-6">
-						{/* Demo Mode */}
-						<div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-8 border border-slate-700">
-							<h2 className="text-2xl font-bold text-white mb-4">Demo Mode</h2>
-							<p className="text-slate-300 mb-6">
-								Practice against AI players and learn the game mechanics
-							</p>
-							<button
-								type="button"
-								onClick={() => setMode("demo")}
-								className="w-full px-6 py-3 bg-glaucous text-white font-semibold rounded-lg hover:bg-glaucous/90 transition-colors"
-							>
-								Start Demo
-							</button>
-						</div>
+						{/* <DemoModeSelector setMode={setMode} /> */}
 
-						{/* Multiplayer Mode */}
-						<div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-8 border border-slate-700">
-							<h2 className="text-2xl font-bold text-white mb-4">
-								Multiplayer
-							</h2>
-							<p className="text-slate-300 mb-6">
-								Play with friends online in real-time
-							</p>
-
-							<div className="grid md:grid-cols-2 gap-6">
-								{/* Create Game */}
-								<div>
-									<h3 className="text-lg font-semibold text-white mb-3">
-										Create New Game
-									</h3>
-									<form onSubmit={handleCreateGame} className="space-y-4">
-										<input
-											type="text"
-											placeholder="Your name"
-											value={createPlayerName}
-											onChange={(e) => setCreatePlayerName(e.target.value)}
-											className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-indian-red focus:outline-none"
-											required
-										/>
-										<button
-											type="submit"
-											disabled={isCreatingGame}
-											className="w-full px-6 py-3 bg-indian-red text-white font-semibold rounded-lg hover:bg-indian-red/90 transition-colors disabled:opacity-50"
-										>
-											{isCreatingGame ? "Creating..." : "Create Game"}
-										</button>
-									</form>
-								</div>
-
-								{/* Join Game */}
-								<div>
-									<h3 className="text-lg font-semibold text-white mb-3">
-										Join Existing Game
-									</h3>
-									<form onSubmit={handleJoinGame} className="space-y-4">
-										<input
-											type="text"
-											placeholder="Your name"
-											value={joinPlayerName}
-											onChange={(e) => setJoinPlayerName(e.target.value)}
-											className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-royal-blue focus:outline-none"
-											required
-										/>
-										<input
-											type="text"
-											placeholder="Game code"
-											value={gameCode}
-											onChange={(e) =>
-												setGameCode(e.target.value.toUpperCase())
-											}
-											className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-royal-blue focus:outline-none"
-											maxLength={6}
-											required
-										/>
-										<button
-											type="submit"
-											disabled={isJoiningGame}
-											className="w-full px-6 py-3 bg-royal-blue text-white font-semibold rounded-lg hover:bg-royal-blue/90 transition-colors disabled:opacity-50"
-										>
-											{isJoiningGame ? "Joining..." : "Join Game"}
-										</button>
-									</form>
-								</div>
-							</div>
-						</div>
+						<RegularModeSelector
+							createSession={createSession}
+							joinSession={joinSession}
+							setSessionId={setSessionId}
+							setMode={setMode}
+						/>
 					</div>
 
 					<div className="text-center mt-8">
@@ -384,6 +276,183 @@ export default function PlayPage() {
 					</div>
 				</div>
 			</div>
+		</div>
+	);
+}
+
+// type DemoModeSelectorProps = {
+//   setMode: (mode: "setup" | "demo" | "multiplayer") => void;
+// };
+
+// function DemoModeSelector({ setMode }: DemoModeSelectorProps) {
+//   return (
+//     <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-8 border border-slate-700">
+//       <h2 className="text-2xl font-bold text-white mb-4">Demo Mode</h2>
+//       <p className="text-slate-300 mb-6">
+//         Practice against AI players and learn the game mechanics
+//       </p>
+//       <button
+//         type="button"
+//         onClick={() => setMode("demo")}
+//         className="w-full px-6 py-3 bg-glaucous text-white font-semibold rounded-lg hover:bg-glaucous/90 transition-colors"
+//       >
+//         Start Demo
+//       </button>
+//     </div>
+//   );
+// }
+
+type RegularModeSelectorProps = {
+	createSession: (playerName: string) => Promise<{ sessionId: string } | null>;
+	joinSession: (
+		code: string,
+		playerName: string,
+	) => Promise<{ playerId: string; position: number } | null>;
+	setSessionId: (id: string | null) => void;
+	setMode: (mode: "setup" | "demo" | "multiplayer") => void;
+};
+
+function RegularModeSelector({
+	createSession,
+	joinSession,
+	setSessionId,
+	setMode,
+}: RegularModeSelectorProps) {
+	const handleCreateGame = async (playerName: string) => {
+		if (!playerName.trim()) return;
+
+		const result = await createSession(playerName);
+		if (result) {
+			setSessionId(result.sessionId);
+			setMode("multiplayer");
+		}
+	};
+
+	const handleJoinGame = async (gameCode: string, playerName: string) => {
+		const result = await joinSession(gameCode.toUpperCase(), playerName);
+		if (result) {
+			setSessionId(gameCode.toUpperCase());
+			setMode("multiplayer");
+		}
+	};
+
+	return (
+		<div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-8 border border-slate-700">
+			<p className="text-slate-300 mb-6">
+				Play against the computer, or with friends online in real-time
+			</p>
+
+			<div className="grid md:grid-cols-2 gap-6">
+				<CreateGame onCreateGame={handleCreateGame} />
+				<JoinGame onJoinGame={handleJoinGame} />
+			</div>
+		</div>
+	);
+}
+
+type CreateGameProps = {
+	onCreateGame: (playerName: string) => void;
+};
+
+function CreateGame({ onCreateGame }: CreateGameProps) {
+	const [playerName, setPlayerName] = useState("");
+	const [isCreatingGame, setIsCreatingGame] = useState(false);
+
+	const handleCreateGame = (e: React.FormEvent) => {
+		e.preventDefault();
+		if (playerName.trim()) {
+			setIsCreatingGame(true);
+
+			onCreateGame(playerName.trim());
+			setPlayerName("");
+		}
+	};
+
+	return (
+		<div>
+			<h3 className="text-lg font-semibold text-white mb-3">Create New Game</h3>
+			<form onSubmit={handleCreateGame} className="space-y-4">
+				<label htmlFor="createPlayerName" className="sr-only">
+					Your name
+				</label>
+				<input
+					id="createPlayerName"
+					type="text"
+					placeholder="Your name"
+					value={playerName}
+					onChange={(e) => setPlayerName(e.target.value)}
+					className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-indian-red focus:outline-none"
+					required
+				/>
+				<button
+					type="submit"
+					disabled={isCreatingGame}
+					className="w-full px-6 py-3 bg-indian-red text-white font-semibold rounded-lg hover:bg-indian-red/90 transition-colors disabled:opacity-50"
+				>
+					{isCreatingGame ? "Creating..." : "Create Game"}
+				</button>
+			</form>
+		</div>
+	);
+}
+
+type JoinGameProps = {
+	onJoinGame: (code: string, name: string) => void;
+};
+
+function JoinGame({ onJoinGame }: JoinGameProps) {
+	const [gameCode, setGameCode] = useState("");
+	const [playerName, setPlayerName] = useState("");
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+
+		if (gameCode.trim() && playerName.trim()) {
+			onJoinGame(gameCode.trim().toUpperCase(), playerName.trim());
+			setGameCode("");
+		}
+	};
+
+	return (
+		<div>
+			<h3 className="text-lg font-semibold text-white mb-3">
+				Join Existing Game
+			</h3>
+			<form onSubmit={handleSubmit} className="space-y-4">
+				<label htmlFor="gameCode" className="sr-only">
+					Game code
+				</label>
+				<input
+					id="gameCode"
+					type="text"
+					placeholder="Enter game code"
+					value={gameCode}
+					onChange={(e) => setGameCode(e.target.value.toUpperCase())}
+					className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-royal-blue focus:outline-none"
+					maxLength={6}
+					required
+				/>
+
+				<label htmlFor="joinPlayerName" className="sr-only">
+					Your name
+				</label>
+				<input
+					id="joinPlayerName"
+					type="text"
+					placeholder="Your name"
+					value={playerName}
+					onChange={(e) => setPlayerName(e.target.value)}
+					className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg border border-slate-600 focus:border-royal-blue focus:outline-none"
+					required
+				/>
+
+				<button
+					type="submit"
+					className="w-full px-6 py-3 bg-royal-blue text-white font-semibold rounded-lg hover:bg-royal-blue/90 transition-colors"
+				>
+					Join Game
+				</button>
+			</form>
 		</div>
 	);
 }

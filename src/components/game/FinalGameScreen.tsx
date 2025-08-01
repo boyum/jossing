@@ -223,7 +223,7 @@ export function FinalGameScreen({
 					<button
 						type="button"
 						onClick={() => setShowStats(!showStats)}
-						className="px-6 py-3 bg-jossing-primary text-white rounded-lg hover:opacity-90 transition-all shadow-lg"
+						className="px-6 py-3 bg-glaucous text-white rounded-lg hover:opacity-90 transition-all shadow-lg"
 					>
 						{showStats ? "Hide" : "Show"} Detailed Statistics
 					</button>
@@ -241,7 +241,7 @@ export function FinalGameScreen({
 							{playerStats.map((stats, index) => (
 								<div
 									key={stats.player.id}
-									className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-jossing-primary"
+									className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-glaucous"
 									style={{
 										animationDelay: `${index * 100}ms`,
 										animation: "slideInUp 0.5s ease-out forwards",
@@ -264,7 +264,7 @@ export function FinalGameScreen({
 										</div>
 										<div className="text-right">
 											<div className="text-sm text-gray-600">Rank</div>
-											<div className="text-lg font-bold text-jossing-primary">
+											<div className="text-lg font-bold text-glaucous">
 												#{stats.rank}
 											</div>
 										</div>
@@ -328,25 +328,25 @@ export function FinalGameScreen({
 
 					<div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
 						<div>
-							<div className="text-2xl font-bold text-jossing-primary">
+							<div className="text-2xl font-bold text-glaucous">
 								{totalSections}
 							</div>
 							<div className="text-sm text-gray-600">Sections Played</div>
 						</div>
 						<div>
-							<div className="text-2xl font-bold text-jossing-primary">
+							<div className="text-2xl font-bold text-glaucous">
 								{players.length}
 							</div>
 							<div className="text-sm text-gray-600">Players</div>
 						</div>
 						<div>
-							<div className="text-2xl font-bold text-jossing-primary">
+							<div className="text-2xl font-bold text-glaucous">
 								{session.scoringSystem === "classic" ? "Classic" : "Modern"}
 							</div>
 							<div className="text-sm text-gray-600">Scoring</div>
 						</div>
 						<div>
-							<div className="text-2xl font-bold text-jossing-primary">
+							<div className="text-2xl font-bold text-glaucous">
 								{Math.max(...Object.values(totalScores)) -
 									Math.min(...Object.values(totalScores))}
 							</div>
@@ -361,7 +361,7 @@ export function FinalGameScreen({
 						<button
 							type="button"
 							onClick={onNewGame}
-							className="px-8 py-4 bg-jossing-primary text-white rounded-lg hover:opacity-90 transition-all shadow-lg font-semibold text-lg"
+							className="px-8 py-4 bg-glaucous text-white rounded-lg hover:opacity-90 transition-all shadow-lg font-semibold text-lg"
 						>
 							🎮 Start New Game
 						</button>

@@ -65,7 +65,7 @@ export function GameSetup({
 						onClick={() => setMode("create")}
 						className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
 							mode === "create"
-								? "bg-white text-jossing-primary shadow-sm"
+								? "bg-white text-glaucous shadow-sm"
 								: "text-gray-600 hover:text-gray-900"
 						}`}
 					>
@@ -76,7 +76,7 @@ export function GameSetup({
 						onClick={() => setMode("join")}
 						className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
 							mode === "join"
-								? "bg-white text-jossing-primary shadow-sm"
+								? "bg-white text-glaucous shadow-sm"
 								: "text-gray-600 hover:text-gray-900"
 						}`}
 					>
@@ -100,7 +100,7 @@ export function GameSetup({
 								onChange={(e) =>
 									setConfig((prev) => ({ ...prev, adminName: e.target.value }))
 								}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jossing-primary focus:border-transparent"
+								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-glaucous focus:border-transparent"
 								placeholder="Enter your name"
 								required
 							/>
@@ -122,7 +122,7 @@ export function GameSetup({
 										gameType: e.target.value as GameType,
 									}))
 								}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jossing-primary focus:border-transparent"
+								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-glaucous focus:border-transparent"
 							>
 								<option value={"up_and_down"}>
 									Up and Down (1-10-1 cards)
@@ -147,7 +147,7 @@ export function GameSetup({
 										scoringSystem: e.target.value as ScoringSystem,
 									}))
 								}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jossing-primary focus:border-transparent"
+								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-glaucous focus:border-transparent"
 							>
 								<option value={"classic"}>Classic (10 + bid)</option>
 								<option value={"modern"}>Modern (bid × 2 + 10)</option>
@@ -170,7 +170,7 @@ export function GameSetup({
 										maxPlayers: parseInt(e.target.value),
 									}))
 								}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jossing-primary focus:border-transparent"
+								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-glaucous focus:border-transparent"
 							>
 								<option value={2}>2 Players</option>
 								<option value={3}>3 Players</option>
@@ -186,7 +186,7 @@ export function GameSetup({
 							className={`w-full py-3 rounded-lg font-semibold transition-all ${
 								isLoading || !config.adminName.trim()
 									? "bg-gray-300 text-gray-500 cursor-not-allowed"
-									: "bg-jossing-primary text-white hover:opacity-90 shadow-lg hover:shadow-xl"
+									: "bg-glaucous text-white hover:opacity-90 shadow-lg hover:shadow-xl"
 							}`}
 						>
 							{isLoading ? "Creating Game..." : "Create Game"}
@@ -206,7 +206,7 @@ export function GameSetup({
 								type="text"
 								value={joinSessionId}
 								onChange={(e) => setJoinSessionId(e.target.value.toUpperCase())}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jossing-primary focus:border-transparent"
+								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-glaucous focus:border-transparent"
 								placeholder="Enter game code"
 								required
 							/>
@@ -224,7 +224,7 @@ export function GameSetup({
 								type="text"
 								value={joinPlayerName}
 								onChange={(e) => setJoinPlayerName(e.target.value)}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jossing-primary focus:border-transparent"
+								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-glaucous focus:border-transparent"
 								placeholder="Enter your name"
 								required
 							/>
@@ -238,7 +238,7 @@ export function GameSetup({
 							className={`w-full py-3 rounded-lg font-semibold transition-all ${
 								isLoading || !joinSessionId.trim() || !joinPlayerName.trim()
 									? "bg-gray-300 text-gray-500 cursor-not-allowed"
-									: "bg-jossing-primary text-white hover:opacity-90 shadow-lg hover:shadow-xl"
+									: "bg-glaucous text-white hover:opacity-90 shadow-lg hover:shadow-xl"
 							}`}
 						>
 							{isLoading ? "Joining Game..." : "Join Game"}
@@ -249,10 +249,7 @@ export function GameSetup({
 				<div className="mt-6 text-center text-sm text-gray-500">
 					<p>
 						Need help? Check out our{" "}
-						<a
-							href="/how-to-play"
-							className="text-jossing-primary hover:underline"
-						>
+						<a href="/how-to-play" className="text-glaucous hover:underline">
 							game rules
 						</a>
 					</p>

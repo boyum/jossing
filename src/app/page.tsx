@@ -209,10 +209,10 @@ export default function HomePage() {
 					<div className="grid md:grid-cols-2 gap-8">
 						<div className="bg-white rounded-lg p-6 shadow-lg border-2 border-primary">
 							<div className="text-4xl mb-4">✅</div>
-							<h3 className="text-xl font-semibold text-jossing-primary mb-2">
+							<h3 className="text-xl font-semibold text-glaucous mb-2">
 								Exact Bid
 							</h3>
-							<p className="text-lg font-medium text-jossing-secondary">
+							<p className="text-lg font-medium text-royal-blue">
 								10 + your bid points
 							</p>
 							<p className="text-sm text-gray-600 mt-2">
@@ -222,10 +222,12 @@ export default function HomePage() {
 
 						<div className="bg-white rounded-lg p-6 shadow-lg border-2 border-accent">
 							<div className="text-4xl mb-4">❌</div>
-							<h3 className="text-xl font-semibold text-jossing-accent mb-2">
+							<h3 className="text-xl font-semibold text-indian-red mb-2">
 								Any Other Result
 							</h3>
-							<p className="text-lg font-medium text-jossing-muted">0 points</p>
+							<p className="text-lg font-medium text-mountbatten-pink">
+								0 points
+							</p>
 							<p className="text-sm text-gray-600 mt-2">
 								Bid 3, win 2 or 4 tricks = nothing!
 							</p>

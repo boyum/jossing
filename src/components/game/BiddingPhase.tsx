@@ -120,8 +120,8 @@ export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
 								onClick={() => setSelectedBid(option.value)}
 								className={`aspect-square rounded-lg border-2 font-bold text-lg transition-all ${
 									selectedBid === option.value
-										? "border-jossing-primary bg-jossing-primary text-white"
-										: "border-gray-300 bg-white text-gray-700 hover:border-jossing-secondary hover:bg-jossing-secondary/10"
+										? "border-glaucous bg-glaucous text-white"
+										: "border-gray-300 bg-white text-gray-700 hover:border-royal-blue hover:bg-royal-blue/10"
 								}`}
 							>
 								{option.value}
@@ -137,7 +137,7 @@ export function BiddingPhase({ maxBid, playerId }: BiddingPhaseProps) {
 							disabled={selectedBid === null}
 							className={`px-8 py-3 rounded-lg font-semibold text-lg transition-all ${
 								selectedBid !== null
-									? "bg-jossing-primary text-white hover:opacity-90 shadow-lg hover:shadow-xl"
+									? "bg-glaucous text-white hover:opacity-90 shadow-lg hover:shadow-xl"
 									: "bg-gray-300 text-gray-500 cursor-not-allowed"
 							}`}
 						>

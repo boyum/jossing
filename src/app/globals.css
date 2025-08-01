@@ -3,12 +3,14 @@
 :root {
 	--background: #ffffff;
 	--foreground: #171717;
+}
 
+@theme {
 	/* Jøssing Color Palette */
-	--color-indian-red: #c95d63;
-	--color-mountbatten-pink: #ae8799;
 	--color-glaucous: #717ec3;
 	--color-royal-blue: #496ddb;
+	--color-indian-red: #c95d63;
+	--color-mountbatten-pink: #ae8799;
 }
 
 @theme inline {

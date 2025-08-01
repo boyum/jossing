@@ -82,7 +82,7 @@ export function GameBoard() {
 								Cards this round: {currentSection.sectionNumber}
 							</p>
 							{isDealer && (
-								<p className="text-sm text-jossing-primary font-semibold">
+								<p className="text-sm text-glaucous font-semibold">
 									🃏 You are the dealer
 								</p>
 							)}
@@ -149,7 +149,7 @@ export function GameBoard() {
 									Waiting for next round to begin...
 								</p>
 								{currentSection.sectionNumber === 10 && (
-									<div className="bg-jossing-primary text-white p-4 rounded-lg">
+									<div className="bg-glaucous text-white p-4 rounded-lg">
 										<h4 className="text-xl font-bold">Game Complete!</h4>
 										<p>Final scores are being calculated...</p>
 									</div>

@@ -19,7 +19,7 @@ export function PlayerList({ players, currentPlayerId }: PlayerListProps) {
 							key={player.id}
 							className={`p-3 rounded-lg border-2 transition-colors ${
 								player.id === currentPlayerId
-									? "border-jossing-primary bg-jossing-primary/10"
+									? "border-glaucous bg-glaucous/10"
 									: "border-gray-200 bg-gray-50"
 							}`}
 						>
@@ -35,7 +35,7 @@ export function PlayerList({ players, currentPlayerId }: PlayerListProps) {
 										{player.id === currentPlayerId && " (You)"}
 									</span>
 									{player.isAdmin && (
-										<span className="text-xs bg-jossing-secondary text-white px-2 py-1 rounded">
+										<span className="text-xs bg-royal-blue text-white px-2 py-1 rounded">
 											Admin
 										</span>
 									)}

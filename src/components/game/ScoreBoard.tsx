@@ -59,7 +59,7 @@ export function ScoreBoard({
 				</div>
 				<div className="w-full bg-gray-200 rounded-full h-2 mt-2">
 					<div
-						className="bg-jossing-primary h-2 rounded-full transition-all duration-300"
+						className="bg-glaucous h-2 rounded-full transition-all duration-300"
 						style={{ width: `${(currentSection / 10) * 100}%` }}
 					/>
 				</div>

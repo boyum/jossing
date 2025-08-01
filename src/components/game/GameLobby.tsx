@@ -72,7 +72,7 @@ export function GameLobby({
 									<button
 										type="button"
 										onClick={copyGameCode}
-										className="bg-jossing-primary text-white px-2 py-1 rounded text-sm hover:opacity-90 transition-opacity"
+										className="bg-glaucous text-white px-2 py-1 rounded text-sm hover:opacity-90 transition-opacity"
 									>
 										{copySuccess ? "✅" : "📋"}
 									</button>
@@ -128,7 +128,7 @@ export function GameLobby({
 										key={player.id}
 										className={`p-4 rounded-lg border-2 transition-colors ${
 											player.id === currentPlayerId
-												? "border-jossing-primary bg-jossing-primary/10"
+												? "border-glaucous bg-glaucous/10"
 												: "border-gray-200 bg-gray-50"
 										}`}
 									>
@@ -144,7 +144,7 @@ export function GameLobby({
 													{player.id === currentPlayerId && " (You)"}
 												</span>
 												{player.isAdmin && (
-													<span className="bg-jossing-secondary text-white px-2 py-1 rounded text-sm font-medium">
+													<span className="bg-royal-blue text-white px-2 py-1 rounded text-sm font-medium">
 														Admin
 													</span>
 												)}
@@ -184,7 +184,7 @@ export function GameLobby({
 									disabled={!canStart}
 									className={`w-full py-3 rounded-lg font-semibold text-lg transition-all ${
 										canStart
-											? "bg-jossing-primary text-white hover:opacity-90 shadow-lg hover:shadow-xl"
+											? "bg-glaucous text-white hover:opacity-90 shadow-lg hover:shadow-xl"
 											: "bg-gray-300 text-gray-500 cursor-not-allowed"
 									}`}
 								>
