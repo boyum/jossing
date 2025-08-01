@@ -281,7 +281,22 @@ export async function getGameState(playerId: string) {
       ? currentSection.bids.length >= players.length &&
         currentSection.bids.every((bid) => bid.bid >= 0)
       : false,
-    isPlayerTurn: false, // Will be calculated based on game state
+    isPlayerTurn: (() => {
+      // Calculate if it's this player's turn
+      if (currentTrick && currentSection?.phase === "playing") {
+        const nextPlayerPosition = getNextPlayerToPlay(
+          {
+            leadPlayerPosition: currentTrick.leadPlayerPosition,
+            trickCards: currentTrick.cardsPlayed.map((cp) => ({
+              playerPosition: cp.playerPosition,
+            })),
+          },
+          players,
+        );
+        return nextPlayerPosition === player.position;
+      }
+      return false;
+    })(),
   };
 }
 
