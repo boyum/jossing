@@ -5,344 +5,344 @@ import { Suit, Rank, RANK_VALUES } from "@/types/game";
  * Creates a new card instance
  */
 export function createCard(suit: Suit, rank: Rank): Card {
-  return {
-    suit,
-    rank,
-  };
+	return {
+		suit,
+		rank,
+	};
 }
 
 export const allSuits = [
-  "spades",
-  "hearts",
-  "diamonds",
-  "clubs",
+	"spades",
+	"hearts",
+	"diamonds",
+	"clubs",
 ] as const satisfies readonly [Suit, Suit, Suit, Suit];
 
 export const allRanks = [
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "7",
-  "8",
-  "9",
-  "10",
-  "J",
-  "Q",
-  "K",
-  "A",
+	"2",
+	"3",
+	"4",
+	"5",
+	"6",
+	"7",
+	"8",
+	"9",
+	"10",
+	"J",
+	"Q",
+	"K",
+	"A",
 ] as const satisfies readonly [
-  Rank,
-  Rank,
-  Rank,
-  Rank,
-  Rank,
-  Rank,
-  Rank,
-  Rank,
-  Rank,
-  Rank,
-  Rank,
-  Rank,
-  Rank,
+	Rank,
+	Rank,
+	Rank,
+	Rank,
+	Rank,
+	Rank,
+	Rank,
+	Rank,
+	Rank,
+	Rank,
+	Rank,
+	Rank,
+	Rank,
 ];
 
 export const allGameTypes = ["up", "up_and_down"] as const satisfies readonly [
-  "up",
-  "up_and_down",
+	"up",
+	"up_and_down",
 ];
 export const allScoringSystems = [
-  "classic",
-  "modern",
+	"classic",
+	"modern",
 ] as const satisfies readonly ["classic", "modern"];
 
 export function isValidGameType(gameType: string): gameType is GameType {
-  return allGameTypes.includes(gameType as GameType);
+	return allGameTypes.includes(gameType as GameType);
 }
 
 export function isValidScoringSystem(
-  scoringSystem: string,
+	scoringSystem: string,
 ): scoringSystem is ScoringSystem {
-  return allScoringSystems.includes(scoringSystem as ScoringSystem);
+	return allScoringSystems.includes(scoringSystem as ScoringSystem);
 }
 
 /**
  * Creates a full deck of 52 cards
  */
 export function createDeck(): Card[] {
-  const deck: Card[] = [];
+	const deck: Card[] = [];
 
-  for (const suit of allSuits) {
-    for (const rank of allRanks) {
-      deck.push(createCard(suit, rank));
-    }
-  }
+	for (const suit of allSuits) {
+		for (const rank of allRanks) {
+			deck.push(createCard(suit, rank));
+		}
+	}
 
-  return deck;
+	return deck;
 }
 
 /**
  * Shuffles an array using Fisher-Yates algorithm
  */
 export function shuffleArray<T>(array: T[]): T[] {
-  const shuffled = [...array];
+	const shuffled = [...array];
 
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
+	for (let i = shuffled.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+	}
 
-  return shuffled;
+	return shuffled;
 }
 
 /**
  * Shuffles a deck of cards
  */
 export function shuffleDeck(deck: Card[]): Card[] {
-  return shuffleArray(deck);
+	return shuffleArray(deck);
 }
 
 /**
  * Deals cards to players from a deck
  */
 export function dealCards(
-  deck: Card[],
-  numPlayers: number,
-  cardsPerPlayer: number,
+	deck: Card[],
+	numPlayers: number,
+	cardsPerPlayer: number,
 ): {
-  hands: Card[][];
-  trumpCard: Card;
-  remainingDeck: Card[];
+	hands: Card[][];
+	trumpCard: Card;
+	remainingDeck: Card[];
 } {
-  const shuffledDeck = shuffleDeck(deck);
-  const hands: Card[][] = [];
+	const shuffledDeck = shuffleDeck(deck);
+	const hands: Card[][] = [];
 
-  // Initialize empty hands for each player
-  for (let i = 0; i < numPlayers; i++) {
-    hands[i] = [];
-  }
+	// Initialize empty hands for each player
+	for (let i = 0; i < numPlayers; i++) {
+		hands[i] = [];
+	}
 
-  // Deal cards round-robin style
-  let cardIndex = 0;
-  for (let round = 0; round < cardsPerPlayer; round++) {
-    for (let player = 0; player < numPlayers; player++) {
-      if (cardIndex < shuffledDeck.length) {
-        hands[player].push(shuffledDeck[cardIndex]);
-        cardIndex++;
-      }
-    }
-  }
+	// Deal cards round-robin style
+	let cardIndex = 0;
+	for (let round = 0; round < cardsPerPlayer; round++) {
+		for (let player = 0; player < numPlayers; player++) {
+			if (cardIndex < shuffledDeck.length) {
+				hands[player].push(shuffledDeck[cardIndex]);
+				cardIndex++;
+			}
+		}
+	}
 
-  // Set trump card (next card after dealing)
-  const trumpCard = shuffledDeck[cardIndex];
-  cardIndex++;
+	// Set trump card (next card after dealing)
+	const trumpCard = shuffledDeck[cardIndex];
+	cardIndex++;
 
-  // Remaining deck
-  const remainingDeck = shuffledDeck.slice(cardIndex);
+	// Remaining deck
+	const remainingDeck = shuffledDeck.slice(cardIndex);
 
-  return { hands, trumpCard, remainingDeck };
+	return { hands, trumpCard, remainingDeck };
 }
 
 /**
  * Determines if one card beats another in a trick
  */
 export function cardBeats(
-  card: Card,
-  currentWinner: Card,
-  trumpSuit: Suit,
-  leadingSuit: Suit,
+	card: Card,
+	currentWinner: Card,
+	trumpSuit: Suit,
+	leadingSuit: Suit,
 ): boolean {
-  // Trump always beats non-trump
-  if (card.suit === trumpSuit && currentWinner.suit !== trumpSuit) {
-    return true;
-  }
+	// Trump always beats non-trump
+	if (card.suit === trumpSuit && currentWinner.suit !== trumpSuit) {
+		return true;
+	}
 
-  // Higher trump beats lower trump
-  if (card.suit === trumpSuit && currentWinner.suit === trumpSuit) {
-    return RANK_VALUES[card.rank] > RANK_VALUES[currentWinner.rank];
-  }
+	// Higher trump beats lower trump
+	if (card.suit === trumpSuit && currentWinner.suit === trumpSuit) {
+		return RANK_VALUES[card.rank] > RANK_VALUES[currentWinner.rank];
+	}
 
-  // Non-trump cannot beat trump
-  if (card.suit !== trumpSuit && currentWinner.suit === trumpSuit) {
-    return false;
-  }
+	// Non-trump cannot beat trump
+	if (card.suit !== trumpSuit && currentWinner.suit === trumpSuit) {
+		return false;
+	}
 
-  // Within leading suit, higher value wins
-  if (card.suit === leadingSuit && currentWinner.suit === leadingSuit) {
-    return RANK_VALUES[card.rank] > RANK_VALUES[currentWinner.rank];
-  }
+	// Within leading suit, higher value wins
+	if (card.suit === leadingSuit && currentWinner.suit === leadingSuit) {
+		return RANK_VALUES[card.rank] > RANK_VALUES[currentWinner.rank];
+	}
 
-  // Leading suit beats off-suit
-  if (card.suit === leadingSuit && currentWinner.suit !== leadingSuit) {
-    return true;
-  }
+	// Leading suit beats off-suit
+	if (card.suit === leadingSuit && currentWinner.suit !== leadingSuit) {
+		return true;
+	}
 
-  return false;
+	return false;
 }
 
 /**
  * Determines the winner of a trick
  */
 export function getTrickWinner(
-  cardsPlayed: Record<number, Card>,
-  leadPlayerPosition: number,
-  trumpSuit: Suit,
-  leadingSuit: Suit,
+	cardsPlayed: Record<number, Card>,
+	leadPlayerPosition: number,
+	trumpSuit: Suit,
+	leadingSuit: Suit,
 ): number {
-  let winnerPosition = leadPlayerPosition;
-  let winningCard = cardsPlayed[leadPlayerPosition];
+	let winnerPosition = leadPlayerPosition;
+	let winningCard = cardsPlayed[leadPlayerPosition];
 
-  for (const [position, card] of Object.entries(cardsPlayed)) {
-    const playerPosition = parseInt(position);
-    if (cardBeats(card, winningCard, trumpSuit, leadingSuit)) {
-      winnerPosition = playerPosition;
-      winningCard = card;
-    }
-  }
+	for (const [position, card] of Object.entries(cardsPlayed)) {
+		const playerPosition = parseInt(position);
+		if (cardBeats(card, winningCard, trumpSuit, leadingSuit)) {
+			winnerPosition = playerPosition;
+			winningCard = card;
+		}
+	}
 
-  return winnerPosition;
+	return winnerPosition;
 }
 
 /**
  * Validates if a player can play a specific card
  */
 export function canPlayCard(
-  card: Card,
-  hand: Card[],
-  leadingSuit?: Suit,
+	card: Card,
+	hand: Card[],
+	leadingSuit?: Suit,
 ): boolean {
-  // Check if player has the card
-  if (!hand.some((c) => c.suit === card.suit && c.rank === card.rank)) {
-    return false;
-  }
+	// Check if player has the card
+	if (!hand.some((c) => c.suit === card.suit && c.rank === card.rank)) {
+		return false;
+	}
 
-  // If no leading suit (first card), any card is valid
-  if (!leadingSuit) {
-    return true;
-  }
+	// If no leading suit (first card), any card is valid
+	if (!leadingSuit) {
+		return true;
+	}
 
-  // Check if player must follow suit
-  const hasLeadingSuit = hand.some((c) => c.suit === leadingSuit);
-  if (hasLeadingSuit && card.suit !== leadingSuit) {
-    return false;
-  }
+	// Check if player must follow suit
+	const hasLeadingSuit = hand.some((c) => c.suit === leadingSuit);
+	if (hasLeadingSuit && card.suit !== leadingSuit) {
+		return false;
+	}
 
-  return true;
+	return true;
 }
 
 /**
  * Calculates score based on bid and tricks won
  */
 export function calculateScore(
-  bid: number,
-  tricksWon: number,
-  scoringSystem: "classic" | "modern",
+	bid: number,
+	tricksWon: number,
+	scoringSystem: "classic" | "modern",
 ): number {
-  if (bid === tricksWon) {
-    // Exact bid achieved
-    if (scoringSystem === "classic") {
-      return 10 + bid;
-    } else {
-      return 5 * (bid + 1);
-    }
-  } else {
-    // Missed bid
-    return 0;
-  }
+	if (bid === tricksWon) {
+		// Exact bid achieved
+		if (scoringSystem === "classic") {
+			return 10 + bid;
+		} else {
+			return 5 * (bid + 1);
+		}
+	} else {
+		// Missed bid
+		return 0;
+	}
 }
 
 /**
  * Determines how many cards each player gets in a section
  */
 export function getCardsPerPlayer(
-  sectionNumber: number,
-  gameType: "up" | "up_and_down",
+	sectionNumber: number,
+	gameType: "up" | "up_and_down",
 ): number {
-  if (gameType === "up") {
-    return sectionNumber;
-  } else {
-    // up_and_down
-    if (sectionNumber <= 10) {
-      return sectionNumber;
-    } else {
-      return 21 - sectionNumber;
-    }
-  }
+	if (gameType === "up") {
+		return sectionNumber;
+	} else {
+		// up_and_down
+		if (sectionNumber <= 10) {
+			return sectionNumber;
+		} else {
+			return 21 - sectionNumber;
+		}
+	}
 }
 
 /**
  * Validates if a bid is valid for the current section
  */
 export function isValidBid(bid: number, maxCards: number): boolean {
-  return bid >= 0 && bid <= maxCards && Number.isInteger(bid);
+	return bid >= 0 && bid <= maxCards && Number.isInteger(bid);
 }
 
 /**
  * Generates a random session ID
  */
 export function generateSessionId(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let result = "";
-  for (let i = 0; i < 6; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
+	const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	let result = "";
+	for (let i = 0; i < 6; i++) {
+		result += chars.charAt(Math.floor(Math.random() * chars.length));
+	}
+	return result;
 }
 
 /**
  * Compares two cards for equality
  */
 export function cardsEqual(card1: Card, card2: Card): boolean {
-  return card1.suit === card2.suit && card1.rank === card2.rank;
+	return card1.suit === card2.suit && card1.rank === card2.rank;
 }
 
 /**
  * Gets the next player position in clockwise order
  */
 export function getNextPlayer(
-  currentPosition: number,
-  totalPlayers: number,
+	currentPosition: number,
+	totalPlayers: number,
 ): number {
-  return (currentPosition + 1) % totalPlayers;
+	return (currentPosition + 1) % totalPlayers;
 }
 
 /**
  * Gets unicode symbol for a suit
  */
 export function getSuitSymbol(suit: Suit): string {
-  switch (suit) {
-    case "hearts":
-      return "♥";
-    case "diamonds":
-      return "♦";
-    case "clubs":
-      return "♣";
-    case "spades":
-      return "♠";
-    default:
-      console.error(`Unknown suit: ${suit}`);
-      return "ERROR";
-  }
+	switch (suit) {
+		case "hearts":
+			return "♥";
+		case "diamonds":
+			return "♦";
+		case "clubs":
+			return "♣";
+		case "spades":
+			return "♠";
+		default:
+			console.error(`Unknown suit: ${suit}`);
+			return "ERROR";
+	}
 }
 
 /**
  * Converts a card to a string representation
  */
 export function cardToString(card: Card): string {
-  return `${card.rank}${getSuitSymbol(card.suit)}`;
+	return `${card.rank}${getSuitSymbol(card.suit)}`;
 }
 
 /**
  * Sorts a hand of cards for display
  */
 export function sortHand(hand: Card[]): Card[] {
-  return [...hand].sort((a, b) => {
-    // Sort by suit first, then by value
-    if (a.suit !== b.suit) {
-      const suitOrder: Suit[] = ["clubs", "diamonds", "hearts", "spades"];
-      return suitOrder.indexOf(a.suit) - suitOrder.indexOf(b.suit);
-    }
-    return RANK_VALUES[a.rank] - RANK_VALUES[b.rank];
-  });
+	return [...hand].sort((a, b) => {
+		// Sort by suit first, then by value
+		if (a.suit !== b.suit) {
+			const suitOrder: Suit[] = ["clubs", "diamonds", "hearts", "spades"];
+			return suitOrder.indexOf(a.suit) - suitOrder.indexOf(b.suit);
+		}
+		return RANK_VALUES[a.rank] - RANK_VALUES[b.rank];
+	});
 }
