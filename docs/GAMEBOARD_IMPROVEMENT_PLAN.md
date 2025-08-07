@@ -5,7 +5,8 @@
   - **Completed:** The play area is now centered, and player avatars/names are arranged around the trick pile in a semi-circle for a more game-like feel. The `PlayerAvatar` component was created for this purpose.
 - ~~Player hand: Display the user’s cards at the bottom in a large, easy-to-tap row. Use card animations (slide, flip, bounce) for selection and play.~~
   - **Completed:** The player hand is now displayed at the bottom in a large, easy-to-tap row. Card components use animation classes for slide, flip, and bounce effects on selection and play.
-- Avatars: Show cartoon avatars for each player, with turn indicator (glow, bounce, or animation).
+- ~~Avatars: Show cartoon avatars for each player, with turn indicator (glow, bounce, or animation).~~
+  - **Completed:** Player avatars now use a cartoon SVG/emoji and display a glowing ring and bounce animation for the current player's turn.
 - Scoreboard: Add a simple, always-visible scoreboard with icons and large numbers.
 
 ## 2. Interactive Elements & Feedback
