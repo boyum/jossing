@@ -3,229 +3,151 @@
 import { CardComponent } from "@/components/ui/card";
 import { useGameStore } from "@/store/game-store";
 import { RANK_VALUES, type Card, type Suit, type Trick } from "@/types/game";
+import { useState } from "react";
 
 interface PlayerHandProps {
-	cards: Card[];
-	isPlayerTurn: boolean;
-	playerId: string;
-	currentTrick: Trick | null;
-	trumpSuit: Suit;
+  cards: Card[];
+  isPlayerTurn: boolean;
+  currentTrick: Trick | null;
+  trumpSuit: Suit;
 }
 
 export function PlayerHand({
-	cards,
-	isPlayerTurn,
-	playerId,
-	currentTrick,
-	trumpSuit,
+  cards,
+  isPlayerTurn,
+  currentTrick,
+  trumpSuit,
 }: PlayerHandProps) {
-	const { playCard, session } = useGameStore();
+  // Track played card index for animation
+  const [playedIdx, setPlayedIdx] = useState<number | null>(null);
 
-	const handleCardClick = async (card: Card) => {
-		if (!isPlayerTurn || !currentTrick || !session) return;
+  const { playCard, session } = useGameStore();
 
-		try {
-			await playCard(session.id, card);
-		} catch (error) {
-			console.error("Failed to play card:", error);
-		}
-	};
+  const handleCardClick = async (card: Card) => {
+    if (!isPlayerTurn || !currentTrick || !session) return;
 
-	const isCardPlayable = (card: Card): boolean => {
-		if (!isPlayerTurn || !currentTrick) return false;
+    try {
+      await playCard(session.id, card);
+    } catch (error) {
+      console.error("Failed to play card:", error);
+    }
+  };
 
-		// If no leading suit yet, any card can be played
-		if (!currentTrick.leadingSuit) return true;
+  const isCardPlayable = (card: Card): boolean => {
+    if (!isPlayerTurn || !currentTrick) return false;
 
-		// Must follow suit if possible
-		const hasSuit = cards.some((c) => c.suit === currentTrick.leadingSuit);
-		if (hasSuit) {
-			return card.suit === currentTrick.leadingSuit;
-		}
+    // If no leading suit yet, any card can be played
+    if (!currentTrick.leadingSuit) return true;
 
-		// If can't follow suit, any card can be played
-		return true;
-	};
+    // Must follow suit if possible
+    const hasSuit = cards.some((c) => c.suit === currentTrick.leadingSuit);
+    if (hasSuit) {
+      return card.suit === currentTrick.leadingSuit;
+    }
 
- if (cards.length === 0) {
-   return (
-	 <div className="bg-white rounded-lg shadow-lg p-6 text-center">
-	   <h3 className="text-xl font-bold text-gray-900 mb-2">Your Hand</h3>
-	   <p className="text-gray-600">No cards to display</p>
-	 </div>
-   );
- }
+    // If can't follow suit, any card can be played
+    return true;
+  };
 
- // Add bounce animation CSS
- const bounceClass = "active:animate-bounce";
- // Track played card index for animation
- const [playedIdx, setPlayedIdx] = React.useState<number | null>(null);
+  if (cards.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6 text-center">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Your Hand</h3>
+        <p className="text-gray-600">No cards to display</p>
+      </div>
+    );
+  }
 
- return (
-   <div className="bg-white rounded-lg shadow-lg p-6">
-	 <div className="flex justify-between items-center mb-4">
-	   <h3 className="text-xl font-bold text-gray-900">Your Hand</h3>
-	   <div className="text-sm text-gray-600">
-		 {cards.length} card{cards.length !== 1 ? "s" : ""} remaining
-	   </div>
-	 </div>
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-bold text-gray-900">Your Hand</h3>
+        <div className="text-sm text-gray-600">
+          {cards.length} card{cards.length !== 1 ? "s" : ""} remaining
+        </div>
+      </div>
 
-	 {!isPlayerTurn && currentTrick && (
-	   <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 rounded-lg text-center">
-		 <p className="text-yellow-800 font-medium">
-		   ⏳ Waiting for your turn...
-		 </p>
-	   </div>
-	 )}
+      {!isPlayerTurn && currentTrick && (
+        <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 rounded-lg text-center">
+          <p className="text-yellow-800 font-medium">
+            ⏳ Waiting for your turn...
+          </p>
+        </div>
+      )}
 
-	 {isPlayerTurn && currentTrick && (
-	   <div className="mb-4 p-3 bg-green-100 border border-green-400 rounded-lg text-center animate-pulse">
-		 <p className="text-green-800 font-medium">
-		   🎯 Your turn! Click a card to play it.
-		 </p>
-		 {currentTrick.leadingSuit && (
-		   <p className="text-sm text-green-700 mt-1">
-			 Leading suit: {" "}
-			 <span className="font-semibold capitalize">
-			   {currentTrick.leadingSuit}
-			 </span>
-			 {currentTrick.leadingSuit === trumpSuit && " (Trump!)"}
-		   </p>
-		 )}
-	   </div>
-	 )}
+      {isPlayerTurn && currentTrick && (
+        <div className="mb-4 p-3 bg-green-100 border border-green-400 rounded-lg text-center animate-pulse">
+          <p className="text-green-800 font-medium">
+            🎯 Your turn! Click a card to play it.
+          </p>
+          {currentTrick.leadingSuit && (
+            <p className="text-sm text-green-700 mt-1">
+              Leading suit:{" "}
+              <span className="font-semibold capitalize">
+                {currentTrick.leadingSuit}
+              </span>
+              {currentTrick.leadingSuit === trumpSuit && " (Trump!)"}
+            </p>
+          )}
+        </div>
+      )}
 
-	 {/* Hand of cards */}
-	 <div className="flex flex-wrap gap-4 justify-center py-4 bg-blue-50 rounded-xl shadow-lg">
-	   {cards.map((card, index) => {
-		 const playable = isCardPlayable(card);
-		 const isTrump = card.suit === trumpSuit;
-		 const highlightClass = playable && isPlayerTurn
-		   ? "ring-4 ring-green-400 animate-bounce hover:scale-105"
-		   : "";
-		 const played = playedIdx === index;
-		 const handlePlay = async () => {
-		   setPlayedIdx(index);
-		   await handleCardClick(card);
-		   setTimeout(() => setPlayedIdx(null), 600);
-		 };
-		 return (
-		   <div
-			 key={`${card.suit}-${card.rank}-${index}`}
-			 className={`transform transition-all duration-200 ${highlightClass} ${played ? "opacity-50" : ""}`}
-			 style={{ minWidth: 90, minHeight: 130 }}
-		   >
-			 <CardComponent
-			   card={card}
-			   size="large"
-			   onClick={playable && isPlayerTurn ? handlePlay : undefined}
-			   isTrump={isTrump}
-			   isPlayable={playable}
-			   disabled={!isPlayerTurn}
-			   className={`shadow-lg transition-all duration-200 ${playable && isPlayerTurn ? "hover:shadow-xl" : ""}`}
-			 />
-			 {isTrump && (
-			   <div className="text-xs text-center mt-1 text-yellow-600 font-semibold">
-				 Trump
-			   </div>
-			 )}
-		   </div>
-		 );
-	   })}
-	 </div>
+      {/* Hand of cards */}
+      <div className="flex flex-wrap gap-4 justify-center py-4 bg-blue-50 rounded-xl shadow-lg">
+        {cards.map((card, index) => {
+          const playable = isCardPlayable(card);
+          const isTrump = card.suit === trumpSuit;
+          const highlightClass =
+            playable && isPlayerTurn
+              ? "ring-4 ring-green-400 animate-bounce hover:scale-105"
+              : "";
+          const played = playedIdx === index;
+          const handlePlay = async () => {
+            setPlayedIdx(index);
+            await handleCardClick(card);
+            setTimeout(() => setPlayedIdx(null), 600);
+          };
+          return (
+            <div
+              key={`${card.suit}-${card.rank}-${index}`}
+              className={`transform transition-all duration-200 ${highlightClass} ${
+                played ? "opacity-50" : ""
+              }`}
+              style={{ minWidth: 90, minHeight: 130 }}
+            >
+              <CardComponent
+                card={card}
+                size="large"
+                onClick={playable && isPlayerTurn ? handlePlay : undefined}
+                isTrump={isTrump}
+                isPlayable={playable}
+                disabled={!isPlayerTurn}
+                className={`shadow-lg transition-all duration-200 ${
+                  playable && isPlayerTurn ? "hover:shadow-xl" : ""
+                }`}
+              />
+              {isTrump && (
+                <div className="text-xs text-center mt-1 text-yellow-600 font-semibold">
+                  Trump
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
-	 {/* Hand analysis */}
-	 <div className="mt-4 pt-4 border-t border-gray-200">
-	   <div className="flex justify-between text-sm text-gray-600">
-		 <span>
-		   Trump cards: {cards.filter((c) => c.suit === trumpSuit).length}
-		 </span>
-		 <span>
-		   High cards (J+):{" "}
-		   {cards.filter((c) => RANK_VALUES[c.rank] >= 11).length}
-		 </span>
-	   </div>
-	 </div>
-   </div>
- );
-					</p>
-				</div>
-			)}
-
-			{isPlayerTurn && currentTrick && (
-				<div className="mb-4 p-3 bg-green-100 border border-green-400 rounded-lg text-center">
-					<p className="text-green-800 font-medium">
-						🎯 Your turn! Click a card to play it.
-					</p>
-					{currentTrick.leadingSuit && (
-						<p className="text-sm text-green-700 mt-1">
-							Leading suit:{" "}
-							<span className="font-semibold capitalize">
-								{currentTrick.leadingSuit}
-							</span>
-							{currentTrick.leadingSuit === trumpSuit && " (Trump!)"}
-						</p>
-					)}
-				</div>
-			)}
-
-			{/* Hand of cards */}
-			<div className="flex flex-wrap gap-4 justify-center py-4 bg-blue-50 rounded-xl shadow-lg">
-		// Track played card index for animation
-		const [playedIdx, setPlayedIdx] = React.useState<number | null>(null);
-		return (
-		  <>
-		{cards.map((card, index) => {
-		  const playable = isCardPlayable(card);
-		  const isTrump = card.suit === trumpSuit;
-		  const highlightClass = playable && isPlayerTurn
-			? "ring-4 ring-green-400 animate-bounce hover:scale-105"
-			: "";
-		  const played = playedIdx === index;
-		  const handlePlay = async () => {
-			setPlayedIdx(index);
-			await handleCardClick(card);
-			setTimeout(() => setPlayedIdx(null), 600);
-		  };
-		  return (
-			<div
-			  key={`${card.suit}-${card.rank}-${index}`}
-			  className={`transform transition-all duration-200 ${highlightClass} ${played ? "opacity-50" : ""}`}
-			  style={{ minWidth: 90, minHeight: 130 }}
-			>
-			  <CardComponent
-				card={card}
-				size="large"
-				onClick={playable && isPlayerTurn ? handlePlay : undefined}
-				isTrump={isTrump}
-				isPlayable={playable}
-				disabled={!isPlayerTurn}
-				className={`shadow-lg transition-all duration-200 ${playable && isPlayerTurn ? "hover:shadow-xl" : ""}`}
-			  />
-			  {isTrump && (
-				<div className="text-xs text-center mt-1 text-yellow-600 font-semibold">
-				  Trump
-				</div>
-			  )}
-			</div>
-		  );
-		})}
-		  </>
-		);
-			</div>
-
-			{/* Hand analysis */}
-			<div className="mt-4 pt-4 border-t border-gray-200">
-				<div className="flex justify-between text-sm text-gray-600">
-					<span>
-						Trump cards: {cards.filter((c) => c.suit === trumpSuit).length}
-					</span>
-					<span>
-						High cards (J+):{" "}
-						{cards.filter((c) => RANK_VALUES[c.rank] >= 11).length}
-					</span>
-				</div>
-			</div>
-		</div>
-	);
+      {/* Hand analysis */}
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>
+            Trump cards: {cards.filter((c) => c.suit === trumpSuit).length}
+          </span>
+          <span>
+            High cards (J+):{" "}
+            {cards.filter((c) => RANK_VALUES[c.rank] >= 11).length}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 }

@@ -145,7 +145,6 @@ export function GameBoard() {
 					<PlayerHand
 						cards={playerHand}
 						isPlayerTurn={isPlayerTurn}
-						playerId={playerId}
 						currentTrick={currentTrick}
 						trumpSuit={currentSection.trumpSuit}
 					/>
@@ -174,7 +173,6 @@ export function GameBoard() {
 						<PlayerHand
 							cards={playerHand}
 							isPlayerTurn={isPlayerTurn}
-							playerId={playerId}
 							currentTrick={currentTrick}
 							trumpSuit={currentSection.trumpSuit}
 						/>

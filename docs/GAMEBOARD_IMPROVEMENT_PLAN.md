@@ -13,8 +13,10 @@
 
 ## 2. Interactive Elements & Feedback
 
-- Card selection: Highlight playable cards with glow or bounce. Animate cards when played.
-- Turn feedback: Use animations and sounds to indicate whose turn it is.
+- ~~Card selection: Highlight playable cards with glow or bounce. Animate cards when played.~~
+  - **Completed:** Playable cards are now highlighted with a green glow and bounce animation. When a card is played, it animates with a fade-out effect for visual feedback.
+- ~~Turn feedback: Use animations and sounds to indicate whose turn it is.~~
+  - **Completed:** The current player's turn is indicated with a bounce and glowing ring animation on their avatar, and a pulsing green message in the play area. (Sound effects can be added in future iterations.)
 - Action buttons: Large, colorful buttons for actions (Play, Pass, Hint). Disable buttons when not usable.
 - Tooltips: Friendly tooltips or mascot speech bubbles for guidance.
 
