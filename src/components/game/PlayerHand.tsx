@@ -56,6 +56,9 @@ export function PlayerHand({
 		);
 	}
 
+	// Add bounce animation CSS
+	const bounceClass = "active:animate-bounce";
+
 	return (
 		<div className="bg-white rounded-lg shadow-lg p-6">
 			<div className="flex justify-between items-center mb-4">
@@ -91,21 +94,21 @@ export function PlayerHand({
 			)}
 
 			{/* Hand of cards */}
-			<div className="flex flex-wrap gap-3 justify-center">
+			<div className="flex flex-wrap gap-4 justify-center py-4 bg-blue-50 rounded-xl shadow-lg">
 				{cards.map((card, index) => {
 					const playable = isCardPlayable(card);
 					const isTrump = card.suit === trumpSuit;
-
 					return (
 						<div
 							key={`${card.suit}-${card.rank}-${index}`}
 							className={`transform transition-all duration-200 ${
 								playable && isPlayerTurn ? "hover:-translate-y-2" : ""
-							}`}
+							} ${playable && isPlayerTurn ? bounceClass : ""}`}
+							style={{ minWidth: 90, minHeight: 130 }}
 						>
 							<CardComponent
 								card={card}
-								size="medium"
+								size="large"
 								onClick={
 									playable && isPlayerTurn
 										? () => handleCardClick(card)
@@ -114,7 +117,7 @@ export function PlayerHand({
 								isTrump={isTrump}
 								isPlayable={playable}
 								disabled={!isPlayerTurn}
-								className={`shadow-md transition-all duration-200 ${
+								className={`shadow-lg transition-all duration-200 ${
 									playable && isPlayerTurn ? "hover:shadow-xl" : ""
 								}`}
 							/>
